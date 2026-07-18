@@ -1,0 +1,363 @@
+/* ════════════════════════════════════════════════════════════════════
+  Dracula Theme — official Dracula Soft palette (VSCode variant)
+  Dark:  soft charcoal #282A36, desaturated purple #BF9EEE accent
+  Light: Alucard-style cream #FFFBEB, deep violet #644AC9 accent
+  Palette source: dracula/visual-studio-code soft variant (via shiki
+  tm-themes dracula-soft.json) — keep values in sync with upstream.
+  ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Dracula Soft Dark ──────────────────────────────────────────────── */
+[data-theme='dracula'] {
+  color-scheme: dark !important;
+
+  --theme-bg: #282a36;
+  --theme-sidebar: #262626;
+  --theme-panel: #2c2e3a;
+  --theme-card: #343746;
+  --theme-card2: #3c3f51;
+  --theme-border: #44475a;
+  --theme-border-subtle: #363948;
+  --theme-text: #f6f6f4;
+  /* Official soft comment #7b7f8b fails AA (2.9:1) on the raised card
+     tone; lightened along the same hue to clear 4.5:1 on every surface. */
+  --theme-muted: #a8abb5;
+  --theme-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --theme-shadow-2: 0 6px 16px rgba(0, 0, 0, 0.45);
+  --theme-shadow-3: 0 16px 36px rgba(0, 0, 0, 0.55);
+  --theme-glass: rgba(40, 42, 54, 0.9);
+  --theme-focus: #bf9eee;
+  --theme-accent: #bf9eee;
+  --theme-accent-secondary: #f286c4;
+  --theme-accent-subtle: rgba(191, 158, 238, 0.12);
+  --theme-accent-border: rgba(191, 158, 238, 0.3);
+  --theme-active: #bf9eee;
+  --theme-link: #97e1f1;
+  --theme-success: #62e884;
+  --theme-warning: #ffb86c;
+  --theme-danger: #ee6666;
+  --theme-stripe: rgba(68, 71, 90, 0.4);
+  --theme-header-bg: #21222c;
+  --theme-header-border: #363948;
+  --chat-user-bg: #383150;
+  --chat-user-border: rgba(191, 158, 238, 0.35);
+  --chat-user-foreground: #f6f6f4;
+  --chat-assistant-bg: #2c2e3a;
+  --chat-assistant-border: #3c3f51;
+  --chat-assistant-foreground: #f6f6f4;
+  --composer-bg: #21222c;
+  --composer-border: #44475a;
+  --composer-placeholder: #a8abb5;
+  --tool-card-bg: #2c2e3a;
+  --tool-card-border: #44475a;
+  --tool-card-title: #f6f6f4;
+  --tool-card-muted: #9ea1ab;
+  --code-bg: #21222c;
+  --code-border: #363948;
+  --code-foreground: #f6f6f4;
+  --theme-input: #343746;
+}
+
+/* ── Dracula Light (Alucard) ────────────────────────────────────────── */
+[data-theme='dracula-light'] {
+  color-scheme: light !important;
+
+  --theme-bg: #fffbeb;
+  --theme-sidebar: #f7f2dd;
+  --theme-panel: #faf5e1;
+  --theme-card: #fffdf5;
+  --theme-card2: #f6f0da;
+  --theme-border: #ddd6bd;
+  --theme-border-subtle: #ebe5cd;
+  --theme-text: #1f1f1f;
+  --theme-muted: #6c664b;
+  --theme-shadow-1: 0 1px 2px rgba(60, 50, 20, 0.06);
+  --theme-shadow-2: 0 8px 24px rgba(60, 50, 20, 0.08);
+  --theme-shadow-3: 0 18px 40px rgba(60, 50, 20, 0.12);
+  --theme-glass: rgba(255, 251, 235, 0.92);
+  --theme-focus: #644ac9;
+  --theme-accent: #644ac9;
+  --theme-accent-secondary: #a3144d;
+  --theme-accent-subtle: rgba(100, 74, 201, 0.08);
+  --theme-accent-border: rgba(100, 74, 201, 0.25);
+  --theme-active: #644ac9;
+  --theme-link: #036a96;
+  --theme-success: #14710a;
+  --theme-warning: #a34d14;
+  --theme-danger: #cb3a2a;
+  --theme-stripe: rgba(221, 214, 189, 0.45);
+  --theme-header-bg: #faf5e1;
+  --theme-header-border: #ddd6bd;
+  --chat-user-bg: #efe8fb;
+  --chat-user-border: #c8b8ef;
+  --chat-user-foreground: #2c1e66;
+  --chat-assistant-bg: #fffdf5;
+  --chat-assistant-border: #e2dcc4;
+  --chat-assistant-foreground: #1f1f1f;
+  --composer-bg: #fffef8;
+  --composer-border: #d8d1b8;
+  --composer-placeholder: #8a8468;
+  --tool-card-bg: #f8f3df;
+  --tool-card-border: #ddd6bd;
+  --tool-card-title: #1f1f1f;
+  --tool-card-muted: #6c664b;
+  --code-bg: #f7f2dd;
+  --code-border: #ddd6bd;
+  --code-foreground: #24242a;
+  --theme-input: #fffef8;
+}
+
+/* ── Dracula dark theme body bg/color overrides ─────────────────────── */
+[data-theme='dracula'] html,
+[data-theme='dracula'] body,
+[data-theme='dracula'] #root,
+[data-theme='dracula'] .dark {
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+/* ── Dracula light theme body bg/color overrides ────────────────────── */
+[data-theme='dracula-light'] html,
+[data-theme='dracula-light'] body,
+[data-theme='dracula-light'] #root,
+[data-theme='dracula-light'] .light {
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+/* ── Dracula Tailwind primary token remaps — dark ───────────────────── */
+[data-theme='dracula'] {
+  --color-primary-50: var(--theme-panel) !important;
+  --color-primary-100: var(--theme-card) !important;
+  --color-primary-200: var(--theme-border-subtle) !important;
+  --color-primary-300: var(--theme-border) !important;
+  --color-primary-400: var(--theme-muted) !important;
+  --color-primary-500: var(--theme-muted) !important;
+  --color-primary-600: var(--theme-muted) !important;
+  --color-primary-700: var(--theme-text) !important;
+  --color-primary-800: var(--theme-text) !important;
+  --color-primary-900: var(--theme-text) !important;
+  --color-primary-950: var(--theme-text) !important;
+  --color-surface: var(--theme-bg) !important;
+  --color-surface-deep: var(--theme-bg) !important;
+  --color-ink: var(--theme-text) !important;
+  --color-accent-400: var(--theme-accent-secondary) !important;
+  --color-accent-500: var(--theme-accent) !important;
+  --color-accent-600: var(--theme-accent) !important;
+}
+
+/* ── Dracula Tailwind primary token remaps — light ──────────────────── */
+[data-theme='dracula-light'] {
+  --color-primary-50: var(--theme-card) !important;
+  --color-primary-100: var(--theme-card2) !important;
+  --color-primary-200: var(--theme-border) !important;
+  --color-primary-300: var(--theme-border-subtle) !important;
+  --color-primary-400: var(--theme-muted) !important;
+  --color-primary-500: var(--theme-muted) !important;
+  --color-primary-600: var(--theme-muted) !important;
+  --color-primary-700: var(--theme-text) !important;
+  --color-primary-800: var(--theme-text) !important;
+  --color-primary-900: var(--theme-text) !important;
+  --color-primary-950: var(--theme-text) !important;
+  --color-surface: var(--theme-bg) !important;
+  --color-surface-deep: var(--theme-bg) !important;
+  --color-ink: var(--theme-text) !important;
+  --color-accent-400: var(--theme-accent-secondary) !important;
+  --color-accent-500: var(--theme-accent) !important;
+  --color-accent-600: var(--theme-accent) !important;
+  --color-white: var(--theme-card) !important;
+}
+
+/* ── Dracula dark: purple focus rings ───────────────────────────────── */
+[data-theme='dracula'] :focus-visible {
+  outline-color: rgba(191, 158, 238, 0.55);
+}
+
+/* ── Dracula dark: amber → purple remap ─────────────────────────────── */
+/* Amber drives selected menu items and warning badges. Default pastel
+   amber clashes with the Dracula palette on dark surfaces; remap the
+   scale to the theme's purple so bg-amber-100 + text-amber-800 stays
+   readable on --theme-panel. */
+[data-theme='dracula'] {
+  --color-amber-50: #2a2440 !important;
+  --color-amber-100: #3a3158 !important;
+  --color-amber-200: #4a3f70 !important;
+  --color-amber-300: #5c4e8a !important;
+  --color-amber-400: #7a67ad !important;
+  --color-amber-500: #9c82cf !important;
+  --color-amber-600: #bf9eee !important;
+  --color-amber-700: #d2b8f5 !important;
+  --color-amber-800: #ecdffc !important;
+  --color-amber-900: #f4ecfe !important;
+  --color-amber-950: #faf6ff !important;
+}
+
+/* ── Dracula dark: red scale on Dracula red #EE6666 ─────────────────── */
+[data-theme='dracula'] {
+  --color-red-50: #2a1616 !important;
+  --color-red-100: #47201f !important;
+  --color-red-200: #632b2a !important;
+  --color-red-300: #8a3a38 !important;
+  --color-red-400: #b84c4a !important;
+  --color-red-500: #ee6666 !important;
+  --color-red-600: #f28080 !important;
+  --color-red-700: #f6a3a3 !important;
+  --color-red-800: #fcdada !important;
+  --color-red-900: #fdecec !important;
+  --color-red-950: #fff5f5 !important;
+}
+
+/* ── Dracula dark: emerald scale on Dracula green #62E884 ───────────── */
+[data-theme='dracula'] {
+  --color-emerald-50: #14251a !important;
+  --color-emerald-100: #1c3a26 !important;
+  --color-emerald-200: #265234 !important;
+  --color-emerald-300: #327a46 !important;
+  --color-emerald-400: #45a55e !important;
+  --color-emerald-500: #62e884 !important;
+  --color-emerald-600: #7fee9b !important;
+  --color-emerald-700: #a5f3b8 !important;
+  --color-emerald-800: #d0fadb !important;
+  --color-emerald-900: #e5fdeb !important;
+  --color-emerald-950: #f1fef4 !important;
+}
+
+/* ── Dracula dark: yellow scale on Dracula yellow #E7EE98 ───────────── */
+[data-theme='dracula'] {
+  --color-yellow-50: #24250f !important;
+  --color-yellow-100: #383a18 !important;
+  --color-yellow-200: #525526 !important;
+  --color-yellow-300: #707436 !important;
+  --color-yellow-400: #94984c !important;
+  --color-yellow-500: #c3c96f !important;
+  --color-yellow-600: #e7ee98 !important;
+  --color-yellow-700: #edf2af !important;
+  --color-yellow-800: #f4f7cd !important;
+  --color-yellow-900: #f9fbe3 !important;
+  --color-yellow-950: #fcfdf0 !important;
+}
+
+/* ── Dracula dark: neutral → charcoal slate remap ───────────────────── */
+/* !important required because Tailwind v4 defines these as oklch in
+   @layer theme. --color-white must become a dark surface for popovers
+   that use bg-white / dark:bg-neutral-900. */
+[data-theme='dracula'] {
+  --color-neutral-50: #f0f0f2 !important;
+  --color-neutral-100: #dedfe4 !important;
+  --color-neutral-200: #b9bbc6 !important;
+  --color-neutral-300: #9497a8 !important;
+  --color-neutral-400: #7b7f8b !important;
+  --color-neutral-500: #62667a !important;
+  --color-neutral-600: #545869 !important;
+  --color-neutral-700: #44475a !important;
+  --color-neutral-800: #343746 !important;
+  --color-neutral-900: #282a36 !important;
+  --color-neutral-950: #191a21 !important;
+  --color-white: #2c2e3a !important;
+}
+
+/* ── Dracula dark: selected menu items — force bg/text on inline-styled MenuItem ─ */
+[data-theme='dracula'] .bg-amber-100 {
+  background-color: var(--color-amber-100) !important;
+  color: var(--color-amber-800) !important;
+}
+[data-theme='dracula'] .bg-amber-100 .text-amber-800 {
+  color: var(--color-amber-800) !important;
+}
+[data-theme='dracula'] .bg-amber-100 .text-amber-600 {
+  color: var(--color-amber-600) !important;
+}
+[data-theme='dracula'] .bg-amber-100 .text-primary-600 {
+  color: var(--color-amber-600) !important;
+}
+[data-theme='dracula'] .bg-amber-100 .text-primary-300 {
+  color: var(--color-amber-700) !important;
+}
+
+/* ── Dracula dark: active tab indicator in Usage Details dialog ─────── */
+[data-theme='dracula'] .bg-primary-50 > button.bg-primary-100 {
+  background-color: rgba(191, 158, 238, 0.18) !important;
+  color: var(--theme-accent) !important;
+}
+
+/* ── Dracula light: amber → violet remap ────────────────────────────── */
+[data-theme='dracula-light'] {
+  --color-amber-50: #f3effb !important;
+  --color-amber-100: #e6def7 !important;
+  --color-amber-200: #d0c2ef !important;
+  --color-amber-300: #b39ce4 !important;
+  --color-amber-400: #8f70d6 !important;
+  --color-amber-500: #644ac9 !important;
+  --color-amber-600: #563eb2 !important;
+  --color-amber-700: #463293 !important;
+  --color-amber-800: #362671 !important;
+  --color-amber-900: #281c54 !important;
+  --color-amber-950: #1a1238 !important;
+  --color-yellow-50: #f7f3df !important;
+  --color-yellow-100: #eee7c0 !important;
+  --color-yellow-200: #ddd191 !important;
+  --color-yellow-300: #c6b562 !important;
+  --color-yellow-400: #a68f38 !important;
+  --color-yellow-500: #846e15 !important;
+  --color-yellow-600: #6d5a10 !important;
+  --color-yellow-700: #54450c !important;
+  --color-yellow-800: #3b3008 !important;
+  --color-yellow-900: #262005 !important;
+  --color-yellow-950: #171303 !important;
+  --color-red-50: #fbe9e7 !important;
+  --color-red-100: #f7d2cd !important;
+  --color-red-200: #eda99f !important;
+  --color-red-300: #e28174 !important;
+  --color-red-400: #d75c4c !important;
+  --color-red-500: #cb3a2a !important;
+  --color-red-600: #b02f22 !important;
+  --color-red-700: #8c251a !important;
+  --color-red-800: #691c13 !important;
+  --color-red-900: #47130d !important;
+  --color-red-950: #2e0c08 !important;
+  --color-emerald-50: #e9f4e7 !important;
+  --color-emerald-100: #d2e9cf !important;
+  --color-emerald-200: #a8d3a2 !important;
+  --color-emerald-300: #7cba74 !important;
+  --color-emerald-400: #3f8f35 !important;
+  --color-emerald-500: #14710a !important;
+  --color-emerald-600: #106008 !important;
+  --color-emerald-700: #0c4c06 !important;
+  --color-emerald-800: #093a05 !important;
+  --color-emerald-900: #062803 !important;
+  --color-emerald-950: #041a02 !important;
+  --color-neutral-50: #fbf7e9 !important;
+  --color-neutral-100: #f1ecd8 !important;
+  --color-neutral-200: #ddd6bd !important;
+  --color-neutral-300: #c2bb9f !important;
+  --color-neutral-400: #a09877 !important;
+  --color-neutral-500: #6c664b !important;
+  --color-neutral-600: #59543d !important;
+  --color-neutral-700: #454130 !important;
+  --color-neutral-800: #322f23 !important;
+  --color-neutral-900: #211f17 !important;
+  --color-neutral-950: #14130e !important;
+}
+
+/* ── Dracula light: selected menu items — force bg/text on inline-styled MenuItem ─ */
+[data-theme='dracula-light'] .bg-amber-100 {
+  background-color: var(--color-amber-100) !important;
+  color: var(--color-amber-800) !important;
+}
+[data-theme='dracula-light'] .bg-amber-100 .text-amber-800 {
+  color: var(--color-amber-800) !important;
+}
+[data-theme='dracula-light'] .bg-amber-100 .text-amber-600 {
+  color: var(--color-amber-600) !important;
+}
+[data-theme='dracula-light'] .bg-amber-100 .text-primary-600 {
+  color: var(--color-amber-600) !important;
+}
+[data-theme='dracula-light'] .bg-amber-100 .text-primary-300 {
+  color: var(--color-amber-700) !important;
+}
+
+/* ── Dracula light: active tab indicator ────────────────────────────── */
+[data-theme='dracula-light'] .bg-primary-50 > button.bg-primary-100 {
+  background-color: rgba(100, 74, 201, 0.14) !important;
+  color: var(--theme-accent) !important;
+}

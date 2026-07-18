@@ -1,0 +1,179 @@
+import { describe, expect, it } from 'vitest'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import * as yaml from 'yaml'
+import { syncSwarmProfileIdentity, syncSwarmProfileModel } from './swarm-profile-config'
+
+function makeProfile(initial: Record<string, unknown>): string {
+  const dir = mkdtempSync(join(tmpdir(), 'swarm-profile-cfg-'))
+  writeFileSync(join(dir, 'config.yaml'), yaml.stringify(initial), 'utf8')
+  return dir
+}
+
+describe('syncSwarmProfileModel', () => {
+  it('returns ok=false when the profile path does not exist', () => {
+    const result = syncSwarmProfileModel('/nope/does-not-exist', {
+      provider: 'openai-codex',
+      default: 'gpt-5.5',
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.error).toContain('profile path missing')
+    }
+  })
+
+  it('returns ok=false when config.yaml does not exist', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'swarm-profile-cfg-'))
+    try {
+      const result = syncSwarmProfileModel(dir, {
+        provider: 'openai-codex',
+        default: 'gpt-5.5',
+      })
+      expect(result.ok).toBe(false)
+      if (!result.ok) {
+        expect(result.error).toContain('config.yaml missing')
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('updates model.provider and model.default when they differ', () => {
+    const dir = makeProfile({
+      model: { provider: 'openai-codex', default: 'gpt-5.5' },
+      providers: {},
+    })
+    try {
+      const result = syncSwarmProfileModel(dir, {
+        provider: 'anthropic-oauth',
+        default: 'claude-opus-4-7',
+      })
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.changed).toBe(true)
+        expect(result.previous).toEqual({
+          provider: 'openai-codex',
+          default: 'gpt-5.5',
+        })
+      }
+      const reread = yaml.parse(
+        readFileSync(join(dir, 'config.yaml'), 'utf8'),
+      ) as { model: { provider: string; default: string } }
+      expect(reread.model.provider).toBe('anthropic-oauth')
+      expect(reread.model.default).toBe('claude-opus-4-7')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('reports changed=false when config already matches target', () => {
+    const dir = makeProfile({
+      model: { provider: 'openai-codex', default: 'gpt-5.5' },
+    })
+    try {
+      const result = syncSwarmProfileModel(dir, {
+        provider: 'openai-codex',
+        default: 'gpt-5.5',
+      })
+      expect(result.ok).toBe(true)
+      if (result.ok) {
+        expect(result.changed).toBe(false)
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('preserves sibling top-level keys (providers, toolsets, agent)', () => {
+    const dir = makeProfile({
+      model: { provider: 'openai-codex', default: 'gpt-5.5' },
+      providers: { ollama: { api_key: 'ollama' } },
+      toolsets: ['file', 'browser'],
+      agent: { max_turns: 90 },
+    })
+    try {
+      syncSwarmProfileModel(dir, {
+        provider: 'anthropic-oauth',
+        default: 'claude-opus-4-7',
+      })
+      const reread = yaml.parse(
+        readFileSync(join(dir, 'config.yaml'), 'utf8'),
+      ) as Record<string, unknown>
+      expect(reread.providers).toEqual({ ollama: { api_key: 'ollama' } })
+      expect(reread.toolsets).toEqual(['file', 'browser'])
+      expect(reread.agent).toEqual({ max_turns: 90 })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('preserves sibling fields inside model (e.g. model.alternates)', () => {
+    const dir = makeProfile({
+      model: {
+        provider: 'openai-codex',
+        default: 'gpt-5.5',
+        alternates: ['gpt-5.4'],
+      },
+    })
+    try {
+      syncSwarmProfileModel(dir, {
+        provider: 'anthropic-oauth',
+        default: 'claude-opus-4-7',
+      })
+      const reread = yaml.parse(
+        readFileSync(join(dir, 'config.yaml'), 'utf8'),
+      ) as { model: Record<string, unknown> }
+      expect(reread.model.provider).toBe('anthropic-oauth')
+      expect(reread.model.default).toBe('claude-opus-4-7')
+      expect(reread.model.alternates).toEqual(['gpt-5.4'])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('returns ok=false when config.yaml is malformed', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'swarm-profile-cfg-'))
+    writeFileSync(join(dir, 'config.yaml'), '::: not yaml :::', 'utf8')
+    try {
+      const result = syncSwarmProfileModel(dir, {
+        provider: 'openai-codex',
+        default: 'gpt-5.5',
+      })
+      expect(result.ok).toBe(false)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+
+describe('syncSwarmProfileIdentity', () => {
+  it('writes profile-local identity with name, role, mission, capabilities, and stable machine ID', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'swarm-profile-id-'))
+    try {
+      const result = syncSwarmProfileIdentity(dir, {
+        id: 'swarm5',
+        name: 'Builder',
+        role: 'Primary Builder',
+        specialty: 'full-stack implementation across Lam Cyberlab and Swarm2',
+        model: 'GPT-5.5',
+        mission: 'Ship focused product slices with tests and clean diffs.',
+        skills: ['swarm-ui-worker', 'swarm-worker-core'],
+        capabilities: ['code-editing', 'ui-implementation'],
+      })
+
+      expect(result.ok).toBe(true)
+      const identity = readFileSync(join(dir, 'memory', 'IDENTITY.md'), 'utf8')
+      expect(identity).toContain('# IDENTITY.md — Builder')
+      expect(identity).toContain('- Name: Builder')
+      expect(identity).toContain('- Worker ID: swarm5')
+      expect(identity).toContain('- Role: Primary Builder')
+      expect(identity).toContain('- Mission: Ship focused product slices with tests and clean diffs.')
+      expect(identity).toContain('- Capabilities: code-editing, ui-implementation')
+      expect(identity).toContain('The worker ID is a stable machine identifier only')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})

@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-18T13:30:00+07:00",
+  "title": "Design System: Hermes Workspace",
+  "extensions": {
+    "colorMeta": {
+      "harbor-night-teal": { "role": "neutral", "displayName": "Harbor-Night Teal", "canonical": "#041C1C", "tonalRamp": ["#02100f", "#041c1c", "#06282a", "#082f31", "#0a3638", "#3d6663", "#7ba39f", "#d5e8e6"] },
+      "teal-panel": { "role": "neutral", "displayName": "Teal Panel", "canonical": "#06282A", "tonalRamp": ["#031416", "#06282a", "#083539", "#0b4247", "#155a60", "#3d8187", "#7fb3b7", "#d3e9ea"] },
+      "teal-card": { "role": "neutral", "displayName": "Teal Card", "canonical": "#082F31", "tonalRamp": ["#041819", "#082f31", "#0b4144", "#0f5357", "#1a7075", "#459298", "#85bfc3", "#d7edee"] },
+      "teal-card-raised": { "role": "neutral", "displayName": "Teal Card Raised", "canonical": "#0A3638", "tonalRamp": ["#051b1c", "#0a3638", "#0e4b4e", "#136063", "#207f83", "#4b9fa3", "#8ac7ca", "#daf0f1"] },
+      "lantern-cream": { "role": "neutral", "displayName": "Lantern Cream", "canonical": "#FFE6CB", "tonalRamp": ["#332619", "#664c33", "#99724c", "#cc9866", "#ffbf80", "#ffd3a6", "#ffe6cb", "#fff5ea"] },
+      "signal-amber": { "role": "primary", "displayName": "Signal Amber", "canonical": "#FFAC02", "tonalRamp": ["#331f00", "#664000", "#996000", "#cc8500", "#ffac02", "#ffc14d", "#ffd88a", "#ffefcc"] },
+      "phosphor-green": { "role": "tertiary", "displayName": "Phosphor Green", "canonical": "#8FFF89", "tonalRamp": ["#0c2a0b", "#1a5518", "#278025", "#35aa32", "#5cd455", "#8fff89", "#b8ffb3", "#e2ffe0"] },
+      "alert-red": { "role": "tertiary", "displayName": "Alert Red", "canonical": "#FB2C36", "tonalRamp": ["#33090b", "#661216", "#991b21", "#cc242c", "#fb2c36", "#fc6169", "#fd969b", "#fecbcd"] }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Body", "purpose": "Default UI text and chat prose; family follows the user-selectable --interface-font-family." },
+      "title": { "displayName": "Title", "purpose": "Panel and card headings." },
+      "headline": { "displayName": "Headline", "purpose": "Screen titles and KPI values." },
+      "label": { "displayName": "Label", "purpose": "Uppercase tracked micro-labels (KPI cards); the one sanctioned uppercase voice." },
+      "mono": { "displayName": "Machine Voice", "purpose": "JetBrains Mono for code, terminal, logs, IDs — wherever output belongs to the system." }
+    },
+    "shadows": [
+      { "name": "theme-shadow-1", "value": "0 1px 2px rgba(0,0,0,0.55)", "purpose": "Resting cards that need a whisper of lift (Nous values; theme-scoped)." },
+      { "name": "theme-shadow-2", "value": "0 6px 16px rgba(0,0,0,0.48)", "purpose": "Hover states and small popovers." },
+      { "name": "theme-shadow-3", "value": "0 16px 36px rgba(0,0,0,0.58)", "purpose": "Dialogs, command palette, dropdowns." }
+    ],
+    "motion": [
+      { "name": "transition-fast", "value": "150ms ease", "purpose": "Hover/focus feedback on buttons, rows, chips." },
+      { "name": "transition-standard", "value": "200ms ease", "purpose": "Card hover lift, panel state changes." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The Signal Amber action — one per view, weight 600, harbor-dark text.",
+      "html": "<button class=\"ds-btn-primary\">Dispatch task</button>",
+      "css": ".ds-btn-primary { background: var(--theme-accent, #ffac02); color: var(--theme-bg, #041c1c); padding: 8px 16px; border: none; border-radius: 0.5rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: filter 150ms ease, transform 150ms ease; } .ds-btn-primary:hover { filter: brightness(1.08); } .ds-btn-primary:focus-visible { outline: 2px solid var(--theme-focus, #ffac02); outline-offset: 2px; } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Quiet secondary action; fills with the panel tone on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost { background: transparent; color: var(--theme-text, #ffe6cb); padding: 8px 16px; border: 1px solid var(--theme-border, rgba(255,230,203,0.2)); border-radius: 0.5rem; font-weight: 500; font-size: 0.875rem; cursor: pointer; transition: background 150ms ease, border-color 150ms ease; } .ds-btn-ghost:hover { background: var(--theme-panel, #06282a); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--theme-focus, #ffac02); outline-offset: 2px; }"
+    },
+    {
+      "name": "KPI Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Dashboard stat card: tracked uppercase label, bold value, amber trend chip.",
+      "html": "<div class=\"ds-kpi-card\"><div class=\"ds-kpi-label\">Active Sessions</div><div class=\"ds-kpi-value\">12</div><span class=\"ds-kpi-trend\">+3 today</span></div>",
+      "css": ".ds-kpi-card { border: 1px solid var(--theme-border, rgba(255,230,203,0.2)); border-radius: 0.75rem; background: var(--theme-card, #082f31); box-shadow: var(--theme-shadow-1, 0 1px 2px rgba(0,0,0,0.55)); padding: 0.875rem 1rem; transition: box-shadow 200ms ease, border-color 200ms ease; } .ds-kpi-card:hover { box-shadow: var(--theme-shadow-2, 0 6px 16px rgba(0,0,0,0.48)); } .ds-kpi-label { color: var(--theme-muted, rgba(255,230,203,0.6)); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; } .ds-kpi-value { color: var(--theme-text, #ffe6cb); font-size: 1.5rem; font-weight: 700; line-height: 1.2; margin: 4px 0 8px; } .ds-kpi-trend { display: inline-flex; align-items: center; border-radius: 9999px; border: 1px solid var(--theme-accent-border, rgba(255,172,2,0.28)); background: var(--theme-accent-subtle, rgba(255,172,2,0.12)); color: var(--theme-accent, #ffac02); font-size: 0.7rem; font-weight: 600; line-height: 1; padding: 0.2rem 0.45rem; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Standard field: input-tone fill, hairline border, amber focus ring.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search skills…\" />",
+      "css": ".ds-input { background: var(--theme-input, #06282a); color: var(--theme-text, #ffe6cb); border: 1px solid var(--theme-border, rgba(255,230,203,0.2)); border-radius: 0.5rem; padding: 8px 12px; font-size: 0.875rem; width: 240px; transition: border-color 150ms ease; } .ds-input::placeholder { color: var(--composer-placeholder, rgba(255,230,203,0.45)); } .ds-input:focus-visible { outline: 2px solid var(--theme-focus, #ffac02); outline-offset: 1px; border-color: var(--theme-focus, #ffac02); }"
+    },
+    {
+      "name": "Sidebar Nav Item",
+      "kind": "nav",
+      "description": "Quiet cream-muted row that fills amber-subtle and switches to accent text when active.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"9\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\"/></svg>Dashboard</a><a class=\"ds-nav-item ds-nav-item--active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/></svg>Chat</a></nav>",
+      "css": ".ds-nav { display: flex; flex-direction: column; gap: 2px; background: var(--theme-sidebar, #06282a); padding: 8px; border-radius: 0.75rem; width: 200px; } .ds-nav-item { display: flex; align-items: center; gap: 10px; color: var(--theme-muted, rgba(255,230,203,0.6)); font-size: 0.875rem; font-weight: 500; text-decoration: none; padding: 8px 10px; border-radius: 0.5rem; transition: background 150ms ease, color 150ms ease; } .ds-nav-item:hover { background: var(--theme-card, #082f31); color: var(--theme-text, #ffe6cb); } .ds-nav-item--active { background: var(--theme-accent-subtle, rgba(255,172,2,0.12)); color: var(--theme-accent, #ffac02); } .ds-nav-item:focus-visible { outline: 2px solid var(--theme-focus, #ffac02); outline-offset: 1px; }"
+    },
+    {
+      "name": "Chat Bubble Pair",
+      "kind": "custom",
+      "description": "Signature surface: two voices in one room — user on teal-deep with amber-tinted border, agent on panel tone with hairline cream border.",
+      "html": "<div class=\"ds-chat\"><div class=\"ds-chat-user\">Restart the swarm workers when you're ready.</div><div class=\"ds-chat-agent\">On it — draining 3 active tasks first, then rotating each worker.</div></div>",
+      "css": ".ds-chat { display: flex; flex-direction: column; gap: 10px; width: 320px; } .ds-chat-user { align-self: flex-end; background: var(--chat-user-bg, #08302d); color: var(--chat-user-foreground, #ffe6cb); border: 1px solid var(--chat-user-border, rgba(255,172,2,0.28)); border-radius: 0.75rem; padding: 10px 14px; font-size: 0.875rem; line-height: 1.5; max-width: 85%; } .ds-chat-agent { align-self: flex-start; background: var(--chat-assistant-bg, #06282a); color: var(--chat-assistant-foreground, #ffe6cb); border: 1px solid var(--chat-assistant-border, rgba(255,230,203,0.1)); border-radius: 0.75rem; padding: 10px 14px; font-size: 0.875rem; line-height: 1.5; max-width: 85%; }"
+    },
+    {
+      "name": "Code Block",
+      "kind": "custom",
+      "description": "The machine voice made visible: near-black well, JetBrains Mono, phosphor green text.",
+      "html": "<pre class=\"ds-code\">$ hermes gateway run\n<span class=\"ds-code-ok\">✓ gateway listening on :8642</span></pre>",
+      "css": ".ds-code { background: var(--code-bg, #02181a); color: var(--code-foreground, #8fff89); border: 1px solid var(--code-border, rgba(255,230,203,0.12)); border-radius: 0.5rem; padding: 12px 14px; font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8125rem; line-height: 1.6; white-space: pre-wrap; width: 300px; } .ds-code-ok { color: var(--theme-success, #8fff89); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Agent Basecamp",
+    "overview": "Hermes Workspace is not an admin panel you visit; it is a basecamp you and your agents inhabit. The reference energy is Discord, not Jira: warm chat surfaces you can live in for hours, a sidebar with presence and life, an agent that reads as a character rather than a form field. The chrome is technical and confident — deep harbor-night surfaces, instruments that glow amber when they matter — but never cold. The system's single most important structural fact is the theme contract: every color flows through the semantic --theme-* layer, implemented by fourteen first-class themes; the default and canonical palette is Nous (harbor-night teal, lantern cream, signal amber), and every rule must survive a theme swap.",
+    "keyCharacteristics": [
+      "Inhabited, not administered: presence, avatars, live activity everywhere it's honest.",
+      "Deep tonal surfaces with one amber voice; personality lives in the theme layer.",
+      "Dense enough for an ops console, warm enough for an all-day chat home.",
+      "Alive but disciplined: fast 150–200ms feedback, uniform component vocabulary."
+    ],
+    "rules": [
+      { "name": "The Theme Contract Rule", "body": "No component ever hardcodes a color. Every fill, border, and text color flows through a --theme-* variable. A feature is not done until it looks intentional in all fourteen themes, both modes.", "section": "colors" },
+      { "name": "The One Lantern Rule", "body": "Signal Amber (and each theme's accent counterpart) covers at most ~10% of any screen: actions, current selection, live indicators. Amber used decoratively is a bug.", "section": "colors" },
+      { "name": "The No Foreign Gray Rule", "body": "Muted text and borders are transparencies of Lantern Cream over teal, never a neutral gray dropped onto the palette.", "section": "colors" },
+      { "name": "The Machine Voice Rule", "body": "JetBrains Mono appears exactly where output belongs to the system (code, terminal, logs, IDs) — never as decoration on human-facing labels or buttons.", "section": "typography" },
+      { "name": "The Fixed Scale Rule", "body": "Type sizes are fixed rem steps (scale ≈1.2); nothing fluid, nothing clamped. This is product UI viewed at consistent DPI.", "section": "typography" },
+      { "name": "The Tonal-First Rule", "body": "If a layer boundary needs expressing, reach for the next surface tone and a hairline border before reaching for a shadow. Shadows respond to state (hover, floating, modal); they do not decorate rest.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do route every color through the --theme-* contract and test new UI in at least Nous, one light theme, and one high-character theme (Matrix/Dracula) before calling it done.",
+      "Do keep body-text contrast ≥4.5:1 in every theme (WCAG 2.1 AA) — including placeholders and muted text on tinted surfaces.",
+      "Do give every interactive element the full state set: default, hover, focus-visible, active, disabled, loading, error.",
+      "Do keep transitions 150–250ms with ease-out curves, and provide prefers-reduced-motion alternatives for anything that moves.",
+      "Do show the system's liveness honestly — streaming tokens, worker status, presence — that's the product's soul."
+    ],
+    "donts": [
+      "Don't import the glossy SaaS landing kit: no gradient text, no glassmorphism-as-decoration, no hero-metric blocks.",
+      "Don't drift toward Jira-like enterprise heaviness: stacked forms, endless toolbars, configuration mazes.",
+      "Don't let any screen read as a bare chat wrapper — one lonely chat column indistinguishable from a ChatGPT clone.",
+      "Don't hardcode a hex in a component; that's a theme-contract violation even when it matches Nous.",
+      "Don't use side-stripe borders (border-left > 1px as accent), foreign grays, or decorative motion that conveys no state.",
+      "Don't put JetBrains Mono on buttons, labels, or headings — the machine voice is for machine output."
+    ]
+  }
+}
