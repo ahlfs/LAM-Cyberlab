@@ -619,6 +619,80 @@ installer.
 
 ---
 
+## 🚀 Running as a Permanent Server
+
+**This is entirely optional.** `pnpm dev` + `hermes gateway run` in two terminals
+(the default flow above) is all you need to try this out or actively develop
+against it — nothing here changes that. This section is for when you want the
+workspace running unattended: a VPS, a home server, or anywhere you want it to
+survive closing the terminal, an SSH disconnect, or a reboot — which matters in
+particular once you turn on **Remote Access** (Settings → Remote Access in the
+sidebar) — a public URL is only useful if something is actually listening on
+the other end of it.
+
+Three processes are involved, and they're deliberately supervised in two
+different ways rather than shoving everything into one tool:
+
+| Process | Supervised by | Why |
+|---|---|---|
+| Hermes Agent gateway | systemd/launchd, via `hermes gateway install` | Native to hermes-agent itself — already the officially-supported way to keep it running. |
+| Hermes Agent dashboard | pm2 | Has no built-in service-install command of its own; this is the gap pm2 fills. |
+| Lam Cyberlab workspace | pm2 | A plain Node process — pm2 is the standard tool for this. |
+
+Running the gateway under both systemd *and* pm2 would mean two supervisors
+fighting over the same process, so it stays on its native systemd unit.
+
+### Setup
+
+```bash
+# 1. Gateway as a systemd/launchd service (hermes-agent's own command)
+hermes gateway install
+
+# 2. Production build of the workspace (pm2 runs the built output, not `pnpm dev`)
+pnpm build
+
+# 3. Install pm2 (global, not a project dependency)
+npm install -g pm2
+
+# 4. Start the dashboard + workspace under pm2
+pnpm pm2:start
+# equivalent to: pm2 start ecosystem.config.cjs
+
+# 5. Persist across reboots
+pm2 save
+pm2 startup      # prints a one-time sudo command — run exactly what it prints
+```
+
+`ecosystem.config.cjs` (repo root) defines the two pm2-managed apps —
+`hermes-dashboard` (`hermes dashboard --port 9119 --host 127.0.0.1 --no-open`,
+the same invocation the Electron desktop build already uses to auto-spawn it)
+and `lam-cyberlab-workspace` (`node server-entry.js` in production mode). The
+workspace still reads all its configuration from `.env` as usual — `pm2:start`
+doesn't duplicate or override any of it.
+
+### Day-to-day
+
+```bash
+pnpm pm2:status      # is everything up?
+pnpm pm2:logs        # tail logs for both apps
+pnpm pm2:restart     # e.g. after `pnpm build` picks up new code
+systemctl --user status hermes-gateway.service   # gateway is separate, check it separately
+```
+
+### Updating the workspace code
+
+Since pm2 runs the *built* output, pulling new code needs a rebuild before it
+takes effect:
+
+```bash
+git pull
+pnpm install
+pnpm build
+pnpm pm2:restart
+```
+
+---
+
 ## 🔒 Security & deployment env vars
 
 Key safeguards — most are on by default, the env vars below are for remote /
@@ -677,6 +751,9 @@ See `.env.example` for the full list.
 | Themes | 7 palettes × light/dark: Nous, Hermes, Bronze, Slate, Matrix, SciFi, Dracula Soft |
 | Capability gates | Graceful 'upstream not ready' placeholders |
 | Multi-provider | OpenAI/OpenAI-compatible, OpenRouter, Google, Ollama, LM Studio, vLLM, and other Hermes-supported providers |
+| Remote Access | Guided public IP/domain exposure with mandatory password + Caddy HTTPS setup |
+| Backup & Restore | One-click export/import of Links, Memory, and settings |
+| Permanent server (pm2) | Optional always-on background service setup for VPS/home-server use |
 
 ### Planned
 

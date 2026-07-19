@@ -186,8 +186,40 @@ Tidak ada satu pun default yang berubah untuk orang yang cuma clone-and-run loka
 2. **Monitor perangkat** — ✅ selesai.
 3. **Linku** — ✅ selesai (MVP, sudah direvisi).
 4. **Akses Publik** — ✅ selesai, semua 3 lapis.
+5. **Backup & Restore** — ✅ selesai.
 
-Semua 4 fitur PRD selesai (2026-07-19). Roadmap lanjutan (kalau ada) akan jadi fitur baru, bukan bagian dokumen ini.
+Semua 5 fitur selesai (2026-07-19). Roadmap lanjutan (kalau ada) akan jadi fitur baru, bukan bagian dokumen ini.
+
+---
+
+## Fitur 5 — Backup & Restore Workspace — ✅ SELESAI (2026-07-19)
+
+### Ringkasan
+Satu tombol export (`Settings → Backup & Restore`) yang membungkus data workspace jadi satu file `.zip`, dan restore dari file itu di mesin lain — selaras dengan tujuan awal project ("gampang di-clone dan dijalankan di komputer lain") tanpa kehilangan data pribadi (Links, Memory, dll) saat pindah mesin/install ulang.
+
+### Temuan penting sebelum implementasi (mengubah scope dari rencana awal)
+Audit langsung ke `~/.hermes/` (bukan asumsi) mengungkap dua koreksi penting terhadap rencana yang sempat disepakati:
+- **`~/.hermes/sessions/` BUKAN riwayat chat** — nama foldernya menyesatkan; isinya ternyata dump debug untuk request yang gagal (`reason: "max_retries_exhausted"`), dan salah satu contoh nyata berisi **header Authorization (Bearer token, sebagian ter-mask)**. Folder ini awalnya direncanakan ikut backup sebagai "riwayat chat" — setelah dicek isinya, itu **dikeluarkan total** dari scope, sama seperti config.yaml/auth.json.
+- **Riwayat chat sungguhan tidak sepenuhnya "milik" workspace** — sebagian besar percakapan disimpan di sisi hermes-agent sendiri (lewat gateway API, `src/server/claude-api.ts`), bukan file yang aman/stabil untuk dibongkar langsung dari sini (melanggar prinsip zero-fork kalau dipaksakan). Yang genuinely milik workspace cuma **local session fallback store** (`.runtime/local-sessions.json` + `.runtime/tool-artifacts/`, dipakai saat tidak ada gateway agent tersambung) — itu yang ikut ter-backup, bukan riwayat chat penuh.
+- **Skills**: katalog marketplace (~2.000 skill, 8.9MB di mesin uji) ternyata **bundled bareng instalasi hermes-agent** (`.bundled_manifest` mendaftar semua id+checksum bawaan) — tidak perlu di-backup karena otomatis ada lagi di instalasi baru. Yang di-backup cuma `.usage.json` (preferensi pin/pemakaian, kecil & personal) + skill folder yang **tidak** ada di `.bundled_manifest` (otomatis terdeteksi sebagai custom/buatan sendiri).
+
+### Scope final
+**Ikut di-backup:**
+- `getStateDir()` (`~/.hermes/workspace/`) — Linku (DB + favicon) + MCP hub sources, wholesale.
+- Memory: `MEMORY.md` + folder `memory/`/`memories/` (lewat `getMemoryWorkspaceRoot()` yang sudah ada, dipakai ulang dari `memory-browser.ts`).
+- Skills: `.usage.json` + skill folder custom (auto-detect via diff terhadap `.bundled_manifest`).
+- `.runtime/local-sessions.json` + `.runtime/tool-artifacts/`.
+- Settings localStorage browser (`claude-settings`, `chat-settings`).
+
+**Sengaja dikecualikan:** `~/.hermes/config.yaml` & `auth.json` (API key/token provider), `~/.hermes/sessions/` (debug dump, berisiko token — lihat temuan di atas), `~/.hermes/workspace-sessions.json` (token sesi Remote Access, percuma dipindah), `hooks/`/`cron/` (level agent), katalog bundled Skills (re-derivable).
+
+### Implementasi
+- `src/server/backup.ts` — `createBackupZip()`/`restoreBackupZip()` pakai `jszip` (dependency baru, pure-JS, tanpa native binding jadi tidak ada komplikasi packaging Electron seperti `better-sqlite3`). Manifest bervensi (`kind`+`version`) divalidasi sebelum restore apa pun dijalankan; guard anti zip-slip pada ekstraksi.
+- Route API: `POST /api/backup/export` (terima `{settings}`, balas file zip via `Content-Disposition`), `POST /api/backup/import` (terima upload multipart, balas `{settings}` untuk ditulis ulang ke localStorage oleh client). Keduanya gated `requireLocalOrAuth` + rate-limited.
+- UI: section baru "Backup & Restore" di Settings (nav id `backup`) — tombol Download, tombol Restore dengan `AlertDialog` konfirmasi destruktif (restore menimpa data), auto-reload halaman setelah restore supaya semua state ter-hydrate ulang dari data baru.
+
+### Verifikasi
+6 unit test (round-trip export→restore byte-for-byte, deteksi skill custom vs bundled, dan tes eksplisit yang memastikan config.yaml/auth.json/sessions/workspace-sessions.json — walau sengaja ditaruh berdampingan dengan data asli saat test — TIDAK PERNAH ikut ter-zip). `tsc` bersih (baseline tidak berubah). Tidak dilakukan uji restore sungguhan terhadap `~/.hermes` asli di mesin ini (risiko sama seperti Fitur 4: bisa menimpa data nyata milik owner).
 
 ## Pertanyaan terbuka
 - Fitur 3: perlukah import data dari instance Linku PHP lama (database.sql)? Masih terbuka, belum diminta.

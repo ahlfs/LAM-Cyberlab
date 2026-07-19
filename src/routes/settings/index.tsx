@@ -3,6 +3,8 @@ import {
   CheckmarkCircle02Icon,
   CloudIcon,
   Delete02Icon,
+  Download01Icon,
+  FloppyDiskIcon,
   Link01Icon,
   MessageMultiple01Icon,
   Mic01Icon,
@@ -11,11 +13,12 @@ import {
   Settings02Icon,
   SourceCodeSquareIcon,
   SparklesIcon,
+  Upload01Icon,
   UserIcon,
   VolumeHighIcon,
 } from '@hugeicons/core-free-icons'
 import { createFileRoute } from '@tanstack/react-router'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type * as React from 'react'
 import type { LoaderStyle } from '@/hooks/use-chat-settings'
 import type { BrailleSpinnerPreset } from '@/components/ui/braille-spinner'
@@ -44,6 +47,15 @@ import { Input } from '@/components/ui/input'
 import { LogoLoader } from '@/components/logo-loader'
 import { BrailleSpinner } from '@/components/ui/braille-spinner'
 import { ThreeDotsSpinner } from '@/components/ui/three-dots-spinner'
+import { toast } from '@/components/ui/toast'
+import {
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogRoot,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 // useWorkspaceStore removed — hamburger eliminated on mobile
 
 const VALID_SECTION_IDS: ReadonlyArray<SettingsNavId> = SETTINGS_NAV_ITEMS.map(
@@ -682,6 +694,8 @@ function SettingsRoute() {
             </>
           )}
 
+          {activeSection === 'backup' && <BackupSection />}
+
           <footer className="mt-auto pt-4">
             <div className="flex items-center gap-2 rounded-2xl border border-primary-200 bg-primary-50/70 p-3 text-sm text-primary-600 backdrop-blur-sm">
               <HugeiconsIcon
@@ -961,6 +975,162 @@ function ChatDisplaySection() {
         </SettingsRow>
       </SettingsSection>
       {/* Mobile Navigation removed — not relevant for Lam Cyberlab */}
+    </>
+  )
+}
+
+// ── Backup & Restore Section (Fitur 5) ──────────────────────────────────
+//
+// Scope: Linku data, MCP hub sources, Memory, per-skill usage/pins + any
+// custom (non-marketplace) skills, the local-only session fallback store,
+// and these two localStorage keys. Deliberately excludes hermes-agent
+// secrets (config.yaml/auth.json), its failed-request debug dumps, and the
+// Remote Access session-token store — see src/server/backup.ts for the
+// full reasoning.
+
+const LOCALSTORAGE_BACKUP_KEYS = ['claude-settings', 'chat-settings']
+
+function collectLocalStorageSettings(): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const key of LOCALSTORAGE_BACKUP_KEYS) {
+    const value = window.localStorage.getItem(key)
+    if (value !== null) out[key] = value
+  }
+  return out
+}
+
+function BackupSection() {
+  const [exporting, setExporting] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const res = await fetch('/api/backup/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ settings: collectLocalStorageSettings() }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Backup failed')
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `lam-cyberlab-backup-${new Date().toISOString().slice(0, 10)}.zip`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+      toast('Backup downloaded', { type: 'success' })
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Backup failed', { type: 'error' })
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function handleConfirmRestore() {
+    const file = pendingFile
+    setPendingFile(null)
+    if (!file) return
+    setImporting(true)
+    try {
+      const form = new FormData()
+      form.set('file', file)
+      const res = await fetch('/api/backup/import', { method: 'POST', body: form })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Restore failed')
+
+      for (const [key, value] of Object.entries(
+        data.settings as Record<string, string>,
+      )) {
+        window.localStorage.setItem(key, value)
+      }
+      toast('Restored — reloading…', { type: 'success' })
+      setTimeout(() => window.location.reload(), 800)
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Restore failed', { type: 'error' })
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  return (
+    <>
+      <SettingsSection
+        title="Backup & Restore"
+        description="Export your Links, Memory, and local settings to a single file — or restore from one."
+        icon={FloppyDiskIcon}
+      >
+        <SettingsRow
+          label="Download backup"
+          description="Links (folders, favorites, stats), Memory, skill pins, and workspace settings. Never includes provider API keys or auth tokens."
+        >
+          <Button size="sm" onClick={handleExport} disabled={exporting}>
+            <HugeiconsIcon icon={Download01Icon} size={16} strokeWidth={1.5} />
+            {exporting ? 'Preparing…' : 'Download backup'}
+          </Button>
+        </SettingsRow>
+        <SettingsRow
+          label="Restore from backup"
+          description="Overwrites current Links, Memory, and settings with the contents of the backup file."
+        >
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".zip"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (file) setPendingFile(file)
+              }}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+            >
+              <HugeiconsIcon icon={Upload01Icon} size={16} strokeWidth={1.5} />
+              {importing ? 'Restoring…' : 'Choose backup file…'}
+            </Button>
+          </div>
+        </SettingsRow>
+      </SettingsSection>
+
+      <AlertDialogRoot
+        open={pendingFile !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingFile(null)
+        }}
+      >
+        <AlertDialogContent>
+          <div className="p-4">
+            <AlertDialogTitle className="mb-1">Restore this backup?</AlertDialogTitle>
+            <AlertDialogDescription className="mb-4">
+              This overwrites your current Links, Memory, skill pins, and
+              settings with the contents of "{pendingFile?.name}". This can't
+              be undone — consider downloading a fresh backup of the current
+              state first if you're unsure.
+            </AlertDialogDescription>
+            <div className="flex justify-end gap-2">
+              <AlertDialogCancel onClick={() => setPendingFile(null)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmRestore}>
+                Restore
+              </AlertDialogAction>
+            </div>
+          </div>
+        </AlertDialogContent>
+      </AlertDialogRoot>
     </>
   )
 }

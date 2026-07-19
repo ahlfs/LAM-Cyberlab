@@ -11,6 +11,7 @@ export type SettingsNavId =
   | 'chat'
   | 'notifications'
   | 'language'
+  | 'backup'
 
 type NavItem = { id: SettingsNavId; label: string }
 
@@ -24,6 +25,7 @@ export const SETTINGS_NAV_ITEMS: Array<NavItem> = [
   { id: 'chat', label: 'Chat' },
   { id: 'notifications', label: 'Notifications' },
   { id: 'language', label: 'Language' },
+  { id: 'backup', label: 'Backup & Restore' },
 ]
 
 type ItemRendererArgs = {

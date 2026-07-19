@@ -26,7 +26,12 @@
     "electron:build:win": "pnpm build && pnpm electron:bundle-server && pnpm electron:rebuild-native && electron-builder --win --config electron-builder.config.cjs",
     "electron:bundle-server": "esbuild dist/server/server.js --bundle --platform=node --format=cjs --outfile=electron/server-bundle.cjs --external:better-sqlite3",
     "electron:rebuild-native": "electron-rebuild --only=better-sqlite3 --force",
-    "electron:restore-native": "pnpm rebuild better-sqlite3"
+    "electron:restore-native": "pnpm rebuild better-sqlite3",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop ecosystem.config.cjs",
+    "pm2:restart": "pm2 restart ecosystem.config.cjs",
+    "pm2:status": "pm2 status",
+    "pm2:logs": "pm2 logs"
   },
   "dependencies": {
     "@base-ui/react": "^1.1.0",
@@ -53,6 +58,7 @@
     "ecctrl": "^1.0.97",
     "electron-updater": "^6.6.2",
     "framer-motion": "^12.36.0",
+    "jszip": "^3.10.1",
     "marked": "^17.0.1",
     "motion": "^12.29.2",
     "motion-dom": "^12.36.0",
