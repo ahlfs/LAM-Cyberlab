@@ -107,12 +107,13 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     if (path === '/swarm' || path.startsWith('/swarm2')) return 5
     if (path.startsWith('/echo-studio')) return 5
     if (path.startsWith('/system')) return 6
-    if (path.startsWith('/memory')) return 7
-    if (path.startsWith('/links')) return 8
-    if (path.startsWith('/skills')) return 9
-    if (path.startsWith('/mcp')) return 10
-    if (path.startsWith('/profiles')) return 11
-    if (path.startsWith('/settings')) return 12
+    if (path.startsWith('/remote-access')) return 7
+    if (path.startsWith('/memory')) return 8
+    if (path.startsWith('/links')) return 9
+    if (path.startsWith('/skills')) return 10
+    if (path.startsWith('/mcp')) return 11
+    if (path.startsWith('/profiles')) return 12
+    if (path.startsWith('/settings')) return 13
     return -1
   }, [])
 
@@ -183,6 +184,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     if (pathname.startsWith('/operations')) return 'Operations'
     if (pathname.startsWith('/swarm2') || pathname === '/swarm') return 'Swarm'
     if (pathname.startsWith('/system')) return 'System'
+    if (pathname.startsWith('/remote-access')) return 'Remote Access'
     if (pathname.startsWith('/echo-studio')) return 'Echo Studio'
     if (pathname.startsWith('/memory')) return 'Memory'
     if (pathname.startsWith('/links')) return 'Links'

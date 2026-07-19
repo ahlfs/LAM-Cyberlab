@@ -12,6 +12,7 @@ import {
   ComputerTerminal01Icon,
   CpuIcon,
   DashboardSquare01Icon,
+  GlobeIcon,
   Link01Icon,
   File01Icon,
   McpServerIcon,
@@ -593,6 +594,7 @@ function ChatSidebarComponent({
   const isOperationsActive = pathname === '/operations'
   const isSwarmActive = pathname === '/swarm' || pathname === '/swarm2'
   const isSystemActive = pathname === '/system'
+  const isRemoteAccessActive = pathname === '/remote-access'
   const echoStudioEnabled = useSettingsStore(
     (state) => state.settings.experimentalEchoStudio,
   )
@@ -860,6 +862,13 @@ function ChatSidebarComponent({
       icon: CpuIcon,
       label: 'System',
       active: isSystemActive,
+    },
+    {
+      kind: 'link',
+      to: '/remote-access',
+      icon: GlobeIcon,
+      label: 'Remote Access',
+      active: isRemoteAccessActive,
     },
     ...(echoStudioEnabled
       ? [

@@ -1,11 +1,46 @@
 import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import { join, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import server from './dist/server/server.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const CLIENT_DIR = join(__dirname, 'dist', 'client')
+
+// `pnpm dev` (Vite) loads .env into process.env automatically, but this
+// production entry point (`pnpm start` / systemd / launchd) previously did
+// not — meaning HOST, HERMES_PASSWORD, etc. from .env silently had no effect
+// unless they were also exported as real shell/service environment
+// variables. Load .env here too, matching dev behavior, without adding a
+// dotenv dependency. Real environment variables always win (never overwrite
+// an already-set process.env key), preserving systemd `Environment=` lines.
+function loadDotEnv(path) {
+  let raw
+  try {
+    raw = readFileSync(path, 'utf8')
+  } catch {
+    return
+  }
+  for (const line of raw.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eq = trimmed.indexOf('=')
+    if (eq === -1) continue
+    const key = trimmed.slice(0, eq).trim()
+    if (!key || key in process.env) continue
+    let value = trimmed.slice(eq + 1).trim()
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1)
+    }
+    process.env[key] = value
+  }
+}
+
+loadDotEnv(join(__dirname, '.env'))
 
 // Content Security Policy — emitted as an HTTP response header on EVERY
 // response so the policy survives any edge body transformations (e.g.

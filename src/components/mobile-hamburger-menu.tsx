@@ -9,6 +9,7 @@ import {
   Clock01Icon,
   CommandLineIcon,
   CpuIcon,
+  GlobeIcon,
   Link01Icon,
   DashboardSquare01Icon,
   File01Icon,
@@ -93,6 +94,13 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
     icon: CpuIcon,
     to: '/system',
     match: (p: string) => p.startsWith('/system'),
+  },
+  {
+    id: 'remote-access',
+    label: 'Remote Access',
+    icon: GlobeIcon,
+    to: '/remote-access',
+    match: (p: string) => p.startsWith('/remote-access'),
   },
   {
     id: 'echo-studio',

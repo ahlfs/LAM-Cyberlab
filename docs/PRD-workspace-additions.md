@@ -2,8 +2,8 @@
 
 - **Owner:** ahlfs (ryuezzx@gmail.com)
 - **Dibuat:** 2026-07-18
-- **Status:** Fitur 1 selesai (2026-07-18); Fitur 2 & 3 belum dikerjakan
-- **Konteks:** Tiga fitur yang ingin ditambahkan ke instance Lam Cyberlab lokal. Mengikuti prinsip zero-fork repo ini: semua perubahan hidup di workspace (UI/control-plane), tidak menyentuh `hermes-agent`.
+- **Status:** Fitur 1–3 selesai (2026-07-18/19); Fitur 4 didefinisikan 2026-07-19, belum dikerjakan.
+- **Konteks:** Empat fitur yang ingin ditambahkan ke instance Lam Cyberlab. Mengikuti prinsip zero-fork repo ini: semua perubahan hidup di workspace (UI/control-plane), tidak menyentuh `hermes-agent`.
 
 ---
 
@@ -105,12 +105,79 @@ Membangun ulang **Linku** — aplikasi manajemen bookmark buatan ahlfs (PHP nati
 
 ### Estimasi ukuran: **L** (fitur terbesar — kerjakan bertahap: storage+API → UI folder/link → tags+search → stats+trash)
 
+**Catatan pasca-implementasi (revisi 2026-07-19):** MVP di atas sudah diubah — lihat detail di changelog fitur ini pada memori/riwayat sesi: kartu link klik-langsung-buka, favorite pindah ke dropdown titik tiga, **fitur tags dihapus total**, folder jadi opsional (link tidak wajib punya folder).
+
+---
+
+## Fitur 4 — Akses Publik (IPv4 + Domain Custom) — 🟡 LAPIS 1 SELESAI (2026-07-19), lapis 2-3 belum
+
+> **Implementasi lapis 1 (2026-07-19):** halaman khusus **`/remote-access`** (sidebar, setelah System — dipilih dedicated page, bukan section Settings, sesuai preferensi owner). Backend: `src/server/remote-access-config.ts` (baca/tulis `.env` mirip `ensure_env_key` bash, `getRemoteAccessStatus()`, `setWorkspacePassword()` — langsung live tanpa restart karena auth-middleware baca `process.env` setiap request, `setExposeEnabled()` — butuh restart karena HOST di-bind sekali saat startup, `detectPublicIp()` — user-triggered via api.ipify.org, bukan otomatis; 13 unit test terisolasi pakai `process.chdir()` ke tmpdir supaya tidak pernah menyentuh `.env` asli). 4 route API (`src/routes/api/remote-access.{status,password,expose,public-ip}.ts`), semua digerbang `requireLocalOrAuth` + rate-limited.
+>
+> **Temuan & perbaikan penting selama implementasi:** `pnpm start` (`node server-entry.js`, jalur produksi/systemd/launchd) ternyata **tidak pernah membaca `.env` sama sekali** — hanya `pnpm dev` (lewat Vite) yang otomatis memuatnya. Ditambahkan loader `.env` minimal (parser inline, tanpa dependency baru) di awal `server-entry.js`, tidak menimpa env var asli (systemd `Environment=` tetap menang). Tanpa perbaikan ini, toggle "Expose to internet" di UI tidak akan pernah berefek pada deployment `pnpm start`.
+>
+> **Rate limiting endpoint login — sudah ada sebelumnya, diverifikasi bukan ditambah baru:** `src/routes/api/auth.ts` sudah pakai `src/server/rate-limit.ts` (5 percobaan/menit per IP + delay 1 detik saat gagal) — acceptance criteria Fitur 4 soal ini otomatis terpenuhi tanpa kerja tambahan.
+>
+> **UX toggle:** sesuai preferensi owner, toggle "Expose to internet" **disabled + hint inline** ("Set a password above first") selama password belum diset — bukan modal. Menyalakan toggle menulis `HOST=0.0.0.0` ke `.env` dan menampilkan banner "restart required" (tidak bisa live karena Node http.Server sudah bind sekali saat start) — status page mendeteksi drift antara `.env` di disk vs `process.env` yang benar-benar berjalan.
+>
+> **Verifikasi:** 13/13 unit test lulus (isolasi total dari `.env` asli lewat `process.chdir()` ke tmpdir), `tsc --noEmit` bersih (baseline error tidak berubah), full `vitest run` tidak menambah kegagalan baru (74 kegagalan pra-eksisting semuanya di worktree lain/`mcp-hub`/`mcp-presets`/e2e specs, tidak terkait). Diverifikasi live di browser: halaman render benar, password-gate pada toggle bekerja, navigasi sidebar berfungsi. **Sengaja tidak** menekan tombol "Set password"/toggle secara nyata terhadap `.env` live milik owner selama verifikasi — berisiko mengunci sesi aktif owner sendiri; owner yang mencoba fitur ini kapan pun siap.
+>
+> **Belum dikerjakan:** Lapis 2 (checklist firewall VPS — sudah didokumentasikan inline di panel "Reachability" halaman ini sebagai 4 langkah, jadi sebagian sudah tercakup) dan Lapis 3 (Caddy + domain custom + `scripts/setup-remote-access.sh`) — lihat scope asli di bawah, statusnya masih 🔲.
+
+### Ringkasan
+Memungkinkan instance Lam Cyberlab (biasanya jalan di VPS headless, tanpa display — hanya terminal) diakses lewat internet publik: via IP publik VPS langsung, dan/atau lewat domain custom dengan HTTPS otomatis. **Wajib** mewajibkan password saat mode ini dinyalakan, supaya kalau IP/domain bocor, instance tidak terbuka begitu saja.
+
+### Temuan penting dari audit kode (sebelum desain fitur ini)
+Sebagian fondasi **sudah ada**, jadi fitur ini bukan membangun dari nol:
+- `server-entry.js` sudah punya **fail-closed guard**: menolak start kalau `HOST` bukan `127.0.0.1` tanpa `HERMES_PASSWORD`/`CLAUDE_PASSWORD` diset (bisa di-bypass paksa dengan `HERMES_ALLOW_INSECURE_REMOTE=1`, tidak direkomendasikan).
+- `isPasswordProtectionEnabled()` di `src/server/auth-middleware.ts` sudah jadi gate auth semua route.
+- Env var `HOST` (default `127.0.0.1`) sudah mengontrol bind address; `COOKIE_SECURE` dan `TRUST_PROXY` sudah ada dan didesain persis untuk skenario di belakang reverse proxy.
+- **Yang belum ada:** pengalaman terpandu di UI (semua ini baru terlihat lewat env var + baca dokumentasi), reachability check, dan seluruh bagian domain custom + HTTPS otomatis (belum ada Caddy/nginx/tunnel apa pun di repo).
+
+### Prinsip desain: 100% opt-in, nol dampak ke `pnpm dev` default
+Tidak ada satu pun default yang berubah untuk orang yang cuma clone-and-run lokal. Fitur ini murni lapisan tambahan yang baru aktif kalau user eksplisit menyalakannya.
+
+### Scope — tiga lapis
+
+**Lapis 1 — UI Settings → "Remote Access" (baru, ringan)**
+- Toggle "Expose to internet". Saat dinyalakan, **memaksa** alur set password inline saat itu juga — bukan menunggu app gagal start dengan error yang baru terlihat di log server. Ini murni membungkus guard backend yang sudah ada (`isPasswordProtectionEnabled` + fail-closed guard) jadi UX yang jelas, hampir tanpa logika keamanan baru di backend.
+- Menampilkan status reachability: IP publik terdeteksi, port yang dipakai, dan hasil self-check apakah port itu kelihatannya terbuka dari luar.
+
+**Lapis 2 — Reachability VPS (skenario utama yang diminta)**
+- VPS pada dasarnya sudah punya IP publik — jadi `HOST=0.0.0.0` + buka port di firewall/security-group VPS itu sendiri **sudah cukup**, tanpa perlu tunneling apa pun untuk kasus ini.
+- Checklist terpandu di Settings (bahasa awam: "buka port 3000 di firewall VPS-mu") karena app tidak bisa otomatis membuka firewall cloud provider dari dalam.
+
+**Lapis 3 — Domain custom + HTTPS otomatis (bagian paling baru)**
+- **Rekomendasi: Caddy sebagai reverse proxy opsional**, bukan Node yang terminate TLS sendiri. Caddy otomatis urus sertifikat Let's Encrypt + renewal, nyaris tanpa config — dan selaras dengan `TRUST_PROXY`/`COOKIE_SECURE` yang sudah ada di repo, didesain persis untuk skenario ini.
+- Script helper baru `scripts/setup-remote-access.sh`, mengikuti pola `install-dashboard-service.sh` yang sudah ada: install Caddy kalau belum ada, generate Caddyfile dari domain yang diisi user di Settings, restart service.
+- App tetap listen di `127.0.0.1:3000` secara internal; hanya Caddy yang bind ke `0.0.0.0:443` — mengecilkan permukaan serangan (app sendiri tidak pernah langsung terekspos).
+
+### Keputusan keamanan tambahan (bukan opsional)
+- **Rate limiting pada endpoint login** — wajib, bukan opsional. Password saja adalah satu lapis pertahanan; begitu IP/domain bocor, penyerang punya akses brute-force langsung ke instance yang punya akses terminal & file. Repo sudah punya "rate limiting on endpoints" secara umum (disebut di README) — perlu dipastikan berlaku ketat khusus di endpoint auth.
+- **Dicatat sebagai alternatif** (bukan pengganti jalur VPS di atas): Cloudflare Tunnel untuk user yang bukan di VPS (di belakang NAT rumah) — tanpa perlu buka port sama sekali, dapat proteksi WAF gratis. Di luar scope MVP, dicatat untuk fase 2.
+
+### Non-goal (MVP)
+- Bukan multi-user dengan role berbeda — password tunggal (sama seperti `HERMES_PASSWORD` sekarang).
+- Bukan tunneling/NAT-traversal otomatis untuk skenario non-VPS (dicatat sebagai fase 2 opsional, lihat di atas).
+- Bukan manajemen DNS otomatis — user tetap yang mengarahkan domain ke IP VPS di registrar masing-masing.
+
+### Acceptance criteria (MVP)
+1. Toggle "Expose to internet" di Settings memaksa set password sebelum bisa aktif — tidak bisa dilewati dari UI.
+2. Dengan `HOST=0.0.0.0` + password diset, instance bisa diakses dari IP publik VPS.
+3. User bisa isi domain custom di Settings → script generate Caddyfile → domain aktif dengan HTTPS otomatis (sertifikat valid, auto-renew).
+4. Endpoint login punya rate limiting yang terverifikasi (bukan cuma didokumentasikan).
+5. Default `pnpm dev` / clone-and-run lokal sama sekali tidak berubah perilakunya.
+
+### Estimasi ukuran: **M–L** (lapis 1–2 relatif kecil karena membungkus mekanisme yang sudah ada; lapis 3 — otomasi Caddy + script — yang paling banyak kerja baru)
+
 ---
 
 ## Urutan pengerjaan yang disarankan
-1. **Dracula Soft** (kecil, hasil langsung terlihat, sekaligus memvalidasi alur theme).
-2. **Monitor perangkat** (backend+widget, independen dari fitur lain).
-3. **Linku** (terbesar; UI-nya wajib dites terhadap theme baru).
+1. **Dracula Soft** — ✅ selesai.
+2. **Monitor perangkat** — ✅ selesai.
+3. **Linku** — ✅ selesai (MVP, sudah direvisi).
+4. **Akses Publik** — berikutnya; disarankan lapis 1–2 dulu (UI + VPS checklist, kerja kecil karena membungkus mekanisme existing), baru lapis 3 (Caddy automation) setelah lapis 1–2 terbukti jalan.
 
 ## Pertanyaan terbuka
 - Fitur 3: perlukah import data dari instance Linku PHP lama (database.sql)?
+- Fitur 4: password tunggal untuk semua remote access sudah cukup, atau perlu dipisah dari `HERMES_PASSWORD` biasa (misal beda password untuk akses publik vs LAN lokal)?
+- Fitur 4: Caddy dijadikan dependency wajib saat lapis 3 dipakai, atau tetap opsional dengan Nginx sebagai alternatif terdokumentasi (tidak diotomasi)?

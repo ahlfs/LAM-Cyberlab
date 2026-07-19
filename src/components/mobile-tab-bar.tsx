@@ -7,6 +7,7 @@ import {
   Clock01Icon,
   CommandLineIcon,
   CpuIcon,
+  GlobeIcon,
   Link01Icon,
   DashboardSquare01Icon,
   File01Icon,
@@ -103,6 +104,13 @@ export const MOBILE_NAV_TABS: Array<TabItem> = [
     icon: CpuIcon,
     to: '/system',
     match: (p) => p.startsWith('/system'),
+  },
+  {
+    id: 'remote-access',
+    label: 'Remote',
+    icon: GlobeIcon,
+    to: '/remote-access',
+    match: (p) => p.startsWith('/remote-access'),
   },
 
   {

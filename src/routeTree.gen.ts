@@ -19,6 +19,7 @@ import { Route as SwarmRouteImport } from './routes/swarm'
 import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReserveRouteImport } from './routes/reserve'
+import { Route as RemoteAccessRouteImport } from './routes/remote-access'
 import { Route as ProfilesRouteImport } from './routes/profiles'
 import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as OperationsRouteImport } from './routes/operations'
@@ -128,6 +129,10 @@ import { Route as ApiSkillsHubSearchRouteImport } from './routes/api/skills/hub-
 import { Route as ApiSessionsSendRouteImport } from './routes/api/sessions/send'
 import { Route as ApiSessionsSearchRouteImport } from './routes/api/sessions/search'
 import { Route as ApiRunsActiveRouteImport } from './routes/api/runs/active'
+import { Route as ApiRemoteAccessStatusRouteImport } from './routes/api/remote-access.status'
+import { Route as ApiRemoteAccessPublicIpRouteImport } from './routes/api/remote-access.public-ip'
+import { Route as ApiRemoteAccessPasswordRouteImport } from './routes/api/remote-access.password'
+import { Route as ApiRemoteAccessExposeRouteImport } from './routes/api/remote-access.expose'
 import { Route as ApiProfilesUpdateRouteImport } from './routes/api/profiles/update'
 import { Route as ApiProfilesToggleSkillRouteImport } from './routes/api/profiles/toggle-skill'
 import { Route as ApiProfilesSkillsRouteImport } from './routes/api/profiles/skills'
@@ -231,6 +236,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ReserveRoute = ReserveRouteImport.update({
   id: '/reserve',
   path: '/reserve',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RemoteAccessRoute = RemoteAccessRouteImport.update({
+  id: '/remote-access',
+  path: '/remote-access',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfilesRoute = ProfilesRouteImport.update({
@@ -779,6 +789,26 @@ const ApiRunsActiveRoute = ApiRunsActiveRouteImport.update({
   path: '/api/runs/active',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRemoteAccessStatusRoute = ApiRemoteAccessStatusRouteImport.update({
+  id: '/api/remote-access/status',
+  path: '/api/remote-access/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRemoteAccessPublicIpRoute = ApiRemoteAccessPublicIpRouteImport.update({
+  id: '/api/remote-access/public-ip',
+  path: '/api/remote-access/public-ip',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRemoteAccessPasswordRoute = ApiRemoteAccessPasswordRouteImport.update({
+  id: '/api/remote-access/password',
+  path: '/api/remote-access/password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRemoteAccessExposeRoute = ApiRemoteAccessExposeRouteImport.update({
+  id: '/api/remote-access/expose',
+  path: '/api/remote-access/expose',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiProfilesUpdateRoute = ApiProfilesUpdateRouteImport.update({
   id: '/api/profiles/update',
   path: '/api/profiles/update',
@@ -1074,6 +1104,7 @@ export interface FileRoutesByFullPath {
   '/operations': typeof OperationsRoute
   '/playground': typeof PlaygroundRoute
   '/profiles': typeof ProfilesRoute
+  '/remote-access': typeof RemoteAccessRoute
   '/reserve': typeof ReserveRouteWithChildren
   '/settings': typeof SettingsRouteWithChildren
   '/skills': typeof SkillsRoute
@@ -1207,6 +1238,10 @@ export interface FileRoutesByFullPath {
   '/api/profiles/skills': typeof ApiProfilesSkillsRoute
   '/api/profiles/toggle-skill': typeof ApiProfilesToggleSkillRoute
   '/api/profiles/update': typeof ApiProfilesUpdateRoute
+  '/api/remote-access/expose': typeof ApiRemoteAccessExposeRoute
+  '/api/remote-access/password': typeof ApiRemoteAccessPasswordRoute
+  '/api/remote-access/public-ip': typeof ApiRemoteAccessPublicIpRoute
+  '/api/remote-access/status': typeof ApiRemoteAccessStatusRoute
   '/api/runs/active': typeof ApiRunsActiveRoute
   '/api/sessions/search': typeof ApiSessionsSearchRoute
   '/api/sessions/send': typeof ApiSessionsSendRoute
@@ -1249,6 +1284,7 @@ export interface FileRoutesByTo {
   '/operations': typeof OperationsRoute
   '/playground': typeof PlaygroundRoute
   '/profiles': typeof ProfilesRoute
+  '/remote-access': typeof RemoteAccessRoute
   '/reserve': typeof ReserveRouteWithChildren
   '/skills': typeof SkillsRoute
   '/swarm': typeof SwarmRoute
@@ -1381,6 +1417,10 @@ export interface FileRoutesByTo {
   '/api/profiles/skills': typeof ApiProfilesSkillsRoute
   '/api/profiles/toggle-skill': typeof ApiProfilesToggleSkillRoute
   '/api/profiles/update': typeof ApiProfilesUpdateRoute
+  '/api/remote-access/expose': typeof ApiRemoteAccessExposeRoute
+  '/api/remote-access/password': typeof ApiRemoteAccessPasswordRoute
+  '/api/remote-access/public-ip': typeof ApiRemoteAccessPublicIpRoute
+  '/api/remote-access/status': typeof ApiRemoteAccessStatusRoute
   '/api/runs/active': typeof ApiRunsActiveRoute
   '/api/sessions/search': typeof ApiSessionsSearchRoute
   '/api/sessions/send': typeof ApiSessionsSendRoute
@@ -1424,6 +1464,7 @@ export interface FileRoutesById {
   '/operations': typeof OperationsRoute
   '/playground': typeof PlaygroundRoute
   '/profiles': typeof ProfilesRoute
+  '/remote-access': typeof RemoteAccessRoute
   '/reserve': typeof ReserveRouteWithChildren
   '/settings': typeof SettingsRouteWithChildren
   '/skills': typeof SkillsRoute
@@ -1557,6 +1598,10 @@ export interface FileRoutesById {
   '/api/profiles/skills': typeof ApiProfilesSkillsRoute
   '/api/profiles/toggle-skill': typeof ApiProfilesToggleSkillRoute
   '/api/profiles/update': typeof ApiProfilesUpdateRoute
+  '/api/remote-access/expose': typeof ApiRemoteAccessExposeRoute
+  '/api/remote-access/password': typeof ApiRemoteAccessPasswordRoute
+  '/api/remote-access/public-ip': typeof ApiRemoteAccessPublicIpRoute
+  '/api/remote-access/status': typeof ApiRemoteAccessStatusRoute
   '/api/runs/active': typeof ApiRunsActiveRoute
   '/api/sessions/search': typeof ApiSessionsSearchRoute
   '/api/sessions/send': typeof ApiSessionsSendRoute
@@ -1601,6 +1646,7 @@ export interface FileRouteTypes {
     | '/operations'
     | '/playground'
     | '/profiles'
+    | '/remote-access'
     | '/reserve'
     | '/settings'
     | '/skills'
@@ -1734,6 +1780,10 @@ export interface FileRouteTypes {
     | '/api/profiles/skills'
     | '/api/profiles/toggle-skill'
     | '/api/profiles/update'
+    | '/api/remote-access/expose'
+    | '/api/remote-access/password'
+    | '/api/remote-access/public-ip'
+    | '/api/remote-access/status'
     | '/api/runs/active'
     | '/api/sessions/search'
     | '/api/sessions/send'
@@ -1776,6 +1826,7 @@ export interface FileRouteTypes {
     | '/operations'
     | '/playground'
     | '/profiles'
+    | '/remote-access'
     | '/reserve'
     | '/skills'
     | '/swarm'
@@ -1908,6 +1959,10 @@ export interface FileRouteTypes {
     | '/api/profiles/skills'
     | '/api/profiles/toggle-skill'
     | '/api/profiles/update'
+    | '/api/remote-access/expose'
+    | '/api/remote-access/password'
+    | '/api/remote-access/public-ip'
+    | '/api/remote-access/status'
     | '/api/runs/active'
     | '/api/sessions/search'
     | '/api/sessions/send'
@@ -1950,6 +2005,7 @@ export interface FileRouteTypes {
     | '/operations'
     | '/playground'
     | '/profiles'
+    | '/remote-access'
     | '/reserve'
     | '/settings'
     | '/skills'
@@ -2083,6 +2139,10 @@ export interface FileRouteTypes {
     | '/api/profiles/skills'
     | '/api/profiles/toggle-skill'
     | '/api/profiles/update'
+    | '/api/remote-access/expose'
+    | '/api/remote-access/password'
+    | '/api/remote-access/public-ip'
+    | '/api/remote-access/status'
     | '/api/runs/active'
     | '/api/sessions/search'
     | '/api/sessions/send'
@@ -2126,6 +2186,7 @@ export interface RootRouteChildren {
   OperationsRoute: typeof OperationsRoute
   PlaygroundRoute: typeof PlaygroundRoute
   ProfilesRoute: typeof ProfilesRoute
+  RemoteAccessRoute: typeof RemoteAccessRoute
   ReserveRoute: typeof ReserveRouteWithChildren
   SettingsRoute: typeof SettingsRouteWithChildren
   SkillsRoute: typeof SkillsRoute
@@ -2238,6 +2299,10 @@ export interface RootRouteChildren {
   ApiProfilesSkillsRoute: typeof ApiProfilesSkillsRoute
   ApiProfilesToggleSkillRoute: typeof ApiProfilesToggleSkillRoute
   ApiProfilesUpdateRoute: typeof ApiProfilesUpdateRoute
+  ApiRemoteAccessExposeRoute: typeof ApiRemoteAccessExposeRoute
+  ApiRemoteAccessPasswordRoute: typeof ApiRemoteAccessPasswordRoute
+  ApiRemoteAccessPublicIpRoute: typeof ApiRemoteAccessPublicIpRoute
+  ApiRemoteAccessStatusRoute: typeof ApiRemoteAccessStatusRoute
   ApiRunsActiveRoute: typeof ApiRunsActiveRoute
   ApiUpdateAgentRoute: typeof ApiUpdateAgentRoute
   ApiUpdateStatusRoute: typeof ApiUpdateStatusRoute
@@ -2315,6 +2380,13 @@ declare module '@tanstack/react-router' {
       path: '/reserve'
       fullPath: '/reserve'
       preLoaderRoute: typeof ReserveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/remote-access': {
+      id: '/remote-access'
+      path: '/remote-access'
+      fullPath: '/remote-access'
+      preLoaderRoute: typeof RemoteAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profiles': {
@@ -3080,6 +3152,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRunsActiveRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/remote-access/status': {
+      id: '/api/remote-access/status'
+      path: '/api/remote-access/status'
+      fullPath: '/api/remote-access/status'
+      preLoaderRoute: typeof ApiRemoteAccessStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/remote-access/public-ip': {
+      id: '/api/remote-access/public-ip'
+      path: '/api/remote-access/public-ip'
+      fullPath: '/api/remote-access/public-ip'
+      preLoaderRoute: typeof ApiRemoteAccessPublicIpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/remote-access/password': {
+      id: '/api/remote-access/password'
+      path: '/api/remote-access/password'
+      fullPath: '/api/remote-access/password'
+      preLoaderRoute: typeof ApiRemoteAccessPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/remote-access/expose': {
+      id: '/api/remote-access/expose'
+      path: '/api/remote-access/expose'
+      fullPath: '/api/remote-access/expose'
+      preLoaderRoute: typeof ApiRemoteAccessExposeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/profiles/update': {
       id: '/api/profiles/update'
       path: '/api/profiles/update'
@@ -3738,6 +3838,7 @@ const rootRouteChildren: RootRouteChildren = {
   OperationsRoute: OperationsRoute,
   PlaygroundRoute: PlaygroundRoute,
   ProfilesRoute: ProfilesRoute,
+  RemoteAccessRoute: RemoteAccessRoute,
   ReserveRoute: ReserveRouteWithChildren,
   SettingsRoute: SettingsRouteWithChildren,
   SkillsRoute: SkillsRoute,
@@ -3850,6 +3951,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfilesSkillsRoute: ApiProfilesSkillsRoute,
   ApiProfilesToggleSkillRoute: ApiProfilesToggleSkillRoute,
   ApiProfilesUpdateRoute: ApiProfilesUpdateRoute,
+  ApiRemoteAccessExposeRoute: ApiRemoteAccessExposeRoute,
+  ApiRemoteAccessPasswordRoute: ApiRemoteAccessPasswordRoute,
+  ApiRemoteAccessPublicIpRoute: ApiRemoteAccessPublicIpRoute,
+  ApiRemoteAccessStatusRoute: ApiRemoteAccessStatusRoute,
   ApiRunsActiveRoute: ApiRunsActiveRoute,
   ApiUpdateAgentRoute: ApiUpdateAgentRoute,
   ApiUpdateStatusRoute: ApiUpdateStatusRoute,
