@@ -5,6 +5,7 @@ import {
   Alert02Icon,
   CheckmarkCircle02Icon,
   Copy01Icon,
+  Globe02Icon,
   GlobeIcon,
   LockIcon,
   Refresh01Icon,
@@ -108,6 +109,14 @@ export function RemoteAccessScreen() {
   const [checkingIp, setCheckingIp] = useState(false)
   const [ipError, setIpError] = useState<string | null>(null)
 
+  const [domain, setDomain] = useState('')
+  const [checkingDns, setCheckingDns] = useState(false)
+  const [dnsResult, setDnsResult] = useState<{
+    resolvedIps?: Array<string>
+    matchesExpectedIp?: boolean | null
+    error?: string
+  } | null>(null)
+
   const exposeMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
       const res = await fetch('/api/remote-access/expose', {
@@ -177,6 +186,24 @@ export function RemoteAccessScreen() {
       setPublicIp(null)
     } finally {
       setCheckingIp(false)
+    }
+  }
+
+  async function handleCheckDns() {
+    if (!domain.trim()) return
+    setCheckingDns(true)
+    setDnsResult(null)
+    try {
+      const params = new URLSearchParams({ domain: domain.trim() })
+      if (publicIp) params.set('expectedIp', publicIp)
+      const res = await fetch(`/api/remote-access/check-domain?${params}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Check failed')
+      setDnsResult(data)
+    } catch (err) {
+      setDnsResult({ error: err instanceof Error ? err.message : 'Check failed' })
+    } finally {
+      setCheckingDns(false)
     }
   }
 
@@ -402,6 +429,108 @@ export function RemoteAccessScreen() {
             </li>
             <li>4. Check your public IP above, then test the URL from another network.</li>
           </ol>
+        </Panel>
+
+        {/* ── Custom domain (Caddy) ───────────────────────────────────── */}
+        <Panel title="Custom Domain" icon={Globe02Icon}>
+          <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
+            Puts Caddy in front of the workspace for a real domain with automatic
+            HTTPS. The workspace itself can stay on <code>127.0.0.1</code> — only
+            Caddy needs to face the internet, so you don't need "Expose to
+            internet" above for this path.
+          </p>
+
+          <div className="min-w-0 flex-1">
+            {!passwordConfigured ? (
+              <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
+                Set a password above first.
+              </p>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              type="text"
+              placeholder="yourdomain.com"
+              value={domain}
+              onChange={(e) => {
+                setDomain(e.target.value)
+                setDnsResult(null)
+              }}
+              disabled={!passwordConfigured}
+              aria-label="Custom domain"
+              className="max-w-xs"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCheckDns}
+              disabled={!passwordConfigured || !domain.trim() || checkingDns}
+            >
+              <HugeiconsIcon
+                icon={Refresh01Icon}
+                size={14}
+                className={checkingDns ? 'animate-spin' : undefined}
+              />
+              Check DNS
+            </Button>
+          </div>
+
+          {dnsResult ? (
+            dnsResult.error ? (
+              <span className="text-xs" style={{ color: 'var(--theme-danger)' }}>
+                {dnsResult.error}
+              </span>
+            ) : (
+              <div className="flex items-center gap-2 text-xs">
+                <StatusDot
+                  color={
+                    dnsResult.matchesExpectedIp
+                      ? 'var(--theme-success)'
+                      : 'var(--theme-warning)'
+                  }
+                />
+                <span style={{ color: 'var(--theme-text)' }}>
+                  {dnsResult.matchesExpectedIp
+                    ? 'Points to this server'
+                    : `Resolves to ${dnsResult.resolvedIps?.join(', ')}${publicIp ? ` (this server is ${publicIp})` : ''}`}
+                </span>
+              </div>
+            )
+          ) : null}
+
+          {domain.trim() && passwordConfigured ? (
+            <div
+              className="flex items-center gap-2 rounded-lg border px-2.5 py-1.5"
+              style={{ borderColor: 'var(--theme-border)' }}
+            >
+              <code
+                className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-xs"
+                style={{ color: 'var(--theme-text)' }}
+              >
+                sudo ./scripts/setup-remote-access.sh --domain {domain.trim()} --port{' '}
+                {status?.port ?? 3000}
+              </code>
+              <button
+                type="button"
+                onClick={() =>
+                  copyText(
+                    `sudo ./scripts/setup-remote-access.sh --domain ${domain.trim()} --port ${status?.port ?? 3000}`,
+                  )
+                }
+                className="shrink-0 rounded p-1 hover:bg-[var(--theme-card2)]"
+                aria-label="Copy setup command"
+              >
+                <HugeiconsIcon icon={Copy01Icon} size={13} style={{ color: 'var(--theme-muted)' }} />
+              </button>
+            </div>
+          ) : null}
+
+          <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
+            Run this yourself in a terminal on the server — it installs Caddy if
+            needed and needs root. The workspace never runs system setup
+            commands on its own.
+          </p>
         </Panel>
       </div>
     </div>

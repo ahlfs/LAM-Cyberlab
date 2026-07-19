@@ -1,7 +1,12 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const resolve4Mock = vi.fn()
+vi.mock('node:dns/promises', () => ({
+  resolve4: (...args: Array<unknown>) => resolve4Mock(...args),
+}))
 
 // These tests process.chdir() into a throwaway directory before every case
 // so writeEnvFileValue() never touches the real repo .env (which holds live
@@ -149,5 +154,83 @@ describe('setExposeEnabled', () => {
     const result = setExposeEnabled(false)
     expect(result.ok).toBe(true)
     expect(readEnvFileValue('HOST')).toBe('127.0.0.1')
+  })
+})
+
+describe('isValidDomain', () => {
+  it.each([
+    'example.com',
+    'sub.example.com',
+    'my-app.example.co.uk',
+  ])('accepts %s', async (domain) => {
+    const { isValidDomain } = await import('./remote-access-config')
+    expect(isValidDomain(domain)).toBe(true)
+  })
+
+  it.each([
+    ['bare IPv4', '203.0.113.10'],
+    ['localhost', 'localhost'],
+    ['single label', 'example'],
+    ['empty string', ''],
+    ['port suffix', 'example.com:3000'],
+    ['ipv6-ish colon', '::1'],
+    ['leading dash label', '-example.com'],
+    ['too long', `${'a'.repeat(64)}.com`],
+  ])('rejects %s (%s)', async (_label, domain) => {
+    const { isValidDomain } = await import('./remote-access-config')
+    expect(isValidDomain(domain)).toBe(false)
+  })
+})
+
+describe('checkDomainDns', () => {
+  beforeEach(() => {
+    resolve4Mock.mockReset()
+  })
+
+  it('short-circuits on an invalid domain without calling resolve4', async () => {
+    const { checkDomainDns } = await import('./remote-access-config')
+    const result = await checkDomainDns('not a domain')
+    expect(result.ok).toBe(false)
+    expect(resolve4Mock).not.toHaveBeenCalled()
+  })
+
+  it('reports a match when the resolved IP equals the expected IP', async () => {
+    resolve4Mock.mockResolvedValue(['203.0.113.10'])
+    const { checkDomainDns } = await import('./remote-access-config')
+    const result = await checkDomainDns('example.com', '203.0.113.10')
+    expect(result).toEqual({
+      ok: true,
+      resolvedIps: ['203.0.113.10'],
+      matchesExpectedIp: true,
+    })
+  })
+
+  it('reports a mismatch when the resolved IP differs from expected', async () => {
+    resolve4Mock.mockResolvedValue(['198.51.100.5'])
+    const { checkDomainDns } = await import('./remote-access-config')
+    const result = await checkDomainDns('example.com', '203.0.113.10')
+    expect(result).toEqual({
+      ok: true,
+      resolvedIps: ['198.51.100.5'],
+      matchesExpectedIp: false,
+    })
+  })
+
+  it('leaves matchesExpectedIp null when no expected IP is given', async () => {
+    resolve4Mock.mockResolvedValue(['198.51.100.5'])
+    const { checkDomainDns } = await import('./remote-access-config')
+    const result = await checkDomainDns('example.com')
+    expect(result).toEqual({
+      ok: true,
+      resolvedIps: ['198.51.100.5'],
+      matchesExpectedIp: null,
+    })
+  })
+
+  it('surfaces DNS resolution failures', async () => {
+    resolve4Mock.mockRejectedValue(new Error('ENOTFOUND'))
+    const { checkDomainDns } = await import('./remote-access-config')
+    const result = await checkDomainDns('example.com')
+    expect(result.ok).toBe(false)
   })
 })

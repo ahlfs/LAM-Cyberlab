@@ -1,18 +1,25 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { resolve4 } from 'node:dns/promises'
 import { isPasswordProtectionEnabled } from './auth-middleware'
 
 /**
- * Layer 1 of Fitur 4 (Akses Publik): a UI-friendly wrapper around the
- * fail-closed HOST/HERMES_PASSWORD guard that already lives in
- * server-entry.js and auth-middleware.ts. This module owns reading/writing
- * the workspace's own .env file so Settings → Remote Access can persist
- * changes without the user hand-editing a dotfile.
+ * Fitur 4 (Akses Publik) support code.
+ *
+ * Layer 1 — a UI-friendly wrapper around the fail-closed HOST/HERMES_PASSWORD
+ * guard that already lives in server-entry.js and auth-middleware.ts. This
+ * module owns reading/writing the workspace's own .env file so Settings →
+ * Remote Access can persist changes without the user hand-editing a dotfile.
  *
  * HOST changes require a process restart to take effect (Node's
  * http.Server is bound once at startup) — this module never claims
  * otherwise. HERMES_PASSWORD changes take effect immediately because
  * auth-middleware reads process.env fresh on every request.
+ *
+ * Layer 3 — read-only helpers (domain validation, DNS lookup) backing the
+ * "Custom Domain" panel. The actual Caddy install/reverse-proxy setup is
+ * scripts/setup-remote-access.sh, run by the user in their own terminal —
+ * this module never shells out or mutates system config.
  */
 
 const MIN_PASSWORD_LENGTH = 8
@@ -191,5 +198,51 @@ export async function detectPublicIp(): Promise<PublicIpResult> {
     return { ok: false, error: `Could not reach IP lookup service: ${message}` }
   } finally {
     clearTimeout(timeout)
+  }
+}
+
+/**
+ * Loose but safe hostname validation for the custom-domain field: rejects
+ * bare IPs, localhost, and anything that isn't a plausible DNS name.
+ * ACME (Let's Encrypt) issuance needs a real domain anyway, so this just
+ * catches obvious mistakes before the user copies the setup command.
+ */
+export function isValidDomain(input: string): boolean {
+  const domain = input.trim().toLowerCase()
+  if (!domain || domain.length > 253) return false
+  if (domain === 'localhost' || /^\d{1,3}(\.\d{1,3}){3}$/.test(domain)) return false
+  if (domain.includes(':')) return false // no IPv6 literals, no port suffixes
+  const labelPattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/
+  const labels = domain.split('.')
+  if (labels.length < 2) return false
+  return labels.every((label) => label.length > 0 && label.length <= 63 && labelPattern.test(label))
+}
+
+export type DomainDnsResult =
+  | { ok: true; resolvedIps: Array<string>; matchesExpectedIp: boolean | null }
+  | { ok: false; error: string }
+
+/**
+ * Resolve a domain's A records and (optionally) compare against the
+ * server's known public IP. Read-only — never mutates anything, so it's
+ * safe to call before the user has run the setup script at all.
+ */
+export async function checkDomainDns(
+  domain: string,
+  expectedIp?: string,
+): Promise<DomainDnsResult> {
+  if (!isValidDomain(domain)) {
+    return { ok: false, error: 'Not a valid domain name.' }
+  }
+  try {
+    const resolvedIps = await resolve4(domain)
+    return {
+      ok: true,
+      resolvedIps,
+      matchesExpectedIp: expectedIp ? resolvedIps.includes(expectedIp) : null,
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { ok: false, error: `DNS lookup failed: ${message}` }
   }
 }

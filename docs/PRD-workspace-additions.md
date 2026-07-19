@@ -109,7 +109,17 @@ Membangun ulang **Linku** — aplikasi manajemen bookmark buatan ahlfs (PHP nati
 
 ---
 
-## Fitur 4 — Akses Publik (IPv4 + Domain Custom) — 🟡 LAPIS 1 SELESAI (2026-07-19), lapis 2-3 belum
+## Fitur 4 — Akses Publik (IPv4 + Domain Custom) — ✅ SELESAI (2026-07-19, semua 3 lapis)
+
+> **Implementasi lapis 3 (2026-07-19, menyusul lapis 1):** panel baru "Custom Domain" di halaman `/remote-access` — input domain, tombol "Check DNS" (resolve A record via `node:dns/promises`, bandingkan dengan IP publik yang sudah terdeteksi), lalu tampilkan perintah copy-paste `sudo ./scripts/setup-remote-access.sh --domain <domain> --port <port>`.
+>
+> **Keputusan desain penting: script dijalankan manual oleh user di terminal, BUKAN dieksekusi otomatis dari web UI.** Alasan: script ini butuh root (install paket, tulis `/etc/caddy/Caddyfile`, restart systemd) — memberi tombol web yang menjalankan provisioning level-root secara otomatis akan menambah permukaan serangan pada fitur yang justru tujuannya mengekspos workspace ke internet. Karena user yang sudah terautentikasi ke workspace ini SUDAH punya akses Terminal penuh (setara shell), menjalankan satu script yang di-scope jelas via terminal tidak menambah privilege baru dibanding yang sudah ada — pola ini juga konsisten dengan `install-dashboard-service.sh` yang sudah ada (dijalankan manual, bukan dari UI).
+>
+> **`scripts/setup-remote-access.sh`** (baru): idempoten (pakai marker block `# >>> lam-cyberlab ... <<<` di `/etc/caddy/Caddyfile`, replace bukan duplikat saat dijalankan ulang), install Caddy via apt repo resmi kalau belum ada (khusus Debian/Ubuntu — OS lain diarahkan ke docs resmi Caddy), validasi Caddyfile sebelum reload (`caddy validate`), dukung `--remove` untuk membongkar. Linux-only (skenario VPS, bukan macOS). Arsitektur: app tetap boleh di `127.0.0.1`, hanya Caddy yang bind `0.0.0.0:443` — jadi toggle "Expose to internet" di Lapis 1 TIDAK wajib dinyalakan untuk jalur domain custom ini (dijelaskan di UI panel).
+>
+> **Verifikasi:** logika idempoten block-replace diuji terpisah (bukan lewat eksekusi script sungguhan — itu butuh root + memodifikasi Caddy sistem nyata, di luar scope yang aman untuk dijalankan otomatis). 29 unit test total untuk `remote-access-config.ts` (termasuk `isValidDomain` + `checkDomainDns`, DNS di-mock lewat `vi.mock('node:dns/promises')` — sandbox ini memang tidak punya akses jaringan keluar). `tsc` bersih. README bagian Security diberi pointer ke halaman ini.
+>
+> Catatan sesi: saat verifikasi lapis 3, ditemukan owner sudah mencoba fitur "Set password" sendiri secara nyata di browser mereka sendiri (password & session store live berubah) — bukti bagus bahwa Lapis 1 benar-benar berfungsi live tanpa restart.
 
 > **Implementasi lapis 1 (2026-07-19):** halaman khusus **`/remote-access`** (sidebar, setelah System — dipilih dedicated page, bukan section Settings, sesuai preferensi owner). Backend: `src/server/remote-access-config.ts` (baca/tulis `.env` mirip `ensure_env_key` bash, `getRemoteAccessStatus()`, `setWorkspacePassword()` — langsung live tanpa restart karena auth-middleware baca `process.env` setiap request, `setExposeEnabled()` — butuh restart karena HOST di-bind sekali saat startup, `detectPublicIp()` — user-triggered via api.ipify.org, bukan otomatis; 13 unit test terisolasi pakai `process.chdir()` ke tmpdir supaya tidak pernah menyentuh `.env` asli). 4 route API (`src/routes/api/remote-access.{status,password,expose,public-ip}.ts`), semua digerbang `requireLocalOrAuth` + rate-limited.
 >
@@ -175,9 +185,11 @@ Tidak ada satu pun default yang berubah untuk orang yang cuma clone-and-run loka
 1. **Dracula Soft** — ✅ selesai.
 2. **Monitor perangkat** — ✅ selesai.
 3. **Linku** — ✅ selesai (MVP, sudah direvisi).
-4. **Akses Publik** — berikutnya; disarankan lapis 1–2 dulu (UI + VPS checklist, kerja kecil karena membungkus mekanisme existing), baru lapis 3 (Caddy automation) setelah lapis 1–2 terbukti jalan.
+4. **Akses Publik** — ✅ selesai, semua 3 lapis.
+
+Semua 4 fitur PRD selesai (2026-07-19). Roadmap lanjutan (kalau ada) akan jadi fitur baru, bukan bagian dokumen ini.
 
 ## Pertanyaan terbuka
-- Fitur 3: perlukah import data dari instance Linku PHP lama (database.sql)?
-- Fitur 4: password tunggal untuk semua remote access sudah cukup, atau perlu dipisah dari `HERMES_PASSWORD` biasa (misal beda password untuk akses publik vs LAN lokal)?
-- Fitur 4: Caddy dijadikan dependency wajib saat lapis 3 dipakai, atau tetap opsional dengan Nginx sebagai alternatif terdokumentasi (tidak diotomasi)?
+- Fitur 3: perlukah import data dari instance Linku PHP lama (database.sql)? Masih terbuka, belum diminta.
+- ~~Fitur 4: password tunggal cukup, atau dipisah dari `HERMES_PASSWORD`?~~ Dijawab lewat implementasi: password tunggal (reuse `HERMES_PASSWORD`), tidak ada mekanisme terpisah — sederhana, konsisten dengan guard yang sudah ada.
+- ~~Fitur 4: Caddy wajib atau opsional dengan Nginx?~~ Dijawab lewat implementasi: hanya Caddy yang diotomasi (`scripts/setup-remote-access.sh`); Nginx/reverse proxy lain tetap bisa dipakai manual (arsitektur app-di-127.0.0.1 mendukung reverse proxy apa pun), tapi tidak ada script/dokumentasi khusus untuk itu.

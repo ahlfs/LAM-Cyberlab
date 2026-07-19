@@ -624,6 +624,14 @@ installer.
 Key safeguards — most are on by default, the env vars below are for remote /
 Docker deployments where you opt out of the loopback default.
 
+**Prefer a guided flow?** Open **Remote Access** in the sidebar — it sets the
+password and the expose toggle for you (writes `.env`, no manual editing),
+shows whether the current bind is pending a restart, and includes a DNS
+checker + copy-pasteable command for putting [Caddy](https://caddyserver.com)
+in front of a custom domain (`scripts/setup-remote-access.sh`, run yourself in
+a terminal — it needs root to install packages, so it's never triggered from
+the web UI). The env vars below are what that page manages under the hood.
+
 ### Built-in safeguards
 
 - Auth middleware on every API route

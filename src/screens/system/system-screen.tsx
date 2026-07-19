@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { CpuIcon } from '@hugeicons/core-free-icons'
@@ -80,117 +80,277 @@ function Panel({
   )
 }
 
-/* ── Live chart with crosshair readout ───────────────────────────────── */
+/* ── Network traffic chart ───────────────────────────────────────────── */
+//
+// Redesigned for clarity (owner reported confusion about what the old
+// two-line chart was showing): a filled area per direction so "more area
+// filled = more throughput" reads at a glance, a legend that's on-screen at
+// all times (not just discoverable on hover), a real 0-baseline with two
+// scale gridlines, and download vs. upload using genuinely different colors
+// (accent vs. ink) instead of accent vs. a faint muted tone that read as
+// "barely there."
 
-type ChartSeries = { points: number[]; color: string; label: string }
+const DOWNLOAD_COLOR = 'var(--theme-accent)'
+const UPLOAD_COLOR = 'color-mix(in srgb, var(--theme-text) 70%, transparent)'
 
-function LiveChart({
-  series,
-  formatValue,
-  heightClass,
-  windowLabel,
+function NetworkTrafficChart({
+  history,
+  currentRx,
+  currentTx,
 }: {
-  series: ChartSeries[]
-  formatValue: (v: number) => string
-  heightClass: string
-  windowLabel: string
+  history: Array<{ rx: number; tx: number }>
+  currentRx: number
+  currentTx: number
 }) {
   const [cursor, setCursor] = useState<number | null>(null)
   const boxRef = useRef<HTMLDivElement>(null)
-  const len = series[0]?.points.length ?? 0
-  const max = Math.max(1e-6, ...series.flatMap((s) => s.points)) * 1.1
+  const gradientId = useId()
+  const len = history.length
+  const max = Math.max(1, ...history.flatMap((p) => [p.rx, p.tx])) * 1.15
 
-  const paths = series.map((s) => {
+  const VIEW_H = 30
+
+  function toPath(points: Array<number>, close: boolean): string {
     if (len < 2) return ''
-    return s.points
+    const line = points
       .map((v, i) => {
         const x = (i / (len - 1)) * 100
-        const y = 30 - (v / max) * 28
+        const y = VIEW_H - (v / max) * (VIEW_H - 1)
         return `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`
       })
       .join(' ')
-  })
+    return close ? `${line} L100,${VIEW_H} L0,${VIEW_H} Z` : line
+  }
 
+  const rxPoints = history.map((p) => p.rx)
+  const txPoints = history.map((p) => p.tx)
   const cursorX = cursor !== null && len > 1 ? (cursor / (len - 1)) * 100 : null
 
+  const gridSteps = [0.5, 1]
+
   return (
-    <div
-      ref={boxRef}
-      className={`relative w-full select-none ${heightClass}`}
-      onPointerMove={(e) => {
-        if (len < 2 || !boxRef.current) return
-        const rect = boxRef.current.getBoundingClientRect()
-        const ratio = (e.clientX - rect.left) / rect.width
-        setCursor(
-          Math.min(len - 1, Math.max(0, Math.round(ratio * (len - 1)))),
-        )
-      }}
-      onPointerLeave={() => setCursor(null)}
-    >
-      {len >= 2 ? (
-        <svg
-          aria-hidden
-          className="h-full w-full"
-          viewBox="0 0 100 30"
-          preserveAspectRatio="none"
+    <div className="flex flex-col gap-1.5">
+      {/* Always-visible legend — this is what was missing before: it's no
+          longer necessary to hover the chart to know which line is which. */}
+      <div className="flex flex-wrap items-center gap-4">
+        <span
+          className="flex items-center gap-1.5 font-mono text-[11px] tabular-nums"
+          style={{ color: 'var(--theme-text)' }}
         >
-          {paths.map((d, i) => (
+          <i aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: DOWNLOAD_COLOR }} />
+          Download <span style={{ color: 'var(--theme-muted)' }}>{formatRate(currentRx)}</span>
+        </span>
+        <span
+          className="flex items-center gap-1.5 font-mono text-[11px] tabular-nums"
+          style={{ color: 'var(--theme-text)' }}
+        >
+          <i aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: UPLOAD_COLOR }} />
+          Upload <span style={{ color: 'var(--theme-muted)' }}>{formatRate(currentTx)}</span>
+        </span>
+      </div>
+
+      <div
+        ref={boxRef}
+        className="relative h-24 w-full select-none"
+        onPointerMove={(e) => {
+          if (len < 2 || !boxRef.current) return
+          const rect = boxRef.current.getBoundingClientRect()
+          const ratio = (e.clientX - rect.left) / rect.width
+          setCursor(Math.min(len - 1, Math.max(0, Math.round(ratio * (len - 1)))))
+        }}
+        onPointerLeave={() => setCursor(null)}
+      >
+        {len >= 2 ? (
+          <svg
+            aria-hidden
+            className="h-full w-full"
+            viewBox={`0 0 100 ${VIEW_H}`}
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id={`${gradientId}-rx`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={DOWNLOAD_COLOR} stopOpacity="0.28" />
+                <stop offset="100%" stopColor={DOWNLOAD_COLOR} stopOpacity="0" />
+              </linearGradient>
+              <linearGradient id={`${gradientId}-tx`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={UPLOAD_COLOR} stopOpacity="0.22" />
+                <stop offset="100%" stopColor={UPLOAD_COLOR} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
+            {/* Scale gridlines — a 0-baseline and two rate reference lines,
+                so the chart is readable without hovering. */}
+            {gridSteps.map((frac) => (
+              <line
+                key={frac}
+                x1={0}
+                x2={100}
+                y1={VIEW_H - frac * (VIEW_H - 1)}
+                y2={VIEW_H - frac * (VIEW_H - 1)}
+                stroke="color-mix(in srgb, var(--theme-border) 55%, transparent)"
+                strokeWidth={0.4}
+                strokeDasharray="2,2"
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+            <line
+              x1={0}
+              x2={100}
+              y1={VIEW_H}
+              y2={VIEW_H}
+              stroke="color-mix(in srgb, var(--theme-border) 70%, transparent)"
+              strokeWidth={0.6}
+              vectorEffect="non-scaling-stroke"
+            />
+
+            <path d={toPath(rxPoints, true)} fill={`url(#${gradientId}-rx)`} stroke="none" />
+            <path d={toPath(txPoints, true)} fill={`url(#${gradientId}-tx)`} stroke="none" />
             <path
-              key={series[i].label}
-              d={d}
+              d={toPath(rxPoints, false)}
               fill="none"
-              stroke={series[i].color}
+              stroke={DOWNLOAD_COLOR}
               strokeWidth={1.5}
               strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
-              opacity={i === 0 ? 1 : 0.75}
             />
-          ))}
-          {cursorX !== null ? (
-            <line
-              x1={cursorX}
-              x2={cursorX}
-              y1={0}
-              y2={30}
-              stroke="color-mix(in srgb, var(--theme-text) 35%, transparent)"
-              strokeWidth={1}
+            <path
+              d={toPath(txPoints, false)}
+              fill="none"
+              stroke={UPLOAD_COLOR}
+              strokeWidth={1.5}
+              strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
             />
-          ) : null}
-        </svg>
-      ) : (
-        <div
-          aria-hidden
-          className="h-full w-full rounded"
-          style={{
-            background:
-              'color-mix(in srgb, var(--theme-border) 25%, transparent)',
-          }}
-        />
-      )}
-      <span
-        className="pointer-events-none absolute right-1 top-0 font-mono text-[9px] tabular-nums"
-        style={{ color: 'var(--theme-muted)' }}
+
+            {cursorX !== null ? (
+              <line
+                x1={cursorX}
+                x2={cursorX}
+                y1={0}
+                y2={VIEW_H}
+                stroke="color-mix(in srgb, var(--theme-text) 35%, transparent)"
+                strokeWidth={0.5}
+                vectorEffect="non-scaling-stroke"
+              />
+            ) : null}
+          </svg>
+        ) : (
+          <div
+            aria-hidden
+            className="h-full w-full rounded"
+            style={{ background: 'color-mix(in srgb, var(--theme-border) 25%, transparent)' }}
+          />
+        )}
+
+        {/* Scale labels for the gridlines — placed outside the (stretched,
+            non-uniform-scaled) SVG so the text itself never distorts. */}
+        {len >= 2 ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1 top-0 flex h-full flex-col justify-between py-0.5 font-mono text-[8px] tabular-nums"
+            style={{ color: 'var(--theme-muted)' }}
+          >
+            <span>{formatRate(max / 1.15)}</span>
+            <span>0</span>
+          </div>
+        ) : null}
+
+        <span
+          className="pointer-events-none absolute right-1 top-0.5 font-mono text-[9px] tabular-nums"
+          style={{ color: 'var(--theme-muted)' }}
+        >
+          {cursor !== null && len >= 2
+            ? `↓ ${formatRate(rxPoints[cursor])} · ↑ ${formatRate(txPoints[cursor])}`
+            : 'last 5 min'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/* ── Circular gauge (CasaOS-style ring) ──────────────────────────────── */
+
+/** Green below half, yellow from half, red from 90% — matches the CasaOS reading. */
+function gaugeColor(pct: number): string {
+  if (pct >= 90) return 'var(--theme-danger)'
+  if (pct >= 50) return 'var(--theme-warning)'
+  return 'var(--theme-success)'
+}
+
+function CircularGauge({
+  pct,
+  label,
+  size = 108,
+  strokeWidth = 10,
+}: {
+  pct: number
+  label: string
+  size?: number
+  strokeWidth?: number
+}) {
+  const clamped = Math.max(0, Math.min(100, pct))
+  const radius = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference * (1 - clamped / 100)
+  const color = gaugeColor(clamped)
+
+  return (
+    <div
+      className="relative shrink-0"
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={`${label}: ${Math.round(clamped)}%`}
+    >
+      <svg
+        aria-hidden
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
       >
-        {cursor !== null && len >= 2
-          ? series
-              .map((s) => `${s.label} ${formatValue(s.points[cursor])}`)
-              .join(' · ')
-          : `${windowLabel} · peak ${formatValue(max / 1.1)}`}
-      </span>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="color-mix(in srgb, var(--theme-border) 45%, transparent)"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="motion-safe:transition-[stroke-dashoffset,stroke] motion-safe:duration-500"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+        <span
+          className="font-mono text-xl font-bold tabular-nums leading-none"
+          style={{ color: 'var(--theme-text)' }}
+        >
+          {Math.round(clamped)}
+          <span className="text-xs font-semibold">%</span>
+        </span>
+        <span
+          className="font-mono text-[9px] uppercase tracking-[0.12em]"
+          style={{ color: 'var(--theme-muted)' }}
+        >
+          {label}
+        </span>
+      </div>
     </div>
   )
 }
 
 /* ── Panels ──────────────────────────────────────────────────────────── */
 
-function CpuPanel({
-  stats,
-  history,
-}: {
-  stats: SystemStats
-  history: number[]
-}) {
+function CpuPanel({ stats }: { stats: SystemStats }) {
   const cpu = stats.cpu
   if (!cpu) return null
   return (
@@ -207,35 +367,29 @@ function CpuPanel({
         </span>
       }
     >
-      <div className="flex items-end justify-between gap-4">
-        <div className="flex items-baseline gap-2">
-          <span
-            className="font-mono text-3xl font-bold tabular-nums leading-none"
-            style={{ color: 'var(--theme-text)' }}
-          >
-            {Math.round(cpu.pct)}
-            <span className="text-base font-semibold">%</span>
-          </span>
+      <div className="flex items-center gap-4">
+        <CircularGauge pct={cpu.pct} label="CPU" />
+        <div className="flex flex-col gap-1.5">
           <span
             className="font-mono text-[10px] uppercase tracking-[0.1em]"
             style={{ color: 'var(--theme-muted)' }}
           >
             {cpu.perCorePct.length} cores
           </span>
+          {stats.tempC != null ? (
+            <span
+              className="font-mono text-[11px] tabular-nums"
+              style={{
+                color:
+                  stats.tempC >= WARN_TEMP_C
+                    ? 'var(--theme-warning)'
+                    : 'var(--theme-muted)',
+              }}
+            >
+              {Math.round(stats.tempC)}°C
+            </span>
+          ) : null}
         </div>
-        {stats.tempC != null ? (
-          <span
-            className="font-mono text-[11px] tabular-nums"
-            style={{
-              color:
-                stats.tempC >= WARN_TEMP_C
-                  ? 'var(--theme-warning)'
-                  : 'var(--theme-muted)',
-            }}
-          >
-            {Math.round(stats.tempC)}°C
-          </span>
-        ) : null}
       </div>
 
       <div
@@ -275,19 +429,6 @@ function CpuPanel({
           </div>
         ))}
       </div>
-
-      <LiveChart
-        series={[
-          {
-            points: history,
-            color: 'var(--theme-accent)',
-            label: 'cpu',
-          },
-        ]}
-        formatValue={(v) => `${Math.round(v)}%`}
-        heightClass="h-20"
-        windowLabel="last 5 min"
-      />
     </Panel>
   )
 }
@@ -299,14 +440,7 @@ function MemoryPanel({ stats }: { stats: SystemStats }) {
   const cachedBytes = Math.max(0, mem.cachedBytes)
   const freeBytes = Math.max(0, mem.totalBytes - appBytes - cachedBytes)
   const segs = [
-    {
-      label: 'Used',
-      bytes: appBytes,
-      color:
-        mem.pct >= WARN_PCT
-          ? statusColor(mem.pct)
-          : 'color-mix(in srgb, var(--theme-text) 55%, transparent)',
-    },
+    { label: 'Used', bytes: appBytes, color: gaugeColor(mem.pct) },
     {
       label: 'Cached',
       bytes: cachedBytes,
@@ -323,47 +457,31 @@ function MemoryPanel({ stats }: { stats: SystemStats }) {
       title="Memory"
       headerRight={
         <span
-          className="font-mono text-[11px] tabular-nums"
-          style={{ color: 'var(--theme-text)' }}
+          className="font-mono text-[10px] tabular-nums"
+          style={{ color: 'var(--theme-muted)' }}
         >
-          {Math.round(mem.pct)}%{' '}
-          <span style={{ color: 'var(--theme-muted)' }}>
-            of {formatBytes(mem.totalBytes)}
-          </span>
+          of {formatBytes(mem.totalBytes)}
         </span>
       }
     >
-      <div aria-hidden className="flex h-2.5 w-full gap-[2px]">
-        {segs
-          .filter((s) => s.bytes > 0)
-          .map((s, i, all) => (
-            <div
+      <div className="flex items-center gap-4">
+        <CircularGauge pct={mem.pct} label="RAM" />
+        <div className="flex flex-col gap-1">
+          {segs.map((s) => (
+            <span
               key={s.label}
-              className={`motion-safe:transition-[width] motion-safe:duration-500 ${
-                i === 0 ? 'rounded-l-full' : ''
-              } ${i === all.length - 1 ? 'rounded-r-full' : ''}`}
-              style={{
-                width: `${(s.bytes / mem.totalBytes) * 100}%`,
-                background: s.color,
-              }}
-            />
+              className="flex items-center gap-1.5 font-mono text-[10px] tabular-nums"
+              style={{ color: 'var(--theme-text)' }}
+            >
+              <i
+                aria-hidden
+                className="size-1.5 shrink-0 rounded-full"
+                style={{ background: s.color }}
+              />
+              {s.label} {formatBytes(s.bytes)}
+            </span>
           ))}
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        {segs.map((s) => (
-          <span
-            key={s.label}
-            className="flex items-center gap-1.5 font-mono text-[10px] tabular-nums"
-            style={{ color: 'var(--theme-text)' }}
-          >
-            <i
-              aria-hidden
-              className="size-1.5 shrink-0 rounded-full"
-              style={{ background: s.color }}
-            />
-            {s.label} {formatBytes(s.bytes)}
-          </span>
-        ))}
+        </div>
       </div>
       {stats.swap ? (
         <div className="flex items-center gap-2">
@@ -487,44 +605,17 @@ function NetworkPanel({
       className="lg:col-span-2"
       headerRight={
         <span
-          className="flex items-center gap-3 font-mono text-[11px] tabular-nums"
-          style={{ color: 'var(--theme-text)' }}
+          className="font-mono text-[10px] tabular-nums"
+          style={{ color: 'var(--theme-muted)' }}
         >
-          <span className="flex items-center gap-1">
-            <i
-              aria-hidden
-              className="size-1.5 rounded-full"
-              style={{ background: 'var(--theme-accent)' }}
-            />
-            ↓ {formatRate(net.rxBytesPerSec)}
-          </span>
-          <span className="flex items-center gap-1">
-            <i
-              aria-hidden
-              className="size-1.5 rounded-full"
-              style={{ background: 'var(--theme-muted)' }}
-            />
-            ↑ {formatRate(net.txBytesPerSec)}
-          </span>
+          {ifaces.length} interface{ifaces.length === 1 ? '' : 's'}
         </span>
       }
     >
-      <LiveChart
-        series={[
-          {
-            points: history.map((p) => p.rx),
-            color: 'var(--theme-accent)',
-            label: '↓',
-          },
-          {
-            points: history.map((p) => p.tx),
-            color: 'var(--theme-muted)',
-            label: '↑',
-          },
-        ]}
-        formatValue={formatRate}
-        heightClass="h-20"
-        windowLabel="last 5 min"
+      <NetworkTrafficChart
+        history={history}
+        currentRx={net.rxBytesPerSec}
+        currentTx={net.txBytesPerSec}
       />
       {ifaces.length > 0 ? (
         <ul
@@ -573,7 +664,6 @@ export function SystemScreen() {
   const stats = query.data ?? null
   const unreachable = query.isError
 
-  const cpuHistoryRef = useRef<Array<{ at: number; pct: number }>>([])
   const netHistoryRef = useRef<Array<{ at: number; rx: number; tx: number }>>(
     [],
   )
@@ -581,13 +671,6 @@ export function SystemScreen() {
   // synchronously, so charts never lag a render behind the numbers.
   useMemo(() => {
     if (!stats) return
-    if (stats.cpu) {
-      const buf = cpuHistoryRef.current
-      if (buf.length === 0 || buf[buf.length - 1].at !== stats.sampledAt) {
-        buf.push({ at: stats.sampledAt, pct: stats.cpu.pct })
-        if (buf.length > HISTORY_CAP) buf.splice(0, buf.length - HISTORY_CAP)
-      }
-    }
     if (stats.network) {
       const buf = netHistoryRef.current
       if (buf.length === 0 || buf[buf.length - 1].at !== stats.sampledAt) {
@@ -652,10 +735,7 @@ export function SystemScreen() {
 
         {stats ? (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-            <CpuPanel
-              stats={stats}
-              history={cpuHistoryRef.current.map((p) => p.pct)}
-            />
+            <CpuPanel stats={stats} />
             <MemoryPanel stats={stats} />
             <StoragePanel stats={stats} />
             <NetworkPanel stats={stats} history={netHistoryRef.current} />
