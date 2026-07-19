@@ -9,6 +9,7 @@ import {
   Clock01Icon,
   CommandLineIcon,
   CpuIcon,
+  Link01Icon,
   DashboardSquare01Icon,
   File01Icon,
   McpServerIcon,
@@ -107,6 +108,13 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
     icon: BrainIcon,
     to: '/memory',
     match: (p: string) => p.startsWith('/memory'),
+  },
+  {
+    id: 'links',
+    label: 'Links',
+    icon: Link01Icon,
+    to: '/links',
+    match: (p: string) => p.startsWith('/links'),
   },
   {
     id: 'skills',

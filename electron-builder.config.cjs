@@ -17,10 +17,24 @@ module.exports = {
     'assets/**/*',
     'public/**/*',
     'package.json',
+    // better-sqlite3 (Linku storage) is the one native dependency in this
+    // app, so it's excluded from the esbuild server bundle (--external)
+    // and shipped here instead, with its actual runtime require chain:
+    // better-sqlite3 -> bindings -> file-uri-to-path. The compiled
+    // .node binary is rebuilt against Electron's ABI by the
+    // `electron:rebuild-native` script that runs before electron-builder
+    // (see package.json) — run `pnpm electron:restore-native` afterward
+    // to restore the system-Node-ABI binary `pnpm dev` needs.
+    'node_modules/better-sqlite3/**/*',
+    'node_modules/bindings/**/*',
+    'node_modules/file-uri-to-path/**/*',
     '!**/puppeteer-extra-plugin-stealth/**/*',
     '!**/playwright-extra/**/*',
   ],
   npmArgs: ['--ignore-scripts'],
+  // Native rebuild is handled explicitly by `electron:rebuild-native`
+  // (via @electron/rebuild) before electron-builder runs, so its own
+  // automatic node-gyp rebuild step stays off to avoid double-building.
   nodeGypRebuild: false,
   mac: {
     category: 'public.app-category.developer-tools',

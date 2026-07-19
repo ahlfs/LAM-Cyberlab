@@ -108,10 +108,11 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     if (path.startsWith('/echo-studio')) return 5
     if (path.startsWith('/system')) return 6
     if (path.startsWith('/memory')) return 7
-    if (path.startsWith('/skills')) return 8
-    if (path.startsWith('/mcp')) return 9
-    if (path.startsWith('/profiles')) return 10
-    if (path.startsWith('/settings')) return 11
+    if (path.startsWith('/links')) return 8
+    if (path.startsWith('/skills')) return 9
+    if (path.startsWith('/mcp')) return 10
+    if (path.startsWith('/profiles')) return 11
+    if (path.startsWith('/settings')) return 12
     return -1
   }, [])
 
@@ -184,6 +185,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     if (pathname.startsWith('/system')) return 'System'
     if (pathname.startsWith('/echo-studio')) return 'Echo Studio'
     if (pathname.startsWith('/memory')) return 'Memory'
+    if (pathname.startsWith('/links')) return 'Links'
     if (pathname.startsWith('/skills')) return 'Skills'
     if (pathname.startsWith('/mcp')) return 'MCP'
     if (pathname.startsWith('/profiles')) return 'Profiles'

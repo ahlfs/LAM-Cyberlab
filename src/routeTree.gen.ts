@@ -24,6 +24,7 @@ import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as OperationsRouteImport } from './routes/operations'
 import { Route as MemoryRouteImport } from './routes/memory'
 import { Route as McpRouteImport } from './routes/mcp'
+import { Route as LinksRouteImport } from './routes/links'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as HermesWorldRouteImport } from './routes/hermes-world'
 import { Route as FilesRouteImport } from './routes/files'
@@ -88,6 +89,7 @@ import { Route as ApiMemoryRouteImport } from './routes/api/memory'
 import { Route as ApiMediaRouteImport } from './routes/api/media'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as ApiLocalProvidersRouteImport } from './routes/api/local-providers'
+import { Route as ApiLinksRouteImport } from './routes/api/links'
 import { Route as ApiIntegrationsRouteImport } from './routes/api/integrations'
 import { Route as ApiHistoryRouteImport } from './routes/api/history'
 import { Route as ApiHermesTasksRouteImport } from './routes/api/hermes-tasks'
@@ -149,6 +151,9 @@ import { Route as ApiMcpHubSearchRouteImport } from './routes/api/mcp/hub-search
 import { Route as ApiMcpDiscoverRouteImport } from './routes/api/mcp/discover'
 import { Route as ApiMcpConfigureRouteImport } from './routes/api/mcp/configure'
 import { Route as ApiMcpNameRouteImport } from './routes/api/mcp/$name'
+import { Route as ApiLinksTrashEmptyRouteImport } from './routes/api/links.trash-empty'
+import { Route as ApiLinksScrapeRouteImport } from './routes/api/links.scrape'
+import { Route as ApiLinksFoldersRouteImport } from './routes/api/links.folders'
 import { Route as ApiKnowledgeSyncRouteImport } from './routes/api/knowledge/sync'
 import { Route as ApiKnowledgeSearchRouteImport } from './routes/api/knowledge/search'
 import { Route as ApiKnowledgeReadRouteImport } from './routes/api/knowledge/read'
@@ -169,8 +174,14 @@ import { Route as ApiSessionsSessionKeyStatusRouteImport } from './routes/api/se
 import { Route as ApiSessionsSessionKeyActiveRunRouteImport } from './routes/api/sessions/$sessionKey.active-run'
 import { Route as ApiMcpHubSourcesIdRouteImport } from './routes/api/mcp/hub-sources.$id'
 import { Route as ApiMcpNameLogsRouteImport } from './routes/api/mcp/$name.logs'
+import { Route as ApiLinksItemIdRouteImport } from './routes/api/links.item.$id'
+import { Route as ApiLinksGoIdRouteImport } from './routes/api/links.go.$id'
+import { Route as ApiLinksFoldersIdRouteImport } from './routes/api/links.folders.$id'
 import { Route as ApiHermesworldReservationsConfirmRouteImport } from './routes/api/hermesworld/reservations/confirm'
 import { Route as ApiRunsSessionKeyRunIdAbandonRouteImport } from './routes/api/runs/$sessionKey.$runId.abandon'
+import { Route as ApiLinksItemIdRestoreRouteImport } from './routes/api/links.item.$id.restore'
+import { Route as ApiLinksItemIdFavoriteRouteImport } from './routes/api/links.item.$id.favorite'
+import { Route as ApiLinksItemIdArchiveRouteImport } from './routes/api/links.item.$id.archive'
 
 const WorldRoute = WorldRouteImport.update({
   id: '/world',
@@ -245,6 +256,11 @@ const MemoryRoute = MemoryRouteImport.update({
 const McpRoute = McpRouteImport.update({
   id: '/mcp',
   path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LinksRoute = LinksRouteImport.update({
+  id: '/links',
+  path: '/links',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JobsRoute = JobsRouteImport.update({
@@ -568,6 +584,11 @@ const ApiLocalProvidersRoute = ApiLocalProvidersRouteImport.update({
   path: '/api/local-providers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLinksRoute = ApiLinksRouteImport.update({
+  id: '/api/links',
+  path: '/api/links',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiIntegrationsRoute = ApiIntegrationsRouteImport.update({
   id: '/api/integrations',
   path: '/api/integrations',
@@ -873,6 +894,21 @@ const ApiMcpNameRoute = ApiMcpNameRouteImport.update({
   path: '/$name',
   getParentRoute: () => ApiMcpRoute,
 } as any)
+const ApiLinksTrashEmptyRoute = ApiLinksTrashEmptyRouteImport.update({
+  id: '/trash-empty',
+  path: '/trash-empty',
+  getParentRoute: () => ApiLinksRoute,
+} as any)
+const ApiLinksScrapeRoute = ApiLinksScrapeRouteImport.update({
+  id: '/scrape',
+  path: '/scrape',
+  getParentRoute: () => ApiLinksRoute,
+} as any)
+const ApiLinksFoldersRoute = ApiLinksFoldersRouteImport.update({
+  id: '/folders',
+  path: '/folders',
+  getParentRoute: () => ApiLinksRoute,
+} as any)
 const ApiKnowledgeSyncRoute = ApiKnowledgeSyncRouteImport.update({
   id: '/api/knowledge/sync',
   path: '/api/knowledge/sync',
@@ -978,6 +1014,21 @@ const ApiMcpNameLogsRoute = ApiMcpNameLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => ApiMcpNameRoute,
 } as any)
+const ApiLinksItemIdRoute = ApiLinksItemIdRouteImport.update({
+  id: '/item/$id',
+  path: '/item/$id',
+  getParentRoute: () => ApiLinksRoute,
+} as any)
+const ApiLinksGoIdRoute = ApiLinksGoIdRouteImport.update({
+  id: '/go/$id',
+  path: '/go/$id',
+  getParentRoute: () => ApiLinksRoute,
+} as any)
+const ApiLinksFoldersIdRoute = ApiLinksFoldersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiLinksFoldersRoute,
+} as any)
 const ApiHermesworldReservationsConfirmRoute =
   ApiHermesworldReservationsConfirmRouteImport.update({
     id: '/confirm',
@@ -990,6 +1041,21 @@ const ApiRunsSessionKeyRunIdAbandonRoute =
     path: '/api/runs/$sessionKey/$runId/abandon',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiLinksItemIdRestoreRoute = ApiLinksItemIdRestoreRouteImport.update({
+  id: '/restore',
+  path: '/restore',
+  getParentRoute: () => ApiLinksItemIdRoute,
+} as any)
+const ApiLinksItemIdFavoriteRoute = ApiLinksItemIdFavoriteRouteImport.update({
+  id: '/favorite',
+  path: '/favorite',
+  getParentRoute: () => ApiLinksItemIdRoute,
+} as any)
+const ApiLinksItemIdArchiveRoute = ApiLinksItemIdArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => ApiLinksItemIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -1002,6 +1068,7 @@ export interface FileRoutesByFullPath {
   '/files': typeof FilesRoute
   '/hermes-world': typeof HermesWorldRoute
   '/jobs': typeof JobsRoute
+  '/links': typeof LinksRoute
   '/mcp': typeof McpRoute
   '/memory': typeof MemoryRoute
   '/operations': typeof OperationsRoute
@@ -1043,6 +1110,7 @@ export interface FileRoutesByFullPath {
   '/api/hermes-tasks': typeof ApiHermesTasksRouteWithChildren
   '/api/history': typeof ApiHistoryRoute
   '/api/integrations': typeof ApiIntegrationsRoute
+  '/api/links': typeof ApiLinksRouteWithChildren
   '/api/local-providers': typeof ApiLocalProvidersRoute
   '/api/mcp': typeof ApiMcpRouteWithChildren
   '/api/media': typeof ApiMediaRoute
@@ -1113,6 +1181,9 @@ export interface FileRoutesByFullPath {
   '/api/knowledge/read': typeof ApiKnowledgeReadRoute
   '/api/knowledge/search': typeof ApiKnowledgeSearchRoute
   '/api/knowledge/sync': typeof ApiKnowledgeSyncRoute
+  '/api/links/folders': typeof ApiLinksFoldersRouteWithChildren
+  '/api/links/scrape': typeof ApiLinksScrapeRoute
+  '/api/links/trash-empty': typeof ApiLinksTrashEmptyRoute
   '/api/mcp/$name': typeof ApiMcpNameRouteWithChildren
   '/api/mcp/configure': typeof ApiMcpConfigureRoute
   '/api/mcp/discover': typeof ApiMcpDiscoverRoute
@@ -1149,10 +1220,16 @@ export interface FileRoutesByFullPath {
   '/api/update/status': typeof ApiUpdateStatusRoute
   '/api/update/workspace': typeof ApiUpdateWorkspaceRoute
   '/api/hermesworld/reservations/confirm': typeof ApiHermesworldReservationsConfirmRoute
+  '/api/links/folders/$id': typeof ApiLinksFoldersIdRoute
+  '/api/links/go/$id': typeof ApiLinksGoIdRoute
+  '/api/links/item/$id': typeof ApiLinksItemIdRouteWithChildren
   '/api/mcp/$name/logs': typeof ApiMcpNameLogsRoute
   '/api/mcp/hub-sources/$id': typeof ApiMcpHubSourcesIdRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
+  '/api/links/item/$id/archive': typeof ApiLinksItemIdArchiveRoute
+  '/api/links/item/$id/favorite': typeof ApiLinksItemIdFavoriteRoute
+  '/api/links/item/$id/restore': typeof ApiLinksItemIdRestoreRoute
   '/api/runs/$sessionKey/$runId/abandon': typeof ApiRunsSessionKeyRunIdAbandonRoute
 }
 export interface FileRoutesByTo {
@@ -1166,6 +1243,7 @@ export interface FileRoutesByTo {
   '/files': typeof FilesRoute
   '/hermes-world': typeof HermesWorldRoute
   '/jobs': typeof JobsRoute
+  '/links': typeof LinksRoute
   '/mcp': typeof McpRoute
   '/memory': typeof MemoryRoute
   '/operations': typeof OperationsRoute
@@ -1206,6 +1284,7 @@ export interface FileRoutesByTo {
   '/api/hermes-tasks': typeof ApiHermesTasksRouteWithChildren
   '/api/history': typeof ApiHistoryRoute
   '/api/integrations': typeof ApiIntegrationsRoute
+  '/api/links': typeof ApiLinksRouteWithChildren
   '/api/local-providers': typeof ApiLocalProvidersRoute
   '/api/mcp': typeof ApiMcpRouteWithChildren
   '/api/media': typeof ApiMediaRoute
@@ -1276,6 +1355,9 @@ export interface FileRoutesByTo {
   '/api/knowledge/read': typeof ApiKnowledgeReadRoute
   '/api/knowledge/search': typeof ApiKnowledgeSearchRoute
   '/api/knowledge/sync': typeof ApiKnowledgeSyncRoute
+  '/api/links/folders': typeof ApiLinksFoldersRouteWithChildren
+  '/api/links/scrape': typeof ApiLinksScrapeRoute
+  '/api/links/trash-empty': typeof ApiLinksTrashEmptyRoute
   '/api/mcp/$name': typeof ApiMcpNameRouteWithChildren
   '/api/mcp/configure': typeof ApiMcpConfigureRoute
   '/api/mcp/discover': typeof ApiMcpDiscoverRoute
@@ -1312,10 +1394,16 @@ export interface FileRoutesByTo {
   '/api/update/status': typeof ApiUpdateStatusRoute
   '/api/update/workspace': typeof ApiUpdateWorkspaceRoute
   '/api/hermesworld/reservations/confirm': typeof ApiHermesworldReservationsConfirmRoute
+  '/api/links/folders/$id': typeof ApiLinksFoldersIdRoute
+  '/api/links/go/$id': typeof ApiLinksGoIdRoute
+  '/api/links/item/$id': typeof ApiLinksItemIdRouteWithChildren
   '/api/mcp/$name/logs': typeof ApiMcpNameLogsRoute
   '/api/mcp/hub-sources/$id': typeof ApiMcpHubSourcesIdRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
+  '/api/links/item/$id/archive': typeof ApiLinksItemIdArchiveRoute
+  '/api/links/item/$id/favorite': typeof ApiLinksItemIdFavoriteRoute
+  '/api/links/item/$id/restore': typeof ApiLinksItemIdRestoreRoute
   '/api/runs/$sessionKey/$runId/abandon': typeof ApiRunsSessionKeyRunIdAbandonRoute
 }
 export interface FileRoutesById {
@@ -1330,6 +1418,7 @@ export interface FileRoutesById {
   '/files': typeof FilesRoute
   '/hermes-world': typeof HermesWorldRoute
   '/jobs': typeof JobsRoute
+  '/links': typeof LinksRoute
   '/mcp': typeof McpRoute
   '/memory': typeof MemoryRoute
   '/operations': typeof OperationsRoute
@@ -1371,6 +1460,7 @@ export interface FileRoutesById {
   '/api/hermes-tasks': typeof ApiHermesTasksRouteWithChildren
   '/api/history': typeof ApiHistoryRoute
   '/api/integrations': typeof ApiIntegrationsRoute
+  '/api/links': typeof ApiLinksRouteWithChildren
   '/api/local-providers': typeof ApiLocalProvidersRoute
   '/api/mcp': typeof ApiMcpRouteWithChildren
   '/api/media': typeof ApiMediaRoute
@@ -1441,6 +1531,9 @@ export interface FileRoutesById {
   '/api/knowledge/read': typeof ApiKnowledgeReadRoute
   '/api/knowledge/search': typeof ApiKnowledgeSearchRoute
   '/api/knowledge/sync': typeof ApiKnowledgeSyncRoute
+  '/api/links/folders': typeof ApiLinksFoldersRouteWithChildren
+  '/api/links/scrape': typeof ApiLinksScrapeRoute
+  '/api/links/trash-empty': typeof ApiLinksTrashEmptyRoute
   '/api/mcp/$name': typeof ApiMcpNameRouteWithChildren
   '/api/mcp/configure': typeof ApiMcpConfigureRoute
   '/api/mcp/discover': typeof ApiMcpDiscoverRoute
@@ -1477,10 +1570,16 @@ export interface FileRoutesById {
   '/api/update/status': typeof ApiUpdateStatusRoute
   '/api/update/workspace': typeof ApiUpdateWorkspaceRoute
   '/api/hermesworld/reservations/confirm': typeof ApiHermesworldReservationsConfirmRoute
+  '/api/links/folders/$id': typeof ApiLinksFoldersIdRoute
+  '/api/links/go/$id': typeof ApiLinksGoIdRoute
+  '/api/links/item/$id': typeof ApiLinksItemIdRouteWithChildren
   '/api/mcp/$name/logs': typeof ApiMcpNameLogsRoute
   '/api/mcp/hub-sources/$id': typeof ApiMcpHubSourcesIdRoute
   '/api/sessions/$sessionKey/active-run': typeof ApiSessionsSessionKeyActiveRunRoute
   '/api/sessions/$sessionKey/status': typeof ApiSessionsSessionKeyStatusRoute
+  '/api/links/item/$id/archive': typeof ApiLinksItemIdArchiveRoute
+  '/api/links/item/$id/favorite': typeof ApiLinksItemIdFavoriteRoute
+  '/api/links/item/$id/restore': typeof ApiLinksItemIdRestoreRoute
   '/api/runs/$sessionKey/$runId/abandon': typeof ApiRunsSessionKeyRunIdAbandonRoute
 }
 export interface FileRouteTypes {
@@ -1496,6 +1595,7 @@ export interface FileRouteTypes {
     | '/files'
     | '/hermes-world'
     | '/jobs'
+    | '/links'
     | '/mcp'
     | '/memory'
     | '/operations'
@@ -1537,6 +1637,7 @@ export interface FileRouteTypes {
     | '/api/hermes-tasks'
     | '/api/history'
     | '/api/integrations'
+    | '/api/links'
     | '/api/local-providers'
     | '/api/mcp'
     | '/api/media'
@@ -1607,6 +1708,9 @@ export interface FileRouteTypes {
     | '/api/knowledge/read'
     | '/api/knowledge/search'
     | '/api/knowledge/sync'
+    | '/api/links/folders'
+    | '/api/links/scrape'
+    | '/api/links/trash-empty'
     | '/api/mcp/$name'
     | '/api/mcp/configure'
     | '/api/mcp/discover'
@@ -1643,10 +1747,16 @@ export interface FileRouteTypes {
     | '/api/update/status'
     | '/api/update/workspace'
     | '/api/hermesworld/reservations/confirm'
+    | '/api/links/folders/$id'
+    | '/api/links/go/$id'
+    | '/api/links/item/$id'
     | '/api/mcp/$name/logs'
     | '/api/mcp/hub-sources/$id'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
+    | '/api/links/item/$id/archive'
+    | '/api/links/item/$id/favorite'
+    | '/api/links/item/$id/restore'
     | '/api/runs/$sessionKey/$runId/abandon'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1660,6 +1770,7 @@ export interface FileRouteTypes {
     | '/files'
     | '/hermes-world'
     | '/jobs'
+    | '/links'
     | '/mcp'
     | '/memory'
     | '/operations'
@@ -1700,6 +1811,7 @@ export interface FileRouteTypes {
     | '/api/hermes-tasks'
     | '/api/history'
     | '/api/integrations'
+    | '/api/links'
     | '/api/local-providers'
     | '/api/mcp'
     | '/api/media'
@@ -1770,6 +1882,9 @@ export interface FileRouteTypes {
     | '/api/knowledge/read'
     | '/api/knowledge/search'
     | '/api/knowledge/sync'
+    | '/api/links/folders'
+    | '/api/links/scrape'
+    | '/api/links/trash-empty'
     | '/api/mcp/$name'
     | '/api/mcp/configure'
     | '/api/mcp/discover'
@@ -1806,10 +1921,16 @@ export interface FileRouteTypes {
     | '/api/update/status'
     | '/api/update/workspace'
     | '/api/hermesworld/reservations/confirm'
+    | '/api/links/folders/$id'
+    | '/api/links/go/$id'
+    | '/api/links/item/$id'
     | '/api/mcp/$name/logs'
     | '/api/mcp/hub-sources/$id'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
+    | '/api/links/item/$id/archive'
+    | '/api/links/item/$id/favorite'
+    | '/api/links/item/$id/restore'
     | '/api/runs/$sessionKey/$runId/abandon'
   id:
     | '__root__'
@@ -1823,6 +1944,7 @@ export interface FileRouteTypes {
     | '/files'
     | '/hermes-world'
     | '/jobs'
+    | '/links'
     | '/mcp'
     | '/memory'
     | '/operations'
@@ -1864,6 +1986,7 @@ export interface FileRouteTypes {
     | '/api/hermes-tasks'
     | '/api/history'
     | '/api/integrations'
+    | '/api/links'
     | '/api/local-providers'
     | '/api/mcp'
     | '/api/media'
@@ -1934,6 +2057,9 @@ export interface FileRouteTypes {
     | '/api/knowledge/read'
     | '/api/knowledge/search'
     | '/api/knowledge/sync'
+    | '/api/links/folders'
+    | '/api/links/scrape'
+    | '/api/links/trash-empty'
     | '/api/mcp/$name'
     | '/api/mcp/configure'
     | '/api/mcp/discover'
@@ -1970,10 +2096,16 @@ export interface FileRouteTypes {
     | '/api/update/status'
     | '/api/update/workspace'
     | '/api/hermesworld/reservations/confirm'
+    | '/api/links/folders/$id'
+    | '/api/links/go/$id'
+    | '/api/links/item/$id'
     | '/api/mcp/$name/logs'
     | '/api/mcp/hub-sources/$id'
     | '/api/sessions/$sessionKey/active-run'
     | '/api/sessions/$sessionKey/status'
+    | '/api/links/item/$id/archive'
+    | '/api/links/item/$id/favorite'
+    | '/api/links/item/$id/restore'
     | '/api/runs/$sessionKey/$runId/abandon'
   fileRoutesById: FileRoutesById
 }
@@ -1988,6 +2120,7 @@ export interface RootRouteChildren {
   FilesRoute: typeof FilesRoute
   HermesWorldRoute: typeof HermesWorldRoute
   JobsRoute: typeof JobsRoute
+  LinksRoute: typeof LinksRoute
   McpRoute: typeof McpRoute
   MemoryRoute: typeof MemoryRoute
   OperationsRoute: typeof OperationsRoute
@@ -2029,6 +2162,7 @@ export interface RootRouteChildren {
   ApiHermesTasksRoute: typeof ApiHermesTasksRouteWithChildren
   ApiHistoryRoute: typeof ApiHistoryRoute
   ApiIntegrationsRoute: typeof ApiIntegrationsRoute
+  ApiLinksRoute: typeof ApiLinksRouteWithChildren
   ApiLocalProvidersRoute: typeof ApiLocalProvidersRoute
   ApiMcpRoute: typeof ApiMcpRouteWithChildren
   ApiMediaRoute: typeof ApiMediaRoute
@@ -2216,6 +2350,13 @@ declare module '@tanstack/react-router' {
       path: '/mcp'
       fullPath: '/mcp'
       preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/links': {
+      id: '/links'
+      path: '/links'
+      fullPath: '/links'
+      preLoaderRoute: typeof LinksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jobs': {
@@ -2666,6 +2807,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLocalProvidersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/links': {
+      id: '/api/links'
+      path: '/api/links'
+      fullPath: '/api/links'
+      preLoaderRoute: typeof ApiLinksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/integrations': {
       id: '/api/integrations'
       path: '/api/integrations'
@@ -3093,6 +3241,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMcpNameRouteImport
       parentRoute: typeof ApiMcpRoute
     }
+    '/api/links/trash-empty': {
+      id: '/api/links/trash-empty'
+      path: '/trash-empty'
+      fullPath: '/api/links/trash-empty'
+      preLoaderRoute: typeof ApiLinksTrashEmptyRouteImport
+      parentRoute: typeof ApiLinksRoute
+    }
+    '/api/links/scrape': {
+      id: '/api/links/scrape'
+      path: '/scrape'
+      fullPath: '/api/links/scrape'
+      preLoaderRoute: typeof ApiLinksScrapeRouteImport
+      parentRoute: typeof ApiLinksRoute
+    }
+    '/api/links/folders': {
+      id: '/api/links/folders'
+      path: '/folders'
+      fullPath: '/api/links/folders'
+      preLoaderRoute: typeof ApiLinksFoldersRouteImport
+      parentRoute: typeof ApiLinksRoute
+    }
     '/api/knowledge/sync': {
       id: '/api/knowledge/sync'
       path: '/api/knowledge/sync'
@@ -3233,6 +3402,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMcpNameLogsRouteImport
       parentRoute: typeof ApiMcpNameRoute
     }
+    '/api/links/item/$id': {
+      id: '/api/links/item/$id'
+      path: '/item/$id'
+      fullPath: '/api/links/item/$id'
+      preLoaderRoute: typeof ApiLinksItemIdRouteImport
+      parentRoute: typeof ApiLinksRoute
+    }
+    '/api/links/go/$id': {
+      id: '/api/links/go/$id'
+      path: '/go/$id'
+      fullPath: '/api/links/go/$id'
+      preLoaderRoute: typeof ApiLinksGoIdRouteImport
+      parentRoute: typeof ApiLinksRoute
+    }
+    '/api/links/folders/$id': {
+      id: '/api/links/folders/$id'
+      path: '/$id'
+      fullPath: '/api/links/folders/$id'
+      preLoaderRoute: typeof ApiLinksFoldersIdRouteImport
+      parentRoute: typeof ApiLinksFoldersRoute
+    }
     '/api/hermesworld/reservations/confirm': {
       id: '/api/hermesworld/reservations/confirm'
       path: '/confirm'
@@ -3246,6 +3436,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/runs/$sessionKey/$runId/abandon'
       preLoaderRoute: typeof ApiRunsSessionKeyRunIdAbandonRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/links/item/$id/restore': {
+      id: '/api/links/item/$id/restore'
+      path: '/restore'
+      fullPath: '/api/links/item/$id/restore'
+      preLoaderRoute: typeof ApiLinksItemIdRestoreRouteImport
+      parentRoute: typeof ApiLinksItemIdRoute
+    }
+    '/api/links/item/$id/favorite': {
+      id: '/api/links/item/$id/favorite'
+      path: '/favorite'
+      fullPath: '/api/links/item/$id/favorite'
+      preLoaderRoute: typeof ApiLinksItemIdFavoriteRouteImport
+      parentRoute: typeof ApiLinksItemIdRoute
+    }
+    '/api/links/item/$id/archive': {
+      id: '/api/links/item/$id/archive'
+      path: '/archive'
+      fullPath: '/api/links/item/$id/archive'
+      preLoaderRoute: typeof ApiLinksItemIdArchiveRouteImport
+      parentRoute: typeof ApiLinksItemIdRoute
     }
   }
 }
@@ -3321,6 +3532,54 @@ const ApiHermesTasksRouteChildren: ApiHermesTasksRouteChildren = {
 
 const ApiHermesTasksRouteWithChildren = ApiHermesTasksRoute._addFileChildren(
   ApiHermesTasksRouteChildren,
+)
+
+interface ApiLinksFoldersRouteChildren {
+  ApiLinksFoldersIdRoute: typeof ApiLinksFoldersIdRoute
+}
+
+const ApiLinksFoldersRouteChildren: ApiLinksFoldersRouteChildren = {
+  ApiLinksFoldersIdRoute: ApiLinksFoldersIdRoute,
+}
+
+const ApiLinksFoldersRouteWithChildren = ApiLinksFoldersRoute._addFileChildren(
+  ApiLinksFoldersRouteChildren,
+)
+
+interface ApiLinksItemIdRouteChildren {
+  ApiLinksItemIdArchiveRoute: typeof ApiLinksItemIdArchiveRoute
+  ApiLinksItemIdFavoriteRoute: typeof ApiLinksItemIdFavoriteRoute
+  ApiLinksItemIdRestoreRoute: typeof ApiLinksItemIdRestoreRoute
+}
+
+const ApiLinksItemIdRouteChildren: ApiLinksItemIdRouteChildren = {
+  ApiLinksItemIdArchiveRoute: ApiLinksItemIdArchiveRoute,
+  ApiLinksItemIdFavoriteRoute: ApiLinksItemIdFavoriteRoute,
+  ApiLinksItemIdRestoreRoute: ApiLinksItemIdRestoreRoute,
+}
+
+const ApiLinksItemIdRouteWithChildren = ApiLinksItemIdRoute._addFileChildren(
+  ApiLinksItemIdRouteChildren,
+)
+
+interface ApiLinksRouteChildren {
+  ApiLinksFoldersRoute: typeof ApiLinksFoldersRouteWithChildren
+  ApiLinksScrapeRoute: typeof ApiLinksScrapeRoute
+  ApiLinksTrashEmptyRoute: typeof ApiLinksTrashEmptyRoute
+  ApiLinksGoIdRoute: typeof ApiLinksGoIdRoute
+  ApiLinksItemIdRoute: typeof ApiLinksItemIdRouteWithChildren
+}
+
+const ApiLinksRouteChildren: ApiLinksRouteChildren = {
+  ApiLinksFoldersRoute: ApiLinksFoldersRouteWithChildren,
+  ApiLinksScrapeRoute: ApiLinksScrapeRoute,
+  ApiLinksTrashEmptyRoute: ApiLinksTrashEmptyRoute,
+  ApiLinksGoIdRoute: ApiLinksGoIdRoute,
+  ApiLinksItemIdRoute: ApiLinksItemIdRouteWithChildren,
+}
+
+const ApiLinksRouteWithChildren = ApiLinksRoute._addFileChildren(
+  ApiLinksRouteChildren,
 )
 
 interface ApiMcpNameRouteChildren {
@@ -3473,6 +3732,7 @@ const rootRouteChildren: RootRouteChildren = {
   FilesRoute: FilesRoute,
   HermesWorldRoute: HermesWorldRoute,
   JobsRoute: JobsRoute,
+  LinksRoute: LinksRoute,
   McpRoute: McpRoute,
   MemoryRoute: MemoryRoute,
   OperationsRoute: OperationsRoute,
@@ -3514,6 +3774,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHermesTasksRoute: ApiHermesTasksRouteWithChildren,
   ApiHistoryRoute: ApiHistoryRoute,
   ApiIntegrationsRoute: ApiIntegrationsRoute,
+  ApiLinksRoute: ApiLinksRouteWithChildren,
   ApiLocalProvidersRoute: ApiLocalProvidersRoute,
   ApiMcpRoute: ApiMcpRouteWithChildren,
   ApiMediaRoute: ApiMediaRoute,

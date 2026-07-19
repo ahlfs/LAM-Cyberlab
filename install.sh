@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Hermes Workspace — one-liner installer
+# Lam Cyberlab — one-liner installer
+# (personal fork of Hermes Workspace by outsourc-e: https://github.com/outsourc-e/hermes-workspace)
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/outsourc-e/hermes-workspace/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/ahlfs/LAM-Cyberlab/main/install.sh | bash
 #
 # What it does:
 #   1. Verifies Node 22+, git, pnpm
 #   2. Installs hermes-agent via Nous's official upstream installer
-#   3. Clones hermes-workspace
+#   3. Clones this repo
 #   4. Sets up .env, enables the Hermes API server, installs deps,
 #      and links bundled skills
 #
@@ -15,7 +16,7 @@
 
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/outsourc-e/hermes-workspace.git}"
+REPO_URL="${REPO_URL:-https://github.com/ahlfs/LAM-Cyberlab.git}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/hermes-workspace}"
 GATEWAY_PORT="${GATEWAY_PORT:-8642}"
 NOUS_INSTALLER_URL="${NOUS_INSTALLER_URL:-https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh}"
@@ -34,8 +35,8 @@ banner() {
   cat <<'EOF'
 
    ╭────────────────────────────────────────────╮
-   │  HERMES WORKSPACE — zero-fork installer   │
-   │  outsourc-e/hermes-workspace               │
+   │  LAM CYBERLAB — installer                 │
+   │  ahlfs/LAM-Cyberlab                        │
    ╰────────────────────────────────────────────╯
 
 EOF

@@ -7,6 +7,7 @@ import {
   Clock01Icon,
   CommandLineIcon,
   CpuIcon,
+  Link01Icon,
   DashboardSquare01Icon,
   File01Icon,
   McpServerIcon,
@@ -110,6 +111,13 @@ export const MOBILE_NAV_TABS: Array<TabItem> = [
     icon: BrainIcon,
     to: '/memory',
     match: (p) => p.startsWith('/memory'),
+  },
+  {
+    id: 'links',
+    label: 'Links',
+    icon: Link01Icon,
+    to: '/links',
+    match: (p) => p.startsWith('/links'),
   },
   {
     id: 'skills',

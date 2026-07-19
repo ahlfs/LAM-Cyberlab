@@ -12,6 +12,7 @@ import {
   ComputerTerminal01Icon,
   CpuIcon,
   DashboardSquare01Icon,
+  Link01Icon,
   File01Icon,
   McpServerIcon,
   MessageMultiple01Icon,
@@ -586,6 +587,7 @@ function ChatSidebarComponent({
   const isTerminalActive = pathname === '/terminal'
   const isJobsActive = pathname === '/jobs'
   const isMemoryActive = pathname === '/memory'
+  const isLinksActive = pathname === '/links'
   const isTasksActive = pathname === '/tasks'
   const isConductorActive = pathname === '/conductor'
   const isOperationsActive = pathname === '/operations'
@@ -880,6 +882,13 @@ function ChatSidebarComponent({
       icon: BrainIcon,
       label: t('nav.memory'),
       active: isMemoryActive,
+    },
+    {
+      kind: 'link',
+      to: '/links',
+      icon: Link01Icon,
+      label: 'Links',
+      active: isLinksActive,
     },
     {
       kind: 'link',
