@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   computeCpuPct,
+  parseDiskStats,
   parseLoadavgProcs,
   parseMeminfo,
   parseNetDev,
@@ -121,6 +122,41 @@ describe('parseNetDev', () => {
       '  eth0: 100 1 0 0 0 0 0 0 50 1 0 0 0 0 0 0\n    lo: 999 1 0 0 0 0 0 0 999 1 0 0 0 0 0 0',
     )
     expect(totals.ifaces).toEqual([{ name: 'eth0', rx: 100, tx: 50 }])
+  })
+})
+
+describe('parseDiskStats', () => {
+  it('keeps whole-disk devices, drops partitions and loop devices', () => {
+    const sample = [
+      '   8       0 sda 100 20 5000 500 200 50 8000 800 0 300 1300',
+      '   8       1 sda1 90 15 4500 400 150 40 7000 700 0 250 1100',
+      ' 259       0 nvme0n1 500 10 20000 200 300 5 15000 300 0 100 500',
+      ' 259       1 nvme0n1p1 400 5 18000 150 250 3 13000 250 0 80 400',
+      '   7       0 loop0 10 0 200 5 0 0 0 0 0 5 5',
+    ].join('\n')
+    const stats = parseDiskStats(sample)
+    expect([...stats.keys()]).toEqual(['sda', 'nvme0n1'])
+    expect(stats.get('sda')).toEqual({ sectorsRead: 5000, sectorsWritten: 8000 })
+    expect(stats.get('nvme0n1')).toEqual({
+      sectorsRead: 20000,
+      sectorsWritten: 15000,
+    })
+  })
+
+  it('recognizes vd/hd/xvd and mmcblk whole-disk names', () => {
+    const sample = [
+      ' 253       0 vda 1 0 10 0 1 0 10 0 0 0 0',
+      '  ' + '3       0 hda 1 0 10 0 1 0 10 0 0 0 0',
+      ' 202       0 xvda 1 0 10 0 1 0 10 0 0 0 0',
+      ' 179       0 mmcblk0 1 0 10 0 1 0 10 0 0 0 0',
+      ' 179       1 mmcblk0p1 1 0 10 0 1 0 10 0 0 0 0',
+    ].join('\n')
+    const stats = parseDiskStats(sample)
+    expect([...stats.keys()].sort()).toEqual(['hda', 'mmcblk0', 'vda', 'xvda'])
+  })
+
+  it('ignores malformed lines with too few fields', () => {
+    expect(parseDiskStats('garbage line\n').size).toBe(0)
   })
 })
 

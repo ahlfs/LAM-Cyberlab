@@ -1508,12 +1508,12 @@ function AppearanceContent() {
 }
 
 const ENTERPRISE_THEME_FAMILIES: Array<ThemeId> = [
+  'dracula',
   'claude-nous',
   'matrix',
   'claude-official',
   'claude-classic',
   'claude-slate',
-  'dracula',
 ]
 
 const ENTERPRISE_THEMES = THEMES.map((theme) => ({
@@ -1660,7 +1660,7 @@ function ThemeSwatch({
 function EnterpriseThemePicker() {
   const { updateSettings } = useSettings()
   const [current, setCurrent] = useState(() => {
-    if (typeof window === 'undefined') return 'claude-nous'
+    if (typeof window === 'undefined') return 'dracula'
     return getTheme()
   })
   const currentMode = isDarkTheme(current) ? 'dark' : 'light'

@@ -21,6 +21,18 @@ export const THEMES: Array<{
   icon: string
 }> = [
   {
+    id: 'dracula',
+    label: 'Dracula Soft',
+    description: 'Muted Dracula palette, dusk purple on soft charcoal',
+    icon: String.fromCodePoint(0x1f987),
+  },
+  {
+    id: 'dracula-light',
+    label: 'Dracula Light',
+    description: 'Alucard-style cream paper with deep violet accents',
+    icon: String.fromCodePoint(0x1f987),
+  },
+  {
     id: 'claude-nous',
     label: 'Nous',
     description: 'Deep teal background, cream accent — matches Nous Research chrome',
@@ -92,22 +104,10 @@ export const THEMES: Array<{
     description: 'Cold steel and teal — cyberpunk interface in daylight',
     icon: '🌌',
   },
-  {
-    id: 'dracula',
-    label: 'Dracula Soft',
-    description: 'Muted Dracula palette — dusk purple on soft charcoal',
-    icon: '🦇',
-  },
-  {
-    id: 'dracula-light',
-    label: 'Dracula Light',
-    description: 'Alucard-style cream paper with deep violet accents',
-    icon: '🦇',
-  },
 ]
 
 const STORAGE_KEY = 'claude-theme'
-const DEFAULT_THEME: ThemeId = 'claude-nous'
+const DEFAULT_THEME: ThemeId = 'dracula'
 const THEME_SET = new Set<ThemeId>(THEMES.map((theme) => theme.id))
 const LIGHT_THEME_MAP: Record<
   Exclude<ThemeId, `${string}-light`>,

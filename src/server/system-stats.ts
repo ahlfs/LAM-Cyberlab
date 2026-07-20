@@ -27,6 +27,12 @@ export type InterfaceRate = {
   txBytesPerSec: number
 }
 
+export type DiskIoRate = {
+  device: string
+  readBytesPerSec: number
+  writeBytesPerSec: number
+}
+
 export type SystemStats = {
   sampledAt: number
   hostname: string
@@ -51,6 +57,7 @@ export type SystemStats = {
   /** From /proc/loadavg field 4 ("runnable/total"); null off-Linux. */
   procs: { running: number; total: number } | null
   tempC: number | null
+  diskIo: DiskIoRate[] | null
 }
 
 /** [user, nice, sys, idle, irq] per core, in ms (node:os units). */
@@ -179,6 +186,31 @@ export function parseNetDev(text: string): {
   return { rx, tx, ifaces }
 }
 
+/** Whole-disk device names only — excludes partitions (sda1, nvme0n1p1, ...). */
+const WHOLE_DISK_RE = /^(sd[a-z]+|vd[a-z]+|hd[a-z]+|xvd[a-z]+|nvme\d+n\d+|mmcblk\d+)$/
+
+export type DiskStatsSnapshot = Map<
+  string,
+  { sectorsRead: number; sectorsWritten: number }
+>
+
+export function parseDiskStats(text: string): DiskStatsSnapshot {
+  const stats: DiskStatsSnapshot = new Map()
+  for (const line of text.split('\n')) {
+    const fields = line.trim().split(/\s+/)
+    // major minor name reads_completed reads_merged sectors_read
+    // time_reading writes_completed writes_merged sectors_written ...
+    if (fields.length < 10) continue
+    const device = fields[2]
+    if (!device || !WHOLE_DISK_RE.test(device)) continue
+    stats.set(device, {
+      sectorsRead: Number(fields[5]) || 0,
+      sectorsWritten: Number(fields[9]) || 0,
+    })
+  }
+  return stats
+}
+
 export function parseLoadavgProcs(
   text: string,
 ): { running: number; total: number } | null {
@@ -263,6 +295,16 @@ async function readNetTotals(): Promise<NetSnapshot | null> {
   }
 }
 
+const SECTOR_BYTES = 512
+
+async function readDiskStatsSnapshot(): Promise<DiskStatsSnapshot | null> {
+  try {
+    return parseDiskStats(await fs.readFile('/proc/diskstats', 'utf-8'))
+  } catch {
+    return null
+  }
+}
+
 async function readProcs(): Promise<SystemStats['procs']> {
   try {
     return parseLoadavgProcs(await fs.readFile('/proc/loadavg', 'utf-8'))
@@ -304,6 +346,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 /** Module-level baselines for rate computation between polls. */
 let prevCpu: { coreTimes: CpuCoreTimes[]; at: number } | null = null
 let prevNet: { snapshot: NetSnapshot; at: number } | null = null
+let prevDiskIo: { snapshot: DiskStatsSnapshot; at: number } | null = null
 
 /** Minimum delta window for a meaningful rate; below this, re-sample. */
 const MIN_RATE_WINDOW_MS = 150
@@ -311,6 +354,7 @@ const MIN_RATE_WINDOW_MS = 150
 export async function collectSystemStats(): Promise<SystemStats> {
   let cpuNow = snapshotCpu()
   let netNow = await readNetTotals()
+  let diskIoNow = await readDiskStatsSnapshot()
   let now = Date.now()
 
   // First call (or hot-reload reset): seed baselines, wait a beat, and
@@ -318,9 +362,11 @@ export async function collectSystemStats(): Promise<SystemStats> {
   if (!prevCpu || now - prevCpu.at < MIN_RATE_WINDOW_MS) {
     prevCpu = { coreTimes: cpuNow, at: now }
     if (netNow) prevNet = { snapshot: netNow, at: now }
+    if (diskIoNow) prevDiskIo = { snapshot: diskIoNow, at: now }
     await sleep(MIN_RATE_WINDOW_MS)
     cpuNow = snapshotCpu()
     netNow = await readNetTotals()
+    diskIoNow = await readDiskStatsSnapshot()
     now = Date.now()
   }
 
@@ -357,6 +403,32 @@ export async function collectSystemStats(): Promise<SystemStats> {
     prevNet = { snapshot: netNow, at: now }
   }
 
+  let diskIo: SystemStats['diskIo'] = null
+  if (diskIoNow) {
+    if (prevDiskIo && now > prevDiskIo.at) {
+      const dt = (now - prevDiskIo.at) / 1000
+      diskIo = [...diskIoNow.entries()]
+        .map(([device, s]) => {
+          const p = prevDiskIo!.snapshot.get(device)
+          return {
+            device,
+            readBytesPerSec: p
+              ? Math.max(0, ((s.sectorsRead - p.sectorsRead) * SECTOR_BYTES) / dt)
+              : 0,
+            writeBytesPerSec: p
+              ? Math.max(0, ((s.sectorsWritten - p.sectorsWritten) * SECTOR_BYTES) / dt)
+              : 0,
+          }
+        })
+        .filter((d) => d.readBytesPerSec + d.writeBytesPerSec > 0)
+        .sort(
+          (a, b) =>
+            b.readBytesPerSec + b.writeBytesPerSec - (a.readBytesPerSec + a.writeBytesPerSec),
+        )
+    }
+    prevDiskIo = { snapshot: diskIoNow, at: now }
+  }
+
   const [{ memory, swap }, disks, tempC, procs] = await Promise.all([
     readMemory(),
     readDisks(),
@@ -378,5 +450,6 @@ export async function collectSystemStats(): Promise<SystemStats> {
     network,
     procs,
     tempC,
+    diskIo,
   }
 }

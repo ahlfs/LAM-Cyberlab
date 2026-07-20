@@ -102,8 +102,8 @@ export function DashboardOverflowPanel({ open, onClose }: Props) {
 
   // Detect actual current theme family from data-theme attribute
   const currentDataTheme = typeof document !== 'undefined'
-    ? (document.documentElement.getAttribute('data-theme') || 'claude-nous')
-    : 'claude-nous'
+    ? (document.documentElement.getAttribute('data-theme') || 'dracula')
+    : 'dracula'
   const isDark = !currentDataTheme.endsWith('-light')
   const themeIcon = isDark ? Sun02Icon : Moon02Icon
   const themeLabel = isDark ? 'Light mode' : 'Dark mode'

@@ -76,8 +76,8 @@ function ThemeToggleMini() {
   // Detect dark/light from actual data-theme attribute
   const currentDataTheme =
     typeof document !== 'undefined'
-      ? document.documentElement.getAttribute('data-theme') || 'claude-nous'
-      : 'claude-nous'
+      ? document.documentElement.getAttribute('data-theme') || 'dracula'
+      : 'dracula'
   const isDark = !currentDataTheme.endsWith('-light')
 
   // Map between dark and light counterparts — must include all theme families
@@ -187,7 +187,7 @@ function NavItem({
     'w-full h-auto min-h-11 gap-2.5 py-2 md:min-h-0',
     isCollapsed ? 'justify-center px-0' : 'justify-start px-3',
     item.active
-      ? 'bg-accent-500/10 text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-900/300/15'
+      ? 'bg-[var(--theme-accent-subtle)] text-accent-500 hover:bg-[var(--theme-accent-subtle)]'
       : 'text-primary-900 hover:bg-primary-200 dark:hover:bg-primary-800',
   )
 
@@ -1060,7 +1060,7 @@ function ChatSidebarComponent({
               buttonVariants({ variant: 'ghost', size: 'sm' }),
               'w-full justify-start gap-2.5 px-3 py-2 text-primary-900 hover:bg-primary-200 dark:hover:bg-primary-800',
               isNewSessionActive &&
-                'bg-accent-500/10 text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-900/300/15',
+                'bg-[var(--theme-accent-subtle)] text-accent-500 hover:bg-[var(--theme-accent-subtle)]',
             )}
             data-tour="new-session"
           >
@@ -1087,7 +1087,7 @@ function ChatSidebarComponent({
               buttonVariants({ variant: 'ghost', size: 'sm' }),
               'group w-full justify-start gap-2.5 px-3 py-2 text-primary-900 hover:bg-primary-200 dark:hover:bg-primary-800',
               isPlaygroundActive &&
-                'bg-accent-500/10 text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-900/300/15',
+                'bg-[var(--theme-accent-subtle)] text-accent-500 hover:bg-[var(--theme-accent-subtle)]',
             )}
             data-tour="hermesworld"
           >

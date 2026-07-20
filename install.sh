@@ -17,7 +17,7 @@
 set -euo pipefail
 
 REPO_URL="${REPO_URL:-https://github.com/ahlfs/LAM-Cyberlab.git}"
-INSTALL_DIR="${INSTALL_DIR:-$HOME/hermes-workspace}"
+INSTALL_DIR="${INSTALL_DIR:-$HOME/lam-cyberlab}"
 GATEWAY_PORT="${GATEWAY_PORT:-8642}"
 NOUS_INSTALLER_URL="${NOUS_INSTALLER_URL:-https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh}"
 
@@ -155,7 +155,7 @@ else
   if ! command -v hermes &>/dev/null; then
     red "  hermes-agent installed, but 'hermes' is not on PATH in this shell."
     yellow "  Open a new shell (or: source ~/.bashrc / ~/.zshrc) and re-run:"
-    yellow "    curl -fsSL https://hermes-workspace.com/install.sh | bash"
+    yellow "    curl -fsSL https://raw.githubusercontent.com/ahlfs/LAM-Cyberlab/main/install.sh | bash"
     exit 1
   fi
   green "  hermes-agent installed ✓ ($(command -v hermes))"

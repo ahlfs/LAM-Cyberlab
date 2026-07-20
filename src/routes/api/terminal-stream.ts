@@ -117,6 +117,17 @@ export const Route = createFileRoute('/api/terminal-stream')({
 
             send('session', { sessionId: session.id, reattach: isReattach })
 
+            // Reattaching gets no live output until the shell prints
+            // something new — replay recent history so the terminal doesn't
+            // look blank/dead after navigating away and back. See the
+            // scrollback comment on TerminalSession for the size cap.
+            if (isReattach) {
+              const scrollback = session.getScrollback()
+              if (scrollback) {
+                send('data', { data: scrollback })
+              }
+            }
+
             const handleEvent = (evt: { event: string; payload: unknown }) => {
               if (evt.event === 'data') {
                 send('data', evt.payload)

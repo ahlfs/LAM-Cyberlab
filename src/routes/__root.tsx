@@ -41,7 +41,7 @@ import { LoginScreen } from '@/components/auth/login-screen'
 // (production) and vite.config.ts (dev/preview). Leave it that way.
 
 const THEME_STORAGE_KEY = 'claude-theme'
-const DEFAULT_THEME = 'claude-nous'
+const DEFAULT_THEME = 'dracula'
 const VALID_THEMES = [
   'claude-nous',
   'claude-nous-light',
@@ -113,10 +113,10 @@ const themeColorScript = `
 `
 
 const DEFAULT_SPLASH_HTML = `
-<img src="/claude-avatar.webp" alt="Hermes Agent" style="width:80px;height:80px;margin-bottom:20px;border-radius:16px;filter:drop-shadow(0 8px 32px color-mix(in srgb,#FFAC02 45%, transparent))" />
-<div style="font:700 26px/1 Inter,system-ui,-apple-system,sans-serif;letter-spacing:0.08em;color:#FFE6CB;margin-bottom:8px">LAM CYBERLAB</div>
-<div style="font:400 14px/1 system-ui,-apple-system,sans-serif;letter-spacing:0.04em;color:#9CB2AE">Workspace</div>
-<div style="margin-top:28px;width:140px;height:3px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;position:relative"><div id="splash-bar" style="width:0%;height:100%;background:#FFAC02;border-radius:3px;transition:width 0.4s ease"></div></div>
+<img src="/claude-avatar.webp" alt="Hermes Agent" style="width:80px;height:80px;margin-bottom:20px;border-radius:16px;filter:drop-shadow(0 8px 32px color-mix(in srgb,#bf9eee 45%, transparent))" />
+<div style="font:700 26px/1 Inter,system-ui,-apple-system,sans-serif;letter-spacing:0.08em;color:#f6f6f4;margin-bottom:8px">LAM CYBERLAB</div>
+<div style="font:400 14px/1 system-ui,-apple-system,sans-serif;letter-spacing:0.04em;color:#7b7f8b">Workspace</div>
+<div style="margin-top:28px;width:140px;height:3px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;position:relative"><div id="splash-bar" style="width:0%;height:100%;background:#bf9eee;border-radius:3px;transition:width 0.4s ease"></div></div>
 `
 
 export const Route = createRootRoute({
@@ -445,7 +445,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             if (location.pathname === '/hermes-world' || location.pathname.indexOf('/hermes-world/') === 0 || location.pathname === '/world' || location.pathname.indexOf('/world/') === 0) return;
             var d = document.getElementById('splash-screen');
             if (!d) return;
-            var bg = '#031A1A', txt = '#F8F1E3', muted = '#9CB2AE', accent = '#FFAC02';
+            var bg = '#282A36', txt = '#f6f6f4', muted = '#7b7f8b', accent = '#bf9eee';
             try {
               var theme = localStorage.getItem('${THEME_STORAGE_KEY}') || '${DEFAULT_THEME}';
               if (theme === 'claude-nous') {

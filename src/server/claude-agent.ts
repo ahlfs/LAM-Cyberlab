@@ -158,7 +158,7 @@ export async function startClaudeAgent(): Promise<StartClaudeAgentResult> {
         return {
           ok: false,
           error:
-            "hermes-agent not found. Run the installer: curl -fsSL https://hermes-workspace.com/install.sh | bash",
+            "hermes-agent not found. Run the installer: curl -fsSL https://raw.githubusercontent.com/ahlfs/LAM-Cyberlab/main/install.sh | bash",
         }
       }
 

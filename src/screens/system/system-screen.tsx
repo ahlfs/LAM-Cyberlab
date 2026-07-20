@@ -17,6 +17,11 @@ import { formatUptime } from '@/screens/dashboard/lib/formatters'
  */
 
 const POLL_MS = 2000
+// Services/processes poll slower than CPU/RAM: a service check makes real
+// network calls and a process scan reads every /proc/pid dir, so checking
+// every 2s the way CPU/RAM does would be wasteful for data that a human is
+// just glancing at to catch something being down.
+const POLL_MS_SLOW = 5000
 const HISTORY_CAP = 150 // ~5 min at POLL_MS
 const MAX_IFACE_ROWS = 6
 
@@ -585,6 +590,518 @@ function StoragePanel({ stats }: { stats: SystemStats }) {
           )
         })}
       </ul>
+      {stats.diskIo && stats.diskIo.length > 0 ? (
+        <div
+          className="flex flex-col gap-1.5 border-t pt-2.5"
+          style={{ borderColor: 'var(--theme-border)' }}
+        >
+          <span
+            className="font-mono text-[9px] uppercase tracking-[0.1em]"
+            style={{ color: 'var(--theme-muted)' }}
+          >
+            I/O
+          </span>
+          <ul className="flex flex-col gap-1">
+            {stats.diskIo.map((d) => (
+              <li
+                key={d.device}
+                className="flex items-center justify-between gap-2 font-mono text-[10px] tabular-nums"
+              >
+                <span style={{ color: 'var(--theme-text)' }}>{d.device}</span>
+                <span style={{ color: 'var(--theme-muted)' }}>
+                  ↓ {formatRate(d.readBytesPerSec)} · ↑{' '}
+                  {formatRate(d.writeBytesPerSec)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </Panel>
+  )
+}
+
+/* ── Active Services ─────────────────────────────────────────────────── */
+
+type ServiceStatusData = {
+  name: string
+  status: 'up' | 'down'
+  latencyMs: number | null
+}
+
+function ServicesPanel() {
+  const query = useQuery<{ services: Array<ServiceStatusData> }>({
+    queryKey: ['system-services'],
+    queryFn: async () => {
+      const res = await fetch('/api/system-services', {
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    },
+    refetchInterval: POLL_MS_SLOW,
+    refetchOnWindowFocus: false,
+    retry: false,
+    staleTime: 2000,
+  })
+
+  const services = query.data?.services ?? []
+  const downCount = services.filter((s) => s.status === 'down').length
+
+  return (
+    <Panel
+      title="Active Services"
+      headerRight={
+        services.length > 0 ? (
+          <span
+            className="font-mono text-[10px] tabular-nums"
+            style={{
+              color:
+                downCount > 0 ? 'var(--theme-danger)' : 'var(--theme-muted)',
+            }}
+          >
+            {downCount > 0
+              ? `${downCount} down`
+              : `${services.length} up`}
+          </span>
+        ) : null
+      }
+    >
+      {query.isLoading ? (
+        <div
+          className="h-24 animate-pulse rounded-lg"
+          style={{ background: 'var(--theme-border)' }}
+        />
+      ) : query.isError ? (
+        <p className="text-[11px]" style={{ color: 'var(--theme-danger)' }}>
+          Couldn't check services — the workspace itself may be unreachable.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {services.map((s) => {
+            const up = s.status === 'up'
+            const dotColor = up ? 'var(--theme-success)' : 'var(--theme-danger)'
+            return (
+              <li key={s.name} className="flex items-center justify-between gap-2">
+                <span
+                  className="flex min-w-0 items-center gap-2 text-[11px]"
+                  style={{ color: 'var(--theme-text)' }}
+                >
+                  <i
+                    aria-hidden
+                    className="size-1.5 shrink-0 rounded-full"
+                    style={{
+                      background: dotColor,
+                      boxShadow: up ? 'none' : `0 0 6px ${dotColor}`,
+                    }}
+                  />
+                  <span className="truncate">{s.name}</span>
+                </span>
+                <span
+                  className="shrink-0 font-mono text-[10px] uppercase tabular-nums tracking-[0.06em]"
+                  style={{ color: up ? 'var(--theme-muted)' : 'var(--theme-danger)' }}
+                >
+                  {up
+                    ? s.latencyMs != null && s.latencyMs > 0
+                      ? `${s.latencyMs}ms`
+                      : 'up'
+                    : 'down'}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </Panel>
+  )
+}
+
+/* ── Top Processes ───────────────────────────────────────────────────── */
+
+type ProcessInfoData = {
+  pid: number
+  name: string
+  cpuPct: number
+  rssBytes: number
+}
+
+function ProcessesPanel() {
+  const query = useQuery<{ processes: Array<ProcessInfoData> }>({
+    queryKey: ['system-processes'],
+    queryFn: async () => {
+      const res = await fetch('/api/system-processes', {
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    },
+    refetchInterval: POLL_MS_SLOW,
+    refetchOnWindowFocus: false,
+    retry: false,
+    staleTime: 2000,
+  })
+
+  const processes = query.data?.processes ?? []
+
+  return (
+    <Panel
+      title="Top Processes"
+      headerRight={
+        <span
+          className="font-mono text-[10px] uppercase tracking-[0.08em]"
+          style={{ color: 'var(--theme-muted)' }}
+        >
+          by CPU
+        </span>
+      }
+    >
+      {query.isLoading ? (
+        <div
+          className="h-32 animate-pulse rounded-lg"
+          style={{ background: 'var(--theme-border)' }}
+        />
+      ) : query.isError ? (
+        <p className="text-[11px]" style={{ color: 'var(--theme-danger)' }}>
+          Couldn't read process list.
+        </p>
+      ) : processes.length === 0 ? (
+        <p className="text-[11px]" style={{ color: 'var(--theme-muted)' }}>
+          No process data available on this host.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {processes.map((p) => (
+            <li key={p.pid} className="flex items-center gap-2">
+              <span
+                className="w-10 shrink-0 font-mono text-[9px] tabular-nums"
+                style={{ color: 'var(--theme-muted)' }}
+              >
+                {p.pid}
+              </span>
+              <span
+                className="min-w-0 flex-1 truncate font-mono text-[11px]"
+                style={{ color: 'var(--theme-text)' }}
+                title={p.name}
+              >
+                {p.name}
+              </span>
+              <span
+                className="w-11 shrink-0 text-right font-mono text-[10px] tabular-nums"
+                style={{ color: gaugeColor(p.cpuPct) }}
+              >
+                {p.cpuPct.toFixed(1)}%
+              </span>
+              <span
+                className="w-14 shrink-0 text-right font-mono text-[10px] tabular-nums"
+                style={{ color: 'var(--theme-muted)' }}
+              >
+                {formatBytes(p.rssBytes)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  )
+}
+
+/* ── GPU ──────────────────────────────────────────────────────────────── */
+
+type GpuStatData = {
+  vendor: 'nvidia' | 'amd'
+  index: number
+  name: string
+  utilizationPct: number | null
+  memUsedBytes: number | null
+  memTotalBytes: number | null
+  tempC: number | null
+}
+
+function GpuPanel() {
+  const query = useQuery<{ gpus: Array<GpuStatData> | null }>({
+    queryKey: ['system-gpu'],
+    queryFn: async () => {
+      const res = await fetch('/api/system-gpu', {
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    },
+    refetchInterval: POLL_MS_SLOW,
+    refetchOnWindowFocus: false,
+    retry: false,
+    staleTime: 2000,
+  })
+
+  const gpus = query.data?.gpus ?? null
+  // No GPU hardware on this host — not an error, just hide the panel once
+  // we've actually heard back (never mid-flight, to avoid a loading flash
+  // for a panel that's about to disappear).
+  if (query.data && (!gpus || gpus.length === 0)) return null
+
+  return (
+    <Panel
+      title="GPU"
+      headerRight={
+        gpus && gpus.length > 0 ? (
+          <span
+            className="font-mono text-[10px] uppercase tracking-[0.08em]"
+            style={{ color: 'var(--theme-muted)' }}
+          >
+            {gpus.length} device{gpus.length > 1 ? 's' : ''}
+          </span>
+        ) : null
+      }
+    >
+      {query.isLoading ? (
+        <div
+          className="h-24 animate-pulse rounded-lg"
+          style={{ background: 'var(--theme-border)' }}
+        />
+      ) : query.isError ? (
+        <p className="text-[11px]" style={{ color: 'var(--theme-danger)' }}>
+          Couldn't read GPU stats.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {(gpus ?? []).map((g) => (
+            <li key={`${g.vendor}-${g.index}`} className="flex items-center gap-3">
+              {g.utilizationPct !== null ? (
+                <CircularGauge
+                  pct={g.utilizationPct}
+                  label={g.vendor.toUpperCase()}
+                  size={72}
+                  strokeWidth={7}
+                />
+              ) : (
+                <div
+                  className="flex size-[72px] shrink-0 items-center justify-center rounded-full border"
+                  style={{ borderColor: 'var(--theme-border)' }}
+                >
+                  <span
+                    className="font-mono text-[9px] uppercase"
+                    style={{ color: 'var(--theme-muted)' }}
+                  >
+                    {g.vendor}
+                  </span>
+                </div>
+              )}
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <span
+                  className="truncate font-mono text-[11px]"
+                  style={{ color: 'var(--theme-text)' }}
+                  title={g.name}
+                >
+                  {g.name}
+                </span>
+                <span
+                  className="font-mono text-[10px] tabular-nums"
+                  style={{ color: 'var(--theme-muted)' }}
+                >
+                  {g.memUsedBytes !== null && g.memTotalBytes !== null
+                    ? `${formatBytes(g.memUsedBytes)} / ${formatBytes(g.memTotalBytes)} VRAM`
+                    : 'VRAM n/a'}
+                  {g.tempC !== null ? ` · ${Math.round(g.tempC)}°C` : ''}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  )
+}
+
+/* ── System Logs ──────────────────────────────────────────────────────── */
+
+type LogEntryData = {
+  timestampMs: number
+  priority: number | null
+  unit: string | null
+  message: string
+}
+
+/** syslog priority: 0-3 crit/err, 4 warning, 5+ notice/info/debug. */
+function logPriorityColor(priority: number | null): string {
+  if (priority === null) return 'var(--theme-muted)'
+  if (priority <= 3) return 'var(--theme-danger)'
+  if (priority === 4) return 'var(--theme-warning)'
+  return 'var(--theme-muted)'
+}
+
+function formatLogTime(ms: number): string {
+  return new Date(ms).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
+
+function LogsPanel() {
+  const query = useQuery<{ logs: Array<LogEntryData> | null }>({
+    queryKey: ['system-logs'],
+    queryFn: async () => {
+      const res = await fetch('/api/system-logs', {
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    },
+    refetchInterval: POLL_MS_SLOW,
+    refetchOnWindowFocus: false,
+    retry: false,
+    staleTime: 2000,
+  })
+
+  const logs = query.data?.logs ?? []
+
+  return (
+    <Panel
+      title="System Logs"
+      className="lg:col-span-2"
+      headerRight={
+        <span
+          className="font-mono text-[10px] uppercase tracking-[0.08em]"
+          style={{ color: 'var(--theme-muted)' }}
+        >
+          warning+
+        </span>
+      }
+    >
+      {query.isLoading ? (
+        <div
+          className="h-24 animate-pulse rounded-lg"
+          style={{ background: 'var(--theme-border)' }}
+        />
+      ) : query.isError || query.data?.logs === null ? (
+        <p className="text-[11px]" style={{ color: 'var(--theme-muted)' }}>
+          Log access unavailable on this host (requires systemd's journalctl).
+        </p>
+      ) : logs.length === 0 ? (
+        <p className="text-[11px]" style={{ color: 'var(--theme-muted)' }}>
+          No warnings or errors recently — quiet.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {logs.slice(0, 10).map((l, i) => (
+            <li
+              key={`${l.timestampMs}-${i}`}
+              className="flex items-start gap-2 font-mono text-[10px]"
+            >
+              <span
+                className="shrink-0 tabular-nums"
+                style={{ color: 'var(--theme-muted)' }}
+              >
+                {formatLogTime(l.timestampMs)}
+              </span>
+              {l.unit ? (
+                <span
+                  className="max-w-[110px] shrink-0 truncate"
+                  style={{ color: 'var(--theme-muted)' }}
+                  title={l.unit}
+                >
+                  {l.unit}
+                </span>
+              ) : null}
+              <span
+                className="min-w-0 flex-1 truncate"
+                style={{ color: logPriorityColor(l.priority) }}
+                title={l.message}
+              >
+                {l.message}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  )
+}
+
+/* ── Connections ──────────────────────────────────────────────────────── */
+
+type NetworkConnectionData = {
+  protocol: 'tcp' | 'tcp6'
+  localAddress: string
+  localPort: number
+  remoteAddress: string
+  remotePort: number
+  state: string
+  pid: number | null
+  processName: string | null
+}
+
+function ConnectionsPanel() {
+  const query = useQuery<{ connections: Array<NetworkConnectionData> | null }>({
+    queryKey: ['system-connections'],
+    queryFn: async () => {
+      const res = await fetch('/api/system-connections', {
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return res.json()
+    },
+    refetchInterval: POLL_MS_SLOW,
+    refetchOnWindowFocus: false,
+    retry: false,
+    staleTime: 2000,
+  })
+
+  const connections = query.data?.connections ?? []
+
+  return (
+    <Panel
+      title="Connections"
+      className="lg:col-span-2"
+      headerRight={
+        connections.length > 0 ? (
+          <span
+            className="font-mono text-[10px] tabular-nums"
+            style={{ color: 'var(--theme-muted)' }}
+          >
+            {connections.length} established
+          </span>
+        ) : null
+      }
+    >
+      {query.isLoading ? (
+        <div
+          className="h-24 animate-pulse rounded-lg"
+          style={{ background: 'var(--theme-border)' }}
+        />
+      ) : query.isError ? (
+        <p className="text-[11px]" style={{ color: 'var(--theme-danger)' }}>
+          Couldn't read connections.
+        </p>
+      ) : connections.length === 0 ? (
+        <p className="text-[11px]" style={{ color: 'var(--theme-muted)' }}>
+          No active connections.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {connections.slice(0, 12).map((c, i) => (
+            <li
+              key={`${c.protocol}-${c.localPort}-${c.remoteAddress}-${c.remotePort}-${i}`}
+              className="flex items-center justify-between gap-2 font-mono text-[10px] tabular-nums"
+            >
+              <span
+                className="min-w-0 flex-1 truncate"
+                style={{ color: 'var(--theme-text)' }}
+                title={c.processName ?? undefined}
+              >
+                {c.processName ?? '—'}
+                {c.pid !== null ? ` (${c.pid})` : ''}
+              </span>
+              <span
+                className="shrink-0 truncate"
+                style={{ color: 'var(--theme-muted)' }}
+              >
+                :{c.localPort} → {c.remoteAddress}:{c.remotePort}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </Panel>
   )
 }
@@ -737,8 +1254,13 @@ export function SystemScreen() {
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <CpuPanel stats={stats} />
             <MemoryPanel stats={stats} />
+            <GpuPanel />
+            <ServicesPanel />
             <StoragePanel stats={stats} />
+            <ProcessesPanel />
             <NetworkPanel stats={stats} history={netHistoryRef.current} />
+            <ConnectionsPanel />
+            <LogsPanel />
           </div>
         ) : unreachable ? (
           <div
@@ -761,11 +1283,13 @@ export function SystemScreen() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2" aria-hidden>
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div
                 key={i}
                 className={`h-40 rounded-xl border motion-safe:animate-pulse ${
-                  i === 0 || i === 3 ? 'lg:col-span-2' : ''
+                  i === 0 || i === 6 || i === 7 || i === 8
+                    ? 'lg:col-span-2'
+                    : ''
                 }`}
                 style={{
                   borderColor: 'var(--theme-border)',

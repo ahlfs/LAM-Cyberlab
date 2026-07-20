@@ -32,6 +32,12 @@ export type TerminalSession = {
   markDetached: () => void
   /** Cancel a pending detached-reap timer (called when a new listener attaches). */
   markAttached: () => void
+  /**
+   * Last SCROLLBACK_CAP_BYTES of raw PTY output. Replayed by terminal-stream.ts
+   * when a client reattaches, so navigating away and back doesn't leave the
+   * terminal looking blank until the shell happens to print something new.
+   */
+  getScrollback: () => string
 }
 
 // How long an unattached PTY session stays alive before it's reaped, in ms.
@@ -45,6 +51,22 @@ const DETACH_TTL_MS = (() => {
 })()
 
 const sessions = new Map<string, TerminalSession>()
+
+// Bounded so a reattach after a long-idle session (or one that ran a
+// screen-redrawing TUI) doesn't replay an unbounded amount of history —
+// just enough to make the terminal feel alive again immediately.
+const SCROLLBACK_CAP_BYTES = 64 * 1024
+
+/** Pure so it's directly testable without spinning up a real PTY process. */
+export function appendScrollback(
+  current: string,
+  chunk: string,
+  capBytes: number,
+): string {
+  const next = current + chunk
+  if (next.length <= capBytes) return next
+  return next.slice(next.length - capBytes)
+}
 
 // Resolve path to pty-helper.py relative to this file
 const __dirname_resolved =
@@ -141,10 +163,14 @@ export function createTerminalSession(params: {
     )
   }
 
+  let scrollback = ''
+
   proc.stdout?.on('data', (data: Buffer) => {
+    const text = data.toString()
+    scrollback = appendScrollback(scrollback, text, SCROLLBACK_CAP_BYTES)
     pushEvent({
       event: 'data',
-      payload: { data: data.toString() },
+      payload: { data: text },
     })
   })
 
@@ -213,6 +239,10 @@ export function createTerminalSession(params: {
         clearTimeout(detachTimer)
         detachTimer = null
       }
+    },
+
+    getScrollback() {
+      return scrollback
     },
 
     close() {

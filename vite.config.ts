@@ -165,7 +165,7 @@ const config = defineConfig(({ mode, command }) => {
       console.warn(
         '[hermes-agent] Could not find hermes-agent installation.\n' +
           '  Run the installer:\n' +
-          '    curl -fsSL https://hermes-workspace.com/install.sh | bash\n' +
+          '    curl -fsSL https://raw.githubusercontent.com/ahlfs/LAM-Cyberlab/main/install.sh | bash\n' +
           '  Or set HERMES_AGENT_PATH (or legacy CLAUDE_AGENT_PATH) in .env to point at your hermes-agent clone.',
       )
       return

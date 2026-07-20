@@ -49,7 +49,12 @@ import { Route as ApiTerminalResizeRouteImport } from './routes/api/terminal-res
 import { Route as ApiTerminalInputRouteImport } from './routes/api/terminal-input'
 import { Route as ApiTerminalCloseRouteImport } from './routes/api/terminal-close'
 import { Route as ApiSystemStatsRouteImport } from './routes/api/system-stats'
+import { Route as ApiSystemServicesRouteImport } from './routes/api/system-services'
+import { Route as ApiSystemProcessesRouteImport } from './routes/api/system-processes'
 import { Route as ApiSystemMetricsRouteImport } from './routes/api/system-metrics'
+import { Route as ApiSystemLogsRouteImport } from './routes/api/system-logs'
+import { Route as ApiSystemGpuRouteImport } from './routes/api/system-gpu'
+import { Route as ApiSystemConnectionsRouteImport } from './routes/api/system-connections'
 import { Route as ApiSwarmTmuxStopRouteImport } from './routes/api/swarm-tmux-stop'
 import { Route as ApiSwarmTmuxStartRouteImport } from './routes/api/swarm-tmux-start'
 import { Route as ApiSwarmTmuxScrollRouteImport } from './routes/api/swarm-tmux-scroll'
@@ -391,9 +396,34 @@ const ApiSystemStatsRoute = ApiSystemStatsRouteImport.update({
   path: '/api/system-stats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSystemServicesRoute = ApiSystemServicesRouteImport.update({
+  id: '/api/system-services',
+  path: '/api/system-services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSystemProcessesRoute = ApiSystemProcessesRouteImport.update({
+  id: '/api/system-processes',
+  path: '/api/system-processes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSystemMetricsRoute = ApiSystemMetricsRouteImport.update({
   id: '/api/system-metrics',
   path: '/api/system-metrics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSystemLogsRoute = ApiSystemLogsRouteImport.update({
+  id: '/api/system-logs',
+  path: '/api/system-logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSystemGpuRoute = ApiSystemGpuRouteImport.update({
+  id: '/api/system-gpu',
+  path: '/api/system-gpu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSystemConnectionsRoute = ApiSystemConnectionsRouteImport.update({
+  id: '/api/system-connections',
+  path: '/api/system-connections',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSwarmTmuxStopRoute = ApiSwarmTmuxStopRouteImport.update({
@@ -1201,7 +1231,12 @@ export interface FileRoutesByFullPath {
   '/api/swarm-tmux-scroll': typeof ApiSwarmTmuxScrollRoute
   '/api/swarm-tmux-start': typeof ApiSwarmTmuxStartRoute
   '/api/swarm-tmux-stop': typeof ApiSwarmTmuxStopRoute
+  '/api/system-connections': typeof ApiSystemConnectionsRoute
+  '/api/system-gpu': typeof ApiSystemGpuRoute
+  '/api/system-logs': typeof ApiSystemLogsRoute
   '/api/system-metrics': typeof ApiSystemMetricsRoute
+  '/api/system-processes': typeof ApiSystemProcessesRoute
+  '/api/system-services': typeof ApiSystemServicesRoute
   '/api/system-stats': typeof ApiSystemStatsRoute
   '/api/terminal-close': typeof ApiTerminalCloseRoute
   '/api/terminal-input': typeof ApiTerminalInputRoute
@@ -1383,7 +1418,12 @@ export interface FileRoutesByTo {
   '/api/swarm-tmux-scroll': typeof ApiSwarmTmuxScrollRoute
   '/api/swarm-tmux-start': typeof ApiSwarmTmuxStartRoute
   '/api/swarm-tmux-stop': typeof ApiSwarmTmuxStopRoute
+  '/api/system-connections': typeof ApiSystemConnectionsRoute
+  '/api/system-gpu': typeof ApiSystemGpuRoute
+  '/api/system-logs': typeof ApiSystemLogsRoute
   '/api/system-metrics': typeof ApiSystemMetricsRoute
+  '/api/system-processes': typeof ApiSystemProcessesRoute
+  '/api/system-services': typeof ApiSystemServicesRoute
   '/api/system-stats': typeof ApiSystemStatsRoute
   '/api/terminal-close': typeof ApiTerminalCloseRoute
   '/api/terminal-input': typeof ApiTerminalInputRoute
@@ -1567,7 +1607,12 @@ export interface FileRoutesById {
   '/api/swarm-tmux-scroll': typeof ApiSwarmTmuxScrollRoute
   '/api/swarm-tmux-start': typeof ApiSwarmTmuxStartRoute
   '/api/swarm-tmux-stop': typeof ApiSwarmTmuxStopRoute
+  '/api/system-connections': typeof ApiSystemConnectionsRoute
+  '/api/system-gpu': typeof ApiSystemGpuRoute
+  '/api/system-logs': typeof ApiSystemLogsRoute
   '/api/system-metrics': typeof ApiSystemMetricsRoute
+  '/api/system-processes': typeof ApiSystemProcessesRoute
+  '/api/system-services': typeof ApiSystemServicesRoute
   '/api/system-stats': typeof ApiSystemStatsRoute
   '/api/terminal-close': typeof ApiTerminalCloseRoute
   '/api/terminal-input': typeof ApiTerminalInputRoute
@@ -1752,7 +1797,12 @@ export interface FileRouteTypes {
     | '/api/swarm-tmux-scroll'
     | '/api/swarm-tmux-start'
     | '/api/swarm-tmux-stop'
+    | '/api/system-connections'
+    | '/api/system-gpu'
+    | '/api/system-logs'
     | '/api/system-metrics'
+    | '/api/system-processes'
+    | '/api/system-services'
     | '/api/system-stats'
     | '/api/terminal-close'
     | '/api/terminal-input'
@@ -1934,7 +1984,12 @@ export interface FileRouteTypes {
     | '/api/swarm-tmux-scroll'
     | '/api/swarm-tmux-start'
     | '/api/swarm-tmux-stop'
+    | '/api/system-connections'
+    | '/api/system-gpu'
+    | '/api/system-logs'
     | '/api/system-metrics'
+    | '/api/system-processes'
+    | '/api/system-services'
     | '/api/system-stats'
     | '/api/terminal-close'
     | '/api/terminal-input'
@@ -2117,7 +2172,12 @@ export interface FileRouteTypes {
     | '/api/swarm-tmux-scroll'
     | '/api/swarm-tmux-start'
     | '/api/swarm-tmux-stop'
+    | '/api/system-connections'
+    | '/api/system-gpu'
+    | '/api/system-logs'
     | '/api/system-metrics'
+    | '/api/system-processes'
+    | '/api/system-services'
     | '/api/system-stats'
     | '/api/terminal-close'
     | '/api/terminal-input'
@@ -2301,7 +2361,12 @@ export interface RootRouteChildren {
   ApiSwarmTmuxScrollRoute: typeof ApiSwarmTmuxScrollRoute
   ApiSwarmTmuxStartRoute: typeof ApiSwarmTmuxStartRoute
   ApiSwarmTmuxStopRoute: typeof ApiSwarmTmuxStopRoute
+  ApiSystemConnectionsRoute: typeof ApiSystemConnectionsRoute
+  ApiSystemGpuRoute: typeof ApiSystemGpuRoute
+  ApiSystemLogsRoute: typeof ApiSystemLogsRoute
   ApiSystemMetricsRoute: typeof ApiSystemMetricsRoute
+  ApiSystemProcessesRoute: typeof ApiSystemProcessesRoute
+  ApiSystemServicesRoute: typeof ApiSystemServicesRoute
   ApiSystemStatsRoute: typeof ApiSystemStatsRoute
   ApiTerminalCloseRoute: typeof ApiTerminalCloseRoute
   ApiTerminalInputRoute: typeof ApiTerminalInputRoute
@@ -2632,11 +2697,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSystemStatsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/system-services': {
+      id: '/api/system-services'
+      path: '/api/system-services'
+      fullPath: '/api/system-services'
+      preLoaderRoute: typeof ApiSystemServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/system-processes': {
+      id: '/api/system-processes'
+      path: '/api/system-processes'
+      fullPath: '/api/system-processes'
+      preLoaderRoute: typeof ApiSystemProcessesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/system-metrics': {
       id: '/api/system-metrics'
       path: '/api/system-metrics'
       fullPath: '/api/system-metrics'
       preLoaderRoute: typeof ApiSystemMetricsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/system-logs': {
+      id: '/api/system-logs'
+      path: '/api/system-logs'
+      fullPath: '/api/system-logs'
+      preLoaderRoute: typeof ApiSystemLogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/system-gpu': {
+      id: '/api/system-gpu'
+      path: '/api/system-gpu'
+      fullPath: '/api/system-gpu'
+      preLoaderRoute: typeof ApiSystemGpuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/system-connections': {
+      id: '/api/system-connections'
+      path: '/api/system-connections'
+      fullPath: '/api/system-connections'
+      preLoaderRoute: typeof ApiSystemConnectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/swarm-tmux-stop': {
@@ -3977,7 +4077,12 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSwarmTmuxScrollRoute: ApiSwarmTmuxScrollRoute,
   ApiSwarmTmuxStartRoute: ApiSwarmTmuxStartRoute,
   ApiSwarmTmuxStopRoute: ApiSwarmTmuxStopRoute,
+  ApiSystemConnectionsRoute: ApiSystemConnectionsRoute,
+  ApiSystemGpuRoute: ApiSystemGpuRoute,
+  ApiSystemLogsRoute: ApiSystemLogsRoute,
   ApiSystemMetricsRoute: ApiSystemMetricsRoute,
+  ApiSystemProcessesRoute: ApiSystemProcessesRoute,
+  ApiSystemServicesRoute: ApiSystemServicesRoute,
   ApiSystemStatsRoute: ApiSystemStatsRoute,
   ApiTerminalCloseRoute: ApiTerminalCloseRoute,
   ApiTerminalInputRoute: ApiTerminalInputRoute,

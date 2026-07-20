@@ -141,8 +141,8 @@ fine too — that just means auth is on and working).
 **6. Clone this repo and install dependencies**, in a new terminal:
 
 ```bash
-git clone git@github.com:ahlfs/LAM-Cyberlab.git hermes-workspace
-cd hermes-workspace
+git clone git@github.com:ahlfs/LAM-Cyberlab.git lam-cyberlab
+cd lam-cyberlab
 pnpm install
 ```
 
@@ -195,8 +195,8 @@ hermes setup
 hermes gateway run
 
 # 6. Clone and install this repo, in a new terminal
-git clone git@github.com:ahlfs/LAM-Cyberlab.git hermes-workspace
-cd hermes-workspace
+git clone git@github.com:ahlfs/LAM-Cyberlab.git lam-cyberlab
+cd lam-cyberlab
 pnpm install
 
 # 7. Configure the workspace
@@ -261,8 +261,8 @@ Mirror the same keys in `C:\Users\<you>\.hermes\.env` (the CLI tools read from h
 **4. Clone this repo:**
 
 ```powershell
-git clone https://github.com/ahlfs/LAM-Cyberlab.git hermes-workspace
-cd hermes-workspace
+git clone https://github.com/ahlfs/LAM-Cyberlab.git lam-cyberlab
+cd lam-cyberlab
 pnpm install
 ```
 
@@ -285,7 +285,7 @@ hermes gateway run
 hermes dashboard
 
 # Terminal 3 — the workspace
-cd C:\Users\<you>\hermes-workspace
+cd C:\Users\<you>\lam-cyberlab
 pnpm dev
 ```
 
@@ -311,7 +311,7 @@ juggling terminals by hand:
 ```
 
 Optional flags: `-Distro <name>` for a non-default WSL distro, `-WorkspacePath <path>`
-if your WSL clone isn't at `~/hermes-workspace`, `-SessionName <name>` for a custom
+if your WSL clone isn't at `~/lam-cyberlab`, `-SessionName <name>` for a custom
 tmux session name.
 
 ---
@@ -475,8 +475,8 @@ from this repo's own source (there's no published container image for a personal
 fork, so this always builds locally rather than pulling someone else's image).
 
 ```bash
-git clone git@github.com:ahlfs/LAM-Cyberlab.git hermes-workspace
-cd hermes-workspace
+git clone git@github.com:ahlfs/LAM-Cyberlab.git lam-cyberlab
+cd lam-cyberlab
 cp .env.example .env
 ```
 
