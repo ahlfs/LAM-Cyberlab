@@ -890,6 +890,7 @@ export function ChatScreen({
       window.clearTimeout(failsafeTimerRef.current)
       failsafeTimerRef.current = null
     }
+    setLiveToolActivity([])
     setPendingGeneration(false)
     setWaitingForResponse(false)
   }, [streamStop])
@@ -1057,8 +1058,21 @@ export function ChatScreen({
     return models.map((m: any) => m.id).filter((id: string) => id)
   }, [modelsQuery.data])
 
+  const activeSessionKeyForModel = isNewChat
+    ? 'new'
+    : forcedSessionKey ||
+      resolvedSessionKey ||
+      activeCanonicalKey ||
+      activeSessionKey ||
+      'main'
+
+  const persistedSessionModel = useSessionModelStore((s) =>
+    s.getModel(activeSessionKeyForModel),
+  )
+
   const gatewayModel = currentModelQuery.data || ''
-  const currentModel = _localModelOverride || gatewayModel
+  const currentModel =
+    persistedSessionModel || _localModelOverride || gatewayModel
 
   // Ref so sendMessage can always read latest thinkingLevel without being in deps
   const thinkingLevelRef = useRef<ThinkingLevel>(thinkingLevel)
@@ -1278,27 +1292,7 @@ export function ChatScreen({
     handoffTimeoutMs: modelsQuery.data?.streamHandoffTimeoutMs,
   })
 
-  // Cancel any in-flight stream when the user navigates between sessions or
-  // starts a new chat. Without this, an SSE stream from session A keeps
-  // running after the user navigates away — and any chunks it had already
-  // buffered before our abort takes effect could land in session B (the
-  // newly active session). See #297 (cross-session response contamination).
-  // Note: useStreamingMessage also has its own generation-token guard for
-  // the buffered-chunk race, but cancelling here is the cleaner contract
-  // (an in-flight response that the user navigated away from is no longer
-  // wanted in either session).
-  const navCancelKeyRef = useRef<string | null>(null)
-  useEffect(() => {
-    const navKey = `${activeCanonicalKey ?? ''}::${isNewChat ? 'new' : activeFriendlyId}`
-    if (navCancelKeyRef.current === null) {
-      navCancelKeyRef.current = navKey
-      return
-    }
-    if (navCancelKeyRef.current !== navKey) {
-      navCancelKeyRef.current = navKey
-      cancelStreaming()
-    }
-  }, [activeCanonicalKey, activeFriendlyId, isNewChat, cancelStreaming])
+
 
   const activeIsRealtimeStreaming = isPortableMode
     ? localIsStreaming
@@ -2458,6 +2452,10 @@ export function ChatScreen({
         // In portable mode, use 'main' — no server-side sessions exist.
         // In enhanced mode, create a UUID thread for the sessions API.
         const threadId = isPortableMode ? 'main' : crypto.randomUUID()
+        const draftModel = useSessionModelStore.getState().getModel('new')
+        if (draftModel) {
+          useSessionModelStore.getState().setModel(threadId, draftModel)
+        }
         const { optimisticMessage } = createOptimisticMessage(
           trimmedBody,
           attachmentPayload,
@@ -2905,7 +2903,7 @@ export function ChatScreen({
               disabled={sending || hideUi}
               sessionKey={
                 isNewChat
-                  ? undefined
+                  ? 'new'
                   : forcedSessionKey ||
                     resolvedSessionKey ||
                     activeCanonicalKey ||

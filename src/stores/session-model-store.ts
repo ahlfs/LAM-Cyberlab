@@ -30,7 +30,13 @@ export const useSessionModelStore = create<State & Actions>()(
       models: {},
       getModel: (sessionKey) => {
         if (!sessionKey) return undefined
-        return get().models[sessionKey]
+        const val = get().models[sessionKey]
+        if (val && (val.includes('horeg/') || val === 'horeg')) {
+          const fixed = val.replace(/horeg\//g, 'iyh/')
+          get().setModel(sessionKey, fixed)
+          return fixed
+        }
+        return val
       },
       setModel: (sessionKey, model) => {
         if (!sessionKey) return

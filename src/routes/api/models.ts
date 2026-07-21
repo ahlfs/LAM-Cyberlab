@@ -113,7 +113,7 @@ const DEFAULT_ACCEPTED_TIMEOUT_S = 120
 const DEFAULT_HANDOFF_TIMEOUT_S = 300
 const LIVE_MODEL_CACHE_TTL_MS = 60_000
 
-type LiveModelEndpoint = {
+export type LiveModelEndpoint = {
   provider: string
   baseUrl: string
   apiKey?: string
@@ -184,9 +184,9 @@ function readClaudeDefaultModel(): ModelEntry | null {
 }
 
 /**
- * Read providers.*.models (+ provider default model) and model_aliases
+ * Read providers.*.models (+ provider default model), custom_providers, and model_aliases
  * from ~/.hermes/config.yaml so the picker reflects the user's full Hermes
- * catalog, not just /v1/models + models.json + local discovery. Fix for #569.
+ * catalog, not just /v1/models + models.json + local discovery.
  */
 function resolveConfiguredSecret(value: unknown): string {
   const raw = readString(value)
@@ -215,7 +215,7 @@ function modelsUrlForBase(baseUrl: string): string {
   return trimmed.endsWith('/v1') ? `${trimmed}/models` : `${trimmed}/v1/models`
 }
 
-function readConfiguredLiveModelEndpoints(): Array<LiveModelEndpoint> {
+export function readConfiguredLiveModelEndpoints(): Array<LiveModelEndpoint> {
   try {
     if (!fs.existsSync(CONFIG_PATH)) return []
     const raw = fs.readFileSync(CONFIG_PATH, 'utf-8')
@@ -251,13 +251,23 @@ function readConfiguredLiveModelEndpoints(): Array<LiveModelEndpoint> {
       pushEndpoint(providerId, asRecord(value))
     }
 
+    const customProviders = Array.isArray(config.custom_providers)
+      ? config.custom_providers
+      : []
+    for (const item of customProviders) {
+      const record = asRecord(item)
+      const providerId =
+        readString(record.name) || readString(record.id) || 'custom'
+      pushEndpoint(providerId, record)
+    }
+
     return endpoints
   } catch {
     return []
   }
 }
 
-async function fetchConfiguredLiveModels(): Promise<Array<ModelEntry>> {
+export async function fetchConfiguredLiveModels(): Promise<Array<ModelEntry>> {
   const endpoints = readConfiguredLiveModelEndpoints()
   if (endpoints.length === 0) return []
 
@@ -292,6 +302,8 @@ async function fetchConfiguredLiveModels(): Promise<Array<ModelEntry>> {
           .map((entry) => ({
             ...entry,
             provider: readString(entry.provider) || endpoint.provider,
+            baseUrl: endpoint.baseUrl,
+            apiKey: endpoint.apiKey,
             source: 'live-proxy',
           }))
       }

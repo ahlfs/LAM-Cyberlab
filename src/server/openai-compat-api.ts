@@ -279,7 +279,7 @@ export async function openaiChat(
   options: OpenAIChatOptions = {},
 ): Promise<string | AsyncGenerator<StreamChunkType, void, void>> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  const bearer = getBearerToken()
+  const bearer = options.apiKey || getBearerToken()
   if (bearer) {
     headers['Authorization'] = `Bearer ${bearer}`
   }

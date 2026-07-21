@@ -1151,12 +1151,13 @@ function ChatMessageListComponent({
       const lastId = getStableMessageId(lastMessage, lastEntry.sourceIndex)
       const isBeingTypewritten = streamingState.streamingTargets.has(lastId)
       if (isBeingTypewritten) return false
-      // If we're in grace period waiting for a NEW response, the last assistant
-      // message is from the PREVIOUS turn — don't let its text hide the bubble.
-      // Only suppress once we know this IS the new response (i.e. not waiting).
-      if (thinkingGrace || waitingForResponse || sending) return true
-      // Check if assistant message has visible text — if not, keep showing indicator
+      // Check if assistant message has visible text — if so and no longer waiting,
+      // hide the bottom typing indicator immediately (don't let thinkingGrace linger below it)
       const msgText = textFromMessage(lastMessage)
+      if (msgText && msgText.trim().length > 0) {
+        if (!waitingForResponse && !sending) return false
+      }
+      if (thinkingGrace || waitingForResponse || sending) return true
       if (!msgText || msgText.trim().length === 0) return true
       return false
     }

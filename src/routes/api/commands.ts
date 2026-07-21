@@ -22,19 +22,13 @@ export const Route = createFileRoute('/api/commands')({
           const res = await gatewayFetch('/v1/commands')
 
           if (!res.ok) {
-            return json(
-              { error: `Gateway responded with status ${res.status}` },
-              { status: res.status },
-            )
+            return json({ commands: [] })
           }
 
           const body = await res.json()
           return Response.json(body)
         } catch {
-          return json(
-            { error: 'Gateway is unreachable' },
-            { status: 500 },
-          )
+          return json({ commands: [] })
         }
       },
     },

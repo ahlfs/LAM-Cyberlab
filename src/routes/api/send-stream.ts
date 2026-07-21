@@ -32,6 +32,7 @@ import {
   streamChat,
 } from '../../server/claude-api'
 import { loadWorkspaceCatalog } from './workspace'
+import { readConfiguredLiveModelEndpoints, fetchConfiguredLiveModels } from './models'
 import {
   collectSyntheticLiveToolEvents,
   createSyntheticLiveToolTracker,
@@ -349,11 +350,12 @@ export const Route = createFileRoute('/api/send-stream')({
           })
         }
 
-        // Check if the selected model is a local provider model — force portable + direct routing
+        // Check if the selected model is a local/custom provider model — force portable + direct routing
         let chatMode = getChatMode()
         let localBaseUrl: string | undefined
+        let localApiKey: string | undefined
         const requestModel = typeof body.model === 'string' ? body.model : ''
-        const bareModel = requestModel.includes('/') ? requestModel.split('/').slice(1).join('/') : requestModel
+        let bareModel = requestModel.includes('/') ? requestModel.split('/').slice(1).join('/') : requestModel
         if (requestModel) {
           const discoveredModels = getDiscoveredModels()
           const localMatch = discoveredModels.find((m) => m.id === requestModel || m.id === bareModel)
@@ -362,6 +364,61 @@ export const Route = createFileRoute('/api/send-stream')({
             if (providerDef) {
               chatMode = 'portable'
               localBaseUrl = providerDef.baseUrl
+              localApiKey = providerDef.apiKey
+            }
+          }
+
+          if (!localBaseUrl) {
+            const configuredLiveModels = await fetchConfiguredLiveModels().catch(() => [])
+            const liveMatch = configuredLiveModels.find((m) => {
+              if (m.id === requestModel || m.id === bareModel) return true
+              if (m.provider && requestModel === `${m.provider}/${m.id}`) return true
+              if (m.provider && requestModel.startsWith(`${m.provider}/`) && requestModel.slice(m.provider.length + 1) === m.id) return true
+              return false
+            })
+            if (liveMatch && typeof (liveMatch as any).baseUrl === 'string') {
+              chatMode = 'portable'
+              localBaseUrl = (liveMatch as any).baseUrl
+              localApiKey = (liveMatch as any).apiKey
+              bareModel = liveMatch.id
+            }
+          }
+
+          if (!localBaseUrl) {
+            const liveEndpoints = readConfiguredLiveModelEndpoints()
+            for (const endpoint of liveEndpoints) {
+              if (
+                requestModel.startsWith(`${endpoint.provider}/`) ||
+                requestModel.startsWith(`${endpoint.provider}:`)
+              ) {
+                chatMode = 'portable'
+                localBaseUrl = endpoint.baseUrl
+                localApiKey = endpoint.apiKey
+                bareModel = requestModel.slice(endpoint.provider.length + 1)
+                break
+              }
+            }
+            if (!localBaseUrl && liveEndpoints.length > 0) {
+              const routerEndpoint = liveEndpoints.find(
+                (e) =>
+                  e.provider.toLowerCase().includes('9router') ||
+                  e.baseUrl.includes('9router'),
+              )
+              if (routerEndpoint) {
+                const isRouterModel =
+                  requestModel.startsWith('horeg/') ||
+                  requestModel.startsWith('iyh/') ||
+                  requestModel.startsWith('ag/') ||
+                  requestModel.startsWith('openrouter/') ||
+                  requestModel.startsWith('kr/') ||
+                  requestModel.startsWith('cx/')
+                if (isRouterModel) {
+                  chatMode = 'portable'
+                  localBaseUrl = routerEndpoint.baseUrl
+                  localApiKey = routerEndpoint.apiKey
+                  bareModel = requestModel
+                }
+              }
             }
           }
         }
@@ -767,6 +824,7 @@ export const Route = createFileRoute('/api/send-stream')({
                     stream: true,
                     sessionId: portableSessionKey,
                     baseUrl: localBaseUrl,
+                    apiKey: localApiKey,
                   })
 
                   let thinking = ''
