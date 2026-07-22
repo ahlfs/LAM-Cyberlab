@@ -155,3 +155,12 @@ pr-triage-20260505-*/
 
 # graphify knowledge graph output (local, rebuildable)
 graphify-out/
+
+# AI Second Brain: ingestion scripts live in this repo (scripts/ingest_*.py,
+# scripts/sync-second-brain.sh), but the actual vault (raw audio/documents,
+# generated notes, Obsidian's own workspace state) lives outside the repo
+# at ~/obsidian/memo — nothing under it should ever end up in here.
+.venv-second-brain/
+
+# Session handoff export (local meta, not repo content)
+HANDOFF-CONTEXT.md
