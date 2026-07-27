@@ -133,23 +133,7 @@ async function searchBundledSkills(
   }
 }
 
-async function searchPythonSkillsHub(
-  query: string,
-  limit: number,
-  source: string,
-): Promise<SkillSearchPayload> {
-  const scriptPath = path.join(process.cwd(), 'scripts/skills-search.py')
-  const { stdout } = await execFileAsync(
-    'python3',
-    [scriptPath, query, String(limit), source],
-    {
-      timeout: 30_000,
-      maxBuffer: 1024 * 1024 * 2,
-    },
-  )
 
-  return JSON.parse(stdout.trim()) as SkillSearchPayload
-}
 
 export const Route = createFileRoute('/api/skills/hub-search')({
   server: {
@@ -173,11 +157,7 @@ export const Route = createFileRoute('/api/skills/hub-search')({
             return json({ results: [], source: 'idle' })
           }
 
-          try {
-            return json(await searchPythonSkillsHub(query, limit, source))
-          } catch {
-            return json(await searchBundledSkills(query, limit))
-          }
+          return json(await searchBundledSkills(query, limit))
         } catch (error) {
           return json(
             {
