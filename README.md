@@ -81,239 +81,117 @@ to add them:
 
 ## 🚀 Getting Started
 
-Everything below installs and runs **this repository**, end to end, on a fresh
-machine. Pick your OS section; all three converge on the same two things running
-side by side:
+Everything below installs and runs **this repository** (the web UI) which pairs with the backend agent.
 
-- **`hermes-agent`** — the agent backend/brain (a separate project by Nous Research), exposing an HTTP gateway on port `8642`.
-- **This repo (Lam Cyberlab)** — the web UI, served on port `3000`.
+### 📋 Requirements
 
-### Prerequisites (all platforms)
+Before starting, ensure you have the following installed on your system:
 
-- **Node.js 22+** — [nodejs.org](https://nodejs.org/)
-- **pnpm** — `npm install -g pnpm` (or `corepack enable`)
-- **git**
-- **Python 3.11+** — only needed if you run `hermes-agent` locally (the typical case)
+| Prerequisite | Version | Description |
+|---|---|---|
+| **Node.js** | 22+ | Required to run the Lam-Cyberlab web server |
+| **pnpm** | 9+ | Package manager (`npm install -g pnpm` or `corepack enable`) |
+| **Git** | latest | Required to clone this repository |
+| **Hermes Agent** | modified fork | **CRITICAL:** You must use the modified fork of Hermes Agent for full compatibility. See instructions at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent). |
 
 ---
 
-### 🐧 Linux (Debian / Ubuntu and derivatives)
+### 🐧 Linux (Debian / Ubuntu) & 🍎 macOS
 
-**1. Install Node.js 22+ and pnpm**, if you don't have them already:
+**1. Install prerequisites** (Node.js 22+, pnpm, git) if you haven't already.
 
-```bash
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
-npm install -g pnpm
-```
-
-**2. Install `hermes-agent`** via Nous's official installer:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-```
-
-**3. Configure a model provider**, then confirm it works:
-
-```bash
-hermes setup      # pick a provider (OpenRouter, OpenAI, Gemini, Ollama, ...) and a model
-```
-
-**4. Enable the gateway's HTTP API.** This is opt-in and easy to miss — without it,
-the gateway only serves messaging platforms (Telegram, etc.), not port `8642`.
-Edit `~/.hermes/.env` and add:
-
+**2. Install and configure the custom `hermes-agent`**
+Please follow the exact installation instructions at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent).
+Make sure you enable the HTTP API in your `~/.hermes/.env`:
 ```env
 API_SERVER_ENABLED=true
 API_SERVER_KEY=<a random secret — e.g. output of: openssl rand -hex 32>
 ```
 
-**5. Start the gateway** (leave this running in its own terminal, or see
-[running without an open terminal](#run-without-an-open-terminal) below for a
-systemd service):
-
+**3. Start the Hermes Agent gateway** (leave this running in its own terminal)
 ```bash
 hermes gateway run
 ```
+Verify it's up: `curl http://127.0.0.1:8642/v1/models` (a 401 response is fine, it means auth is working).
 
-Verify it's up: `curl http://127.0.0.1:8642/v1/models` should return JSON (401 is
-fine too — that just means auth is on and working).
-
-**6. Clone this repo and install dependencies**, in a new terminal:
-
+**4. Clone Lam-Cyberlab and install dependencies** (in a new terminal)
 ```bash
 git clone git@github.com:ahlfs/LAM-Cyberlab.git lam-cyberlab
 cd lam-cyberlab
 pnpm install
 ```
+*(If you don't use SSH keys, use: `https://github.com/ahlfs/LAM-Cyberlab.git`)*
 
-(Use the HTTPS URL instead if you haven't set up an SSH key with GitHub:
-`https://github.com/ahlfs/LAM-Cyberlab.git`.)
-
-**7. Configure the workspace.** Copy the example env file and set the token to
-match `API_SERVER_KEY` from step 4:
-
+**5. Configure the workspace**
+Copy the example env file and set the token to match `API_SERVER_KEY` from step 2:
 ```bash
 cp .env.example .env
 cat >> .env <<'EOF'
 HERMES_API_URL=http://127.0.0.1:8642
-HERMES_API_TOKEN=<same value as API_SERVER_KEY above>
+HERMES_API_TOKEN=<same value as API_SERVER_KEY>
 EOF
 ```
 
-**8. Run it:**
-
+**6. Run Lam-Cyberlab**
 ```bash
 pnpm dev
 ```
-
-Open **http://localhost:3000** — the onboarding screen should detect the gateway
-automatically. If it says "No compatible backend detected," re-check steps 4–5
-(the single most common miss is forgetting `API_SERVER_ENABLED=true`).
-
----
-
-### 🍎 macOS
-
-Same flow as Linux, with Homebrew for the two system dependencies:
-
-```bash
-# 1. Node.js 22+ and pnpm
-brew install node@22
-npm install -g pnpm
-
-# 2. hermes-agent via Nous's official installer
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-
-# 3. Configure a provider
-hermes setup
-
-# 4. Enable the gateway's HTTP API — edit ~/.hermes/.env and add:
-#      API_SERVER_ENABLED=true
-#      API_SERVER_KEY=<openssl rand -hex 32>
-
-# 5. Start the gateway (own terminal / tab)
-hermes gateway run
-
-# 6. Clone and install this repo, in a new terminal
-git clone git@github.com:ahlfs/LAM-Cyberlab.git lam-cyberlab
-cd lam-cyberlab
-pnpm install
-
-# 7. Configure the workspace
-cp .env.example .env
-cat >> .env <<'EOF'
-HERMES_API_URL=http://127.0.0.1:8642
-HERMES_API_TOKEN=<same value as API_SERVER_KEY above>
-EOF
-
-# 8. Run it
-pnpm dev
-```
-
-Open **http://localhost:3000**. To run without an open Terminal window, see
-[running without an open terminal](#run-without-an-open-terminal) (launchd on
-macOS), or install the [desktop app](#-native-desktop-app).
+Open **http://localhost:3000** in your browser.
 
 ---
 
 ### 🪟 Windows
 
-Windows has a genuine native path (no WSL required) — `hermes-agent` ships a
-Windows-native config layout. Three services end up running: the **gateway**
-(`:8642`), the **dashboard** (`:9119`, optional but unlocks more features), and
-the **workspace** (`:3000`).
-
 **1. Install prerequisites** (PowerShell):
-
 ```powershell
-# Node.js 22+ — download the installer from nodejs.org, or via winget:
+# Node.js 22+
 winget install OpenJS.NodeJS.LTS
-
 # pnpm
 npm install -g pnpm
-
-# Claude CLI (only needed if you use Claude Tasks / Conductor)
-npm install -g @anthropic-ai/claude-code
-
-# sqlite3 CLI (needed for kanban/tasks)
-winget install SQLite.SQLite --accept-package-agreements --accept-source-agreements
-# then copy sqlite3.exe from the WinGet packages folder into a directory on your PATH
 ```
 
-**2. Install `hermes-agent`** — follow Nous's official Windows installation
-instructions for [`NousResearch/hermes-agent`](https://github.com/NousResearch/hermes-agent).
-(If you'd rather install it inside WSL2/Ubuntu instead, follow the Linux section
-above inside your WSL shell — either path works, they just place config files
-in different locations.)
-
-**3. Configure the gateway.** Edit `%LocalAppData%\hermes\.env`
-(`C:\Users\<you>\AppData\Local\hermes\.env`) and add:
-
+**2. Install and configure the custom `hermes-agent`**
+Follow the Windows installation instructions at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent).
+Make sure to configure `%LocalAppData%\hermes\.env` with:
 ```env
-OPENROUTER_API_KEY=<your-key>
 API_SERVER_ENABLED=true
 API_SERVER_HOST=0.0.0.0
 API_SERVER_KEY=<a random secret>
 ```
 
-Mirror the same keys in `C:\Users\<you>\.hermes\.env` (the CLI tools read from here).
-
-**4. Clone this repo:**
-
+**3. Clone Lam-Cyberlab**
 ```powershell
 git clone https://github.com/ahlfs/LAM-Cyberlab.git lam-cyberlab
 cd lam-cyberlab
 pnpm install
 ```
 
-**5. Configure the workspace.** Copy `.env.example` to `.env` and set:
-
+**4. Configure the workspace**
+Copy `.env.example` to `.env` and configure the token to match `API_SERVER_KEY`:
 ```env
 HERMES_API_URL=http://127.0.0.1:8642
 HERMES_DASHBOARD_URL=http://127.0.0.1:9119
-HERMES_API_TOKEN=<must exactly match API_SERVER_KEY above>
+HERMES_API_TOKEN=<must exactly match API_SERVER_KEY>
 PORT=3000
 ```
 
-**6. Start everything**, each in its own terminal:
-
+**5. Start everything** (each in its own terminal):
 ```powershell
 # Terminal 1 — gateway
 hermes gateway run
 
-# Terminal 2 — dashboard (optional, but unlocks Sessions/Skills/Config/Jobs)
+# Terminal 2 — dashboard (optional)
 hermes dashboard
 
 # Terminal 3 — the workspace
 cd C:\Users\<you>\lam-cyberlab
 pnpm dev
 ```
-
 Open **http://127.0.0.1:3000**.
 
-**Port already in use?**
-
-```powershell
-netstat -ano | findstr :8642
-Stop-Process -Id <PID> -Force
-```
-
-**Prefer one command instead of three terminals?** Install the
-[desktop app](#-native-desktop-app) — the Electron build auto-starts the gateway
-and dashboard for you. Full reference: [`docs/windows-setup-guide.md`](docs/windows-setup-guide.md).
-
-**Agent in WSL, workspace on native Windows?** Use the bundled helper instead of
-juggling terminals by hand:
-
-```powershell
-.\scripts\start-hermes-workspace.ps1
-# .\scripts\start-hermes-workspace.ps1 -Restart   # force a clean relaunch
-```
-
-Optional flags: `-Distro <name>` for a non-default WSL distro, `-WorkspacePath <path>`
-if your WSL clone isn't at `~/lam-cyberlab`, `-SessionName <name>` for a custom
-tmux session name.
+> **Agent in WSL, workspace on native Windows?**
+> Use the bundled helper script to launch without juggling terminals:
+> `.\scripts\start-hermes-workspace.ps1`
 
 ---
 
