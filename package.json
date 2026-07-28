@@ -55,6 +55,7 @@
     "better-sqlite3": "^12.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "d3-force-3d": "^3.0.6",
     "ecctrl": "^1.0.97",
     "electron-updater": "^6.6.2",
     "framer-motion": "^12.36.0",

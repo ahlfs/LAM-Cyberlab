@@ -28,6 +28,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LinksRouteImport } from './routes/links'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as HermesWorldRouteImport } from './routes/hermes-world'
+import { Route as GraphRouteImport } from './routes/graph'
 import { Route as FilesRouteImport } from './routes/files'
 import { Route as EchoStudioRouteImport } from './routes/echo-studio'
 import { Route as EarlyAccessRouteImport } from './routes/early-access'
@@ -289,6 +290,11 @@ const JobsRoute = JobsRouteImport.update({
 const HermesWorldRoute = HermesWorldRouteImport.update({
   id: '/hermes-world',
   path: '/hermes-world',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GraphRoute = GraphRouteImport.update({
+  id: '/graph',
+  path: '/graph',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FilesRoute = FilesRouteImport.update({
@@ -1145,6 +1151,7 @@ export interface FileRoutesByFullPath {
   '/early-access': typeof EarlyAccessRoute
   '/echo-studio': typeof EchoStudioRoute
   '/files': typeof FilesRoute
+  '/graph': typeof GraphRoute
   '/hermes-world': typeof HermesWorldRoute
   '/jobs': typeof JobsRoute
   '/links': typeof LinksRoute
@@ -1333,6 +1340,7 @@ export interface FileRoutesByTo {
   '/early-access': typeof EarlyAccessRoute
   '/echo-studio': typeof EchoStudioRoute
   '/files': typeof FilesRoute
+  '/graph': typeof GraphRoute
   '/hermes-world': typeof HermesWorldRoute
   '/jobs': typeof JobsRoute
   '/links': typeof LinksRoute
@@ -1521,6 +1529,7 @@ export interface FileRoutesById {
   '/early-access': typeof EarlyAccessRoute
   '/echo-studio': typeof EchoStudioRoute
   '/files': typeof FilesRoute
+  '/graph': typeof GraphRoute
   '/hermes-world': typeof HermesWorldRoute
   '/jobs': typeof JobsRoute
   '/links': typeof LinksRoute
@@ -1711,6 +1720,7 @@ export interface FileRouteTypes {
     | '/early-access'
     | '/echo-studio'
     | '/files'
+    | '/graph'
     | '/hermes-world'
     | '/jobs'
     | '/links'
@@ -1899,6 +1909,7 @@ export interface FileRouteTypes {
     | '/early-access'
     | '/echo-studio'
     | '/files'
+    | '/graph'
     | '/hermes-world'
     | '/jobs'
     | '/links'
@@ -2086,6 +2097,7 @@ export interface FileRouteTypes {
     | '/early-access'
     | '/echo-studio'
     | '/files'
+    | '/graph'
     | '/hermes-world'
     | '/jobs'
     | '/links'
@@ -2275,6 +2287,7 @@ export interface RootRouteChildren {
   EarlyAccessRoute: typeof EarlyAccessRoute
   EchoStudioRoute: typeof EchoStudioRoute
   FilesRoute: typeof FilesRoute
+  GraphRoute: typeof GraphRoute
   HermesWorldRoute: typeof HermesWorldRoute
   JobsRoute: typeof JobsRoute
   LinksRoute: typeof LinksRoute
@@ -2548,6 +2561,13 @@ declare module '@tanstack/react-router' {
       path: '/hermes-world'
       fullPath: '/hermes-world'
       preLoaderRoute: typeof HermesWorldRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/graph': {
+      id: '/graph'
+      path: '/graph'
+      fullPath: '/graph'
+      preLoaderRoute: typeof GraphRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/files': {
@@ -3991,6 +4011,7 @@ const rootRouteChildren: RootRouteChildren = {
   EarlyAccessRoute: EarlyAccessRoute,
   EchoStudioRoute: EchoStudioRoute,
   FilesRoute: FilesRoute,
+  GraphRoute: GraphRoute,
   HermesWorldRoute: HermesWorldRoute,
   JobsRoute: JobsRoute,
   LinksRoute: LinksRoute,

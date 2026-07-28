@@ -3,6 +3,7 @@ import {
   ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
+  Atom02Icon,
   BrainIcon,
   Building01Icon,
   Castle02Icon,
@@ -588,6 +589,7 @@ function ChatSidebarComponent({
   const isTerminalActive = pathname === '/terminal'
   const isJobsActive = pathname === '/jobs'
   const isMemoryActive = pathname === '/memory'
+  const isGraphActive = pathname === '/graph'
   const isLinksActive = pathname === '/links'
   const isTasksActive = pathname === '/tasks'
   const isConductorActive = pathname === '/conductor'
@@ -891,6 +893,13 @@ function ChatSidebarComponent({
       icon: BrainIcon,
       label: t('nav.memory'),
       active: isMemoryActive,
+    },
+    {
+      kind: 'link',
+      to: '/graph',
+      icon: Atom02Icon,
+      label: 'Graph',
+      active: isGraphActive,
     },
     {
       kind: 'link',
