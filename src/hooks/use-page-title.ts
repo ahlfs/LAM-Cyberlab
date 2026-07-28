@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
 
-const BASE_TITLE = 'Lam Cyberlab'
+const BASE_TITLE = 'LAM Cyberlab'
 
 /**
  * Sets document.title for the current page.
- * Usage: usePageTitle('Sessions') → "Sessions — Lam Cyberlab"
+ * Usage: usePageTitle('Sessions') → "Sessions — LAM Cyberlab"
  */
 export function usePageTitle(page: string) {
   useEffect(() => {

@@ -2539,7 +2539,7 @@ export function SettingsDialog({
                 Settings
               </DialogTitle>
               <DialogDescription className="sr-only">
-                Configure Lam Cyberlab
+                Configure LAM Cyberlab
               </DialogDescription>
             </div>
             <DialogClose

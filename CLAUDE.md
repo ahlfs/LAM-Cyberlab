@@ -1,4 +1,4 @@
-# Lam Cyberlab — Agent Notes
+# LAM Cyberlab — Agent Notes
 
 ## Design Context
 

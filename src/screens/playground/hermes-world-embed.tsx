@@ -62,7 +62,7 @@ export function HermesWorldEmbed() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(168,85,247,.24),transparent_48%),#050015]" />
           <div className="relative max-w-xl rounded-3xl border border-white/12 bg-black/45 px-6 py-6 text-center shadow-2xl backdrop-blur-xl">
             <div className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200/70">
-              Lam Cyberlab
+              LAM Cyberlab
             </div>
             <h1 className="mt-2 text-3xl font-black tracking-tight">
               Open HermesWorld in a full tab

@@ -1,4 +1,4 @@
-# Lam Cyberlab — Comprehensive Features Inventory
+# LAM Cyberlab — Comprehensive Features Inventory
 
 > **Version:** 2.0.0 | **Stack:** React 19 + TanStack Start/Router + Vite 7 + Tailwind CSS 4 + Zustand + xterm.js + Monaco Editor  
 > **Description:** Desktop workspace for Hermes Agent — chat, orchestration, and multi-agent coding pipelines

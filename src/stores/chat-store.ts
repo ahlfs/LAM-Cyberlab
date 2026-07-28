@@ -834,7 +834,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
           // Content-text dedup: identical assistant text within the same
           // session should never appear twice, even if message IDs differ
-          // (e.g. same reply routed from Telegram + Lam Cyberlab).
+          // (e.g. same reply routed from Telegram + LAM Cyberlab).
           if (
             normalizedMessage.role === 'assistant' &&
             newPlainText.length > 20 &&

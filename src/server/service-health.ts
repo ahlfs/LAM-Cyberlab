@@ -56,6 +56,6 @@ export async function checkAllServices(): Promise<Array<ServiceStatus>> {
     checkHttpReachable('9router', nineRouterUrl()),
     checkProcessRunning('Caddy', 'caddy'),
   ])
-  results.push({ name: 'Lam Cyberlab Workspace', status: 'up', latencyMs: 0 })
+  results.push({ name: 'LAM Cyberlab Workspace', status: 'up', latencyMs: 0 })
   return results
 }

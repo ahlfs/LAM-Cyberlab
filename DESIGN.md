@@ -1,5 +1,5 @@
 ---
-name: Lam Cyberlab
+name: LAM Cyberlab
 description: The command center UI for a self-hosted Hermes AI agent — chat, swarm, ops, and files in one inhabited shell.
 colors:
   harbor-night-teal: "#041C1C"
@@ -75,13 +75,13 @@ components:
     padding: "8px 12px"
 ---
 
-# Design System: Lam Cyberlab
+# Design System: LAM Cyberlab
 
 ## 1. Overview
 
 **Creative North Star: "The Agent Basecamp"**
 
-Lam Cyberlab is not an admin panel you visit; it is a basecamp you and your agents inhabit. The reference energy is Discord, not Jira: warm chat surfaces you can live in for hours, a sidebar with presence and life, an agent that reads as a character (avatar, activity, status) rather than a form field. The chrome is technical and confident — deep harbor-night surfaces, instruments that glow amber when they matter — but never cold. Everything conveys that a live system is breathing underneath: sessions streaming, workers running, jobs ticking.
+LAM Cyberlab is not an admin panel you visit; it is a basecamp you and your agents inhabit. The reference energy is Discord, not Jira: warm chat surfaces you can live in for hours, a sidebar with presence and life, an agent that reads as a character (avatar, activity, status) rather than a form field. The chrome is technical and confident — deep harbor-night surfaces, instruments that glow amber when they matter — but never cold. Everything conveys that a live system is breathing underneath: sessions streaming, workers running, jobs ticking.
 
 The system's single most important structural fact is the **theme contract**: every color on every surface flows through the semantic `--theme-*` custom-property layer (`bg → sidebar/panel → card → card2`, plus text, muted, accent, borders, chat, composer, code, states), implemented by fourteen first-class themes (Nous, Matrix, Hermes, Bronze, Slate, SciFi, Dracula — each with a light twin). The default and canonical palette is **Nous** (harbor-night teal, lantern cream, signal amber); all values in this document describe that default, and every rule must survive a theme swap.
 

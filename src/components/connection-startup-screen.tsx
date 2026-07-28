@@ -226,7 +226,7 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
         />
 
         <h1 className="text-[2rem] font-semibold tracking-tight text-white">
-          Lam Cyberlab
+          LAM Cyberlab
         </h1>
 
         {/* Connecting spinner */}
@@ -255,7 +255,7 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
               Welcome! Let&apos;s connect your backend
             </p>
             <p className="mt-2 text-sm leading-6 text-white/60">
-              Lam Cyberlab works with any OpenAI-compatible backend. Hermes Agent
+              LAM Cyberlab works with any OpenAI-compatible backend. Hermes Agent
               gateway APIs unlock enhanced features automatically when they are
               available.
             </p>

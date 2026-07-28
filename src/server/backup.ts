@@ -224,7 +224,7 @@ export async function restoreBackupZip(buffer: Buffer): Promise<RestoreResult> {
 
   const manifestEntry = zip.file('manifest.json')
   if (!manifestEntry) {
-    return { ok: false, error: 'Not a Lam Cyberlab backup (missing manifest.json).' }
+    return { ok: false, error: 'Not a LAM Cyberlab backup (missing manifest.json).' }
   }
   let manifest: BackupManifest
   try {
@@ -233,7 +233,7 @@ export async function restoreBackupZip(buffer: Buffer): Promise<RestoreResult> {
     return { ok: false, error: 'manifest.json is corrupt.' }
   }
   if (manifest.kind !== BACKUP_KIND) {
-    return { ok: false, error: 'This zip is not a Lam Cyberlab workspace backup.' }
+    return { ok: false, error: 'This zip is not a LAM Cyberlab workspace backup.' }
   }
   if (manifest.version > BACKUP_VERSION) {
     return {

@@ -1,5 +1,5 @@
 /**
- * Agora — shared types for the Lam Cyberlab community surface.
+ * Agora — shared types for the LAM Cyberlab community surface.
  *
  * v0.0: local mock lobby with fake users.
  * v0.1+: same types will be used for real WebSocket multiplayer.
@@ -41,7 +41,7 @@ export interface AgoraProfile {
   status: AgoraStatus
   /** Optional links (twitter, github, etc) */
   links?: { label: string; url: string }[]
-  /** Current activity hint, e.g. "Building Lam Cyberlab" */
+  /** Current activity hint, e.g. "Building LAM Cyberlab" */
   activity?: string
 }
 

@@ -27,7 +27,7 @@ export const Route = createFileRoute('/api/send')({
         return json(
           {
             ok: false,
-            error: 'Legacy send is not available in Lam Cyberlab.',
+            error: 'Legacy send is not available in LAM Cyberlab.',
           },
           { status: 501 },
         )

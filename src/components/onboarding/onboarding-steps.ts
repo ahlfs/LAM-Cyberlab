@@ -32,7 +32,7 @@ export type OnboardingStep = {
 export const ONBOARDING_STEPS: Array<OnboardingStep> = [
   {
     id: 'welcome',
-    title: 'Welcome to Lam Cyberlab',
+    title: 'Welcome to LAM Cyberlab',
     description: 'Your AI workspace powered by Hermes Agent',
     icon: Home01Icon,
     iconBg: 'bg-orange-500',

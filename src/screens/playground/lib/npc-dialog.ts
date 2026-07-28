@@ -55,7 +55,7 @@ export const NPC_DIALOG: Record<string, NpcDialogTree> = {
       'Welcome, builder. I am Athena. Hermes Agent is the messenger layer for your work: one interface that routes prompts to the right model and tool, then carries the result back into your workflow.',
     lore: [
       'These Training Grounds teach the Hermes loop: move, equip, speak, remember, and build.',
-      'Long before Lam Cyberlab, agents were tools. We invited them into a world instead.',
+      'Long before LAM Cyberlab, agents were tools. We invited them into a world instead.',
       'Start here, then walk through the Forge Gate when you are ready to build with Hermes for real.',
       'I am scripted for this hackathon. Soon a real Hermes agent will speak through me with deeper memory.',
     ],
@@ -97,7 +97,7 @@ export const NPC_DIALOG: Record<string, NpcDialogTree> = {
       'Hail, traveler. I am Apollo. Every world here begins as a song — a prompt that becomes a place.',
     lore: [
       'The Forge is loud. The Grove is melodic. The Arena is percussion. I write the score for each.',
-      'When Lam Cyberlab ships music generation in a quest, I am the one composing.',
+      'When LAM Cyberlab ships music generation in a quest, I am the one composing.',
     ],
     choices: [
       {
@@ -218,7 +218,7 @@ export const NPC_DIALOG: Record<string, NpcDialogTree> = {
       'Time is the only resource you never get back. I keep the archives so you do not relive a wasted hour.',
     lore: [
       'Every quest you complete is etched here. Open the Journal with J and you will see my work.',
-      'The cron jobs in Lam Cyberlab are also mine. I run on heartbeat.',
+      'The cron jobs in LAM Cyberlab are also mine. I run on heartbeat.',
     ],
     choices: [
       {
@@ -246,7 +246,7 @@ export const NPC_DIALOG: Record<string, NpcDialogTree> = {
     opening:
       'I track lost agents. In the Grove they hide between branches. Stay quiet and you will hear them.',
     lore: [
-      'When you run a long agent task in Lam Cyberlab, it walks somewhere. I find it when it forgets to come home.',
+      'When you run a long agent task in LAM Cyberlab, it walks somewhere. I find it when it forgets to come home.',
       'Mini-map is coming. I will mark every agent on it.',
     ],
     choices: [

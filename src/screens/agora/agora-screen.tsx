@@ -1,5 +1,5 @@
 /**
- * AgoraScreen — the Lam Cyberlab community lobby (v0.0).
+ * AgoraScreen — the LAM Cyberlab community lobby (v0.0).
  *
  * Layout:
  *   [Top bar: title · BETA · online count]

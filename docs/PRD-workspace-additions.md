@@ -1,9 +1,9 @@
-# PRD — Fitur Tambahan Lam Cyberlab (ahlfs)
+# PRD — Fitur Tambahan LAM Cyberlab (ahlfs)
 
 - **Owner:** ahlfs (ryuezzx@gmail.com)
 - **Dibuat:** 2026-07-18
 - **Status:** Fitur 1–3 selesai (2026-07-18/19); Fitur 4 didefinisikan 2026-07-19, belum dikerjakan.
-- **Konteks:** Empat fitur yang ingin ditambahkan ke instance Lam Cyberlab. Mengikuti prinsip zero-fork repo ini: semua perubahan hidup di workspace (UI/control-plane), tidak menyentuh `hermes-agent`.
+- **Konteks:** Empat fitur yang ingin ditambahkan ke instance LAM Cyberlab. Mengikuti prinsip zero-fork repo ini: semua perubahan hidup di workspace (UI/control-plane), tidak menyentuh `hermes-agent`.
 
 ---
 
@@ -74,7 +74,7 @@ Panel pemantauan resource mesin host (seperti dashboard CasaOS): CPU, RAM, disk,
 > **Revisi 2026-07-19 (setelah dipakai user beberapa waktu):** (1) Kartu link sekarang `<a href="/api/links/go/:id" target="_blank">` langsung — klik kartu = buka link (mencatat "Dikunjungi"), bukan buka dialog edit. (2) Satu-satunya tombol terlihat di kartu adalah menu titik tiga (Edit/Favorite/Archive/Move to Trash, atau Restore/Delete permanently di Trash) — ikon Open & Favorite terpisah dihapus dari kartu. (3) **Fitur tags dihapus total** (tabel `tags`/`link_tags`, `TagInput`, route `/api/links/tags`, param `tags` di create/update — semua dibuang, bukan disembunyikan). (4) **Folder jadi opsional** — `createLink`/`updateLink` menerima `folderId?: number | null`, dialog link default ke "No folder", tombol "New link" tidak lagi butuh folder ada dulu. Diverifikasi langsung terhadap data nyata milik user (folder "Kuliah") tanpa merusaknya.
 
 ### Ringkasan
-Membangun ulang **Linku** — aplikasi manajemen bookmark buatan ahlfs (PHP native + Medoo + MySQL, repo: https://github.com/ahlfs/Linku) — sebagai fitur native Lam Cyberlab (React + TS + API route lokal).
+Membangun ulang **Linku** — aplikasi manajemen bookmark buatan ahlfs (PHP native + Medoo + MySQL, repo: https://github.com/ahlfs/Linku) — sebagai fitur native LAM Cyberlab (React + TS + API route lokal).
 
 ### Fitur Linku asli yang dijadikan referensi (dari README repo)
 - **Physical Folder Design:** folder visual seperti map fisik dengan tab warna dinamis, seluruh area folder klik-able.
@@ -134,7 +134,7 @@ Membangun ulang **Linku** — aplikasi manajemen bookmark buatan ahlfs (PHP nati
 > **Belum dikerjakan:** Lapis 2 (checklist firewall VPS — sudah didokumentasikan inline di panel "Reachability" halaman ini sebagai 4 langkah, jadi sebagian sudah tercakup) dan Lapis 3 (Caddy + domain custom + `scripts/setup-remote-access.sh`) — lihat scope asli di bawah, statusnya masih 🔲.
 
 ### Ringkasan
-Memungkinkan instance Lam Cyberlab (biasanya jalan di VPS headless, tanpa display — hanya terminal) diakses lewat internet publik: via IP publik VPS langsung, dan/atau lewat domain custom dengan HTTPS otomatis. **Wajib** mewajibkan password saat mode ini dinyalakan, supaya kalau IP/domain bocor, instance tidak terbuka begitu saja.
+Memungkinkan instance LAM Cyberlab (biasanya jalan di VPS headless, tanpa display — hanya terminal) diakses lewat internet publik: via IP publik VPS langsung, dan/atau lewat domain custom dengan HTTPS otomatis. **Wajib** mewajibkan password saat mode ini dinyalakan, supaya kalau IP/domain bocor, instance tidak terbuka begitu saja.
 
 ### Temuan penting dari audit kode (sebelum desain fitur ini)
 Sebagian fondasi **sudah ada**, jadi fitur ini bukan membangun dari nol:

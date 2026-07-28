@@ -67,7 +67,7 @@ export function getUnavailableReason(
   const probes = normalized
     ? FEATURE_PROBES[normalized].join(' or ')
     : '/api/gateway-status'
-  return `${getFeatureLabel(feature)} is not reachable through the local Lam Cyberlab probes yet. Verify ${probes} before starting another gateway; if those endpoints pass, refresh or reprobe the Workspace UI.`
+  return `${getFeatureLabel(feature)} is not reachable through the local LAM Cyberlab probes yet. Verify ${probes} before starting another gateway; if those endpoints pass, refresh or reprobe the Workspace UI.`
 }
 
 export function createCapabilityUnavailablePayload(

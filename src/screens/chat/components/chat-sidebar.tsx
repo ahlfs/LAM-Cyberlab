@@ -997,7 +997,7 @@ function ChatSidebarComponent({
                   className="text-sm font-semibold tracking-tight"
                   style={{ color: 'var(--theme-text)' }}
                 >
-                  Lam Cyberlab
+                  LAM Cyberlab
                 </span>
               </Link>
             </motion.div>

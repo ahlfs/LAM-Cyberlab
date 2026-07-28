@@ -35,7 +35,7 @@ describe('checkAllServices', () => {
     expect(byName['Hermes Dashboard'].status).toBe('up')
     expect(byName['9router'].status).toBe('up')
     expect(byName['Caddy'].status).toBe('up')
-    expect(byName['Lam Cyberlab Workspace'].status).toBe('up')
+    expect(byName['LAM Cyberlab Workspace'].status).toBe('up')
   })
 
   it('treats a non-2xx HTTP response as reachable (something is answering)', async () => {

@@ -10,13 +10,13 @@ web
 
 ## Users
 
-The primary user is the instance owner (ahlfs): a self-hoster running Lam Cyberlab on their own Debian server as a daily driver, reached from browser, PWA, and Tailscale devices. Secondary audience is the open-source community using the public repo for their own instances — the UI must stay legible to a newcomer who just connected their first gateway, not only to the owner who knows every corner.
+The primary user is the instance owner (ahlfs): a self-hoster running LAM Cyberlab on their own Debian server as a daily driver, reached from browser, PWA, and Tailscale devices. Secondary audience is the open-source community using the public repo for their own instances — the UI must stay legible to a newcomer who just connected their first gateway, not only to the owner who knows every corner.
 
 It is an all-day tool, not a occasional visit: daily agent chat, multi-agent/swarm orchestration, server monitoring and ops, and managing files, memory, and skills all happen in the same shell.
 
 ## Product Purpose
 
-Lam Cyberlab is the command center for a self-hosted Hermes AI agent: chat, sessions, memory, skills, jobs, terminal, dashboards, and swarm orchestration in one interface, zero-fork on top of vanilla `hermes-agent`. Success means the owner can live in it for hours and run their whole agent fleet from it — and a stranger cloning the repo reaches a working, understandable workspace without help.
+LAM Cyberlab is the command center for a self-hosted Hermes AI agent: chat, sessions, memory, skills, jobs, terminal, dashboards, and swarm orchestration in one interface, zero-fork on top of vanilla `hermes-agent`. Success means the owner can live in it for hours and run their whole agent fleet from it — and a stranger cloning the repo reaches a working, understandable workspace without help.
 
 ## Positioning
 

@@ -86,7 +86,7 @@ export function ChatEmptyState({
           className="micro-label mb-2"
           style={{ color: 'var(--theme-muted)' }}
         >
-          Lam Cyberlab
+          LAM Cyberlab
         </p>
 
         {/* Editorial display title */}

@@ -180,7 +180,7 @@ export function MobilePromptTrigger() {
                     className="text-xs"
                     style={{ color: 'var(--theme-muted)' }}
                   >
-                    Connect your phone to this Lam Cyberlab instance in a
+                    Connect your phone to this LAM Cyberlab instance in a
                     few steps.
                   </p>
                 </div>

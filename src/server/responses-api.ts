@@ -10,7 +10,7 @@
  *   - stable call_id for matching start/done/result
  *   - tool result text (`function_call_output`)
  *
- * That is everything the Lam Cyberlab TUI tool card needs to render
+ * That is everything the LAM Cyberlab TUI tool card needs to render
  * mid-run with INPUT JSON expanded and live duration counters.
  *
  * This module is the thin consumer side. It talks to the gateway, parses

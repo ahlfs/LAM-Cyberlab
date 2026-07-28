@@ -156,7 +156,7 @@ describe('syncSwarmProfileIdentity', () => {
         id: 'swarm5',
         name: 'Builder',
         role: 'Primary Builder',
-        specialty: 'full-stack implementation across Lam Cyberlab and Swarm2',
+        specialty: 'full-stack implementation across LAM Cyberlab and Swarm2',
         model: 'GPT-5.5',
         mission: 'Ship focused product slices with tests and clean diffs.',
         skills: ['swarm-ui-worker', 'swarm-worker-core'],

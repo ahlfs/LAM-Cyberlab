@@ -58,7 +58,7 @@ export const BOT_PROFILES: Record<PlaygroundWorldId, BotProfile[]> = {
       avatar: 'eros',
       color: '#f472b6',
       spawn: [7, 0, 7],
-      lines: ['promptcraft is wildly fun', 'who else is on Lam Cyberlab?', 'see u in the Grove'],
+      lines: ['promptcraft is wildly fun', 'who else is on LAM Cyberlab?', 'see u in the Grove'],
     },
     {
       id: 'bot-agora-3',

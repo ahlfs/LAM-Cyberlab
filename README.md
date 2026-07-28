@@ -1,16 +1,16 @@
 <div align="center">
 
-<img src="./public/claude-avatar.webp" alt="Lam Cyberlab" width="80" style="border-radius: 16px" />
+<img src="./public/claude-avatar.webp" alt="LAM Cyberlab" width="80" style="border-radius: 16px" />
 <!-- avatar filename retained for cache stability — do not rename without coordinated cache-bust -->
 
-# Lam Cyberlab
+# LAM Cyberlab
 
 **Personal AI agent command center — chat, files, memory, skills, terminal, link manager, and system monitoring in one place.**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 
-> **Attribution.** Lam Cyberlab is a personal fork of
+> **Attribution.** LAM Cyberlab is a personal fork of
 > [**Hermes Workspace**](https://github.com/outsourc-e/hermes-workspace) (MIT) by outsourc-e,
 > which itself runs on vanilla [`NousResearch/hermes-agent`](https://github.com/NousResearch/hermes-agent).
 > Full credit for the original architecture and feature set goes to the upstream project;
@@ -240,7 +240,7 @@ See `.env.example` in this repo for the full annotated list.
 
 ## 🧠 Local Models (Ollama, LM Studio, vLLM, and friends)
 
-Lam Cyberlab supports two modes with local models.
+LAM Cyberlab supports two modes with local models.
 
 ### Portable Mode (Easiest)
 
@@ -349,7 +349,7 @@ directly. When absent, Workspace falls back to its native Swarm dispatch
 
 ## 🐳 Docker
 
-Runs both the **Hermes Agent gateway** and **Lam Cyberlab** in containers, built
+Runs both the **Hermes Agent gateway** and **LAM Cyberlab** in containers, built
 from this repo's own source (there's no published container image for a personal
 fork, so this always builds locally rather than pulling someone else's image).
 
@@ -430,26 +430,26 @@ docker compose down && docker compose -f docker-compose.yml -f docker-compose.de
 
 ## 📱 Install as App (Recommended)
 
-Lam Cyberlab is a **Progressive Web App (PWA)** — install it for the full native
+LAM Cyberlab is a **Progressive Web App (PWA)** — install it for the full native
 app experience with no browser chrome, keyboard shortcuts, and offline support.
 
 ### 🖥️ Desktop (macOS / Windows / Linux)
 
-1. Open Lam Cyberlab in **Chrome** or **Edge** at `http://localhost:3000`
+1. Open LAM Cyberlab in **Chrome** or **Edge** at `http://localhost:3000`
 2. Click the **install icon** (⊕) in the address bar
-3. Click **Install** — Lam Cyberlab opens as a standalone desktop app
+3. Click **Install** — LAM Cyberlab opens as a standalone desktop app
 4. Pin to Dock / Taskbar for quick access
 
 ### 📱 iPhone / iPad (iOS Safari)
 
-1. Open Lam Cyberlab in **Safari** on your iPhone
+1. Open LAM Cyberlab in **Safari** on your iPhone
 2. Tap the **Share** button (□↑)
 3. Scroll down and tap **"Add to Home Screen"**
 4. Tap **Add**
 
 ### 🤖 Android
 
-1. Open Lam Cyberlab in **Chrome** on your Android device
+1. Open LAM Cyberlab in **Chrome** on your Android device
 2. Tap the **three-dot menu** (⋮) → **"Add to Home screen"**
 3. Tap **Add**
 
@@ -457,7 +457,7 @@ app experience with no browser chrome, keyboard shortcuts, and offline support.
 
 ## 📡 Mobile Access via Tailscale
 
-Access Lam Cyberlab from anywhere on your devices — no port forwarding, no VPN complexity.
+Access LAM Cyberlab from anywhere on your devices — no port forwarding, no VPN complexity.
 
 1. **Install Tailscale** on your server and your phone: [tailscale.com/download](https://tailscale.com/download)
 2. **Sign in** to the same Tailscale account on both devices
@@ -466,7 +466,7 @@ Access Lam Cyberlab from anywhere on your devices — no port forwarding, no VPN
    tailscale ip -4
    # Example output: 100.x.x.x
    ```
-4. **Open Lam Cyberlab on your phone:** `http://100.x.x.x:3000`
+4. **Open LAM Cyberlab on your phone:** `http://100.x.x.x:3000`
 5. **Add to Home Screen** using the steps above for the full app experience
 
 > Tailscale works over any network — home wifi, mobile data, even across countries. Your traffic stays end-to-end encrypted.
@@ -516,7 +516,7 @@ different ways rather than shoving everything into one tool:
 |---|---|---|
 | Hermes Agent gateway | systemd/launchd, via `hermes gateway install` | Native to hermes-agent itself — already the officially-supported way to keep it running. |
 | Hermes Agent dashboard | pm2 | Has no built-in service-install command of its own; this is the gap pm2 fills. |
-| Lam Cyberlab workspace | pm2 | A plain Node process — pm2 is the standard tool for this. |
+| LAM Cyberlab workspace | pm2 | A plain Node process — pm2 is the standard tool for this. |
 
 Running the gateway under both systemd *and* pm2 would mean two supervisors
 fighting over the same process, so it stays on its native systemd unit.

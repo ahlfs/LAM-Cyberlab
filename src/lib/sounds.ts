@@ -1,5 +1,5 @@
 /**
- * Sound Notification System for Lam Cyberlab
+ * Sound Notification System for LAM Cyberlab
  * Uses Web Audio API to synthesize unique sounds without audio files.
  */
 

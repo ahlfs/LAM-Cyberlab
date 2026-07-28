@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Lam Cyberlab — one-liner installer
+# LAM Cyberlab — one-liner installer
 # (personal fork of Hermes Workspace by outsourc-e: https://github.com/outsourc-e/hermes-workspace)
 #
 # Usage:

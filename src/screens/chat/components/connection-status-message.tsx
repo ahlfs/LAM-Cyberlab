@@ -25,7 +25,7 @@ function classifyConnectionError(
   if (!normalizedError && !status) {
     return {
       title: 'Not connected',
-      description: "Lam Cyberlab can't reach Hermes Agent.",
+      description: "LAM Cyberlab can't reach Hermes Agent.",
       action: 'Check that Hermes is running, then try again.',
     }
   }

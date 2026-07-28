@@ -1,6 +1,6 @@
 {
-  "name": "Lam Cyberlab",
-  "short_name": "Lam Cyberlab",
+  "name": "LAM Cyberlab",
+  "short_name": "LAM Cyberlab",
   "description": "Installable control surface for Hermes Agent chat, tools, files, memory, jobs, and agent workflows.",
   "id": "/?app=hermes-workspace",
   "start_url": "/?source=pwa",

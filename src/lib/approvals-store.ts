@@ -1,4 +1,4 @@
-// Stub — exec approvals are not used in Lam Cyberlab.
+// Stub — exec approvals are not used in LAM Cyberlab.
 // Kept as a no-op to satisfy chat-screen imports without breaking chat.
 
 export interface ApprovalRequest {

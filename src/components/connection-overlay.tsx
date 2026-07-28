@@ -1,4 +1,4 @@
-// Stub — connection overlay (not used in Lam Cyberlab)
+// Stub — connection overlay (not used in LAM Cyberlab)
 export function useConnectionRestart() {
   return {
     triggerRestart: async (fn: () => Promise<void>) => {

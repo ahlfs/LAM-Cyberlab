@@ -65,7 +65,7 @@ function getNodeColor(type?: string): string {
 }
 
 function getNodeRadius(connections: number): number {
-  return Math.max(3, Math.min(12, 3 + connections * 1.5))
+  return Math.max(5, Math.min(18, 5 + connections * 2.5))
 }
 
 // ── Force Layout Hook ───────────────────────────────────────────────
@@ -113,10 +113,11 @@ function useForceLayout(
         .forceSimulation(simNodes, 3)
         .force(
           'link',
-          d3.forceLink(simLinks).id((d: any) => d.id).distance(20).strength(0.5),
+          d3.forceLink(simLinks).id((d: any) => d.id).distance(250).strength(0.2),
         )
-        .force('charge', d3.forceManyBody().strength(-150))
+        .force('charge', d3.forceManyBody().strength(-1500))
         .force('center', d3.forceCenter())
+        .force('collide', d3.forceCollide().radius(40))
         .stop()
 
       // Run simulation synchronously
@@ -239,8 +240,8 @@ function CanvasRenderer({
       const sinX = Math.sin(rotX)
       const cosY = Math.cos(rotY)
       const sinY = Math.sin(rotY)
-      const focalLength = 400 * zoom
-      const cameraDistance = 400
+      const focalLength = 600
+      const cameraDistance = 350
 
       // Compute active highlights (search + selected + hovered + their edges)
       const activeIds = new Set<string>()
@@ -280,7 +281,8 @@ function CanvasRenderer({
         const finalZ = node.y * sinX + r1z * cosX
 
         // Perspective
-        const scale = focalLength / (focalLength + finalZ + cameraDistance)
+        const baseScale = focalLength / (focalLength + finalZ + cameraDistance)
+        const scale = baseScale * zoom
         const px = r1x * scale + cx
         const py = r2y * scale + cy
         const pr = getNodeRadius(node.connections) * scale
@@ -335,19 +337,44 @@ function CanvasRenderer({
         const baseColor = getNodeColor(node.type)
         const radius = isHighlighted || isSelected ? node.pr * 1.5 : node.pr
         
+        const actualRadius = Math.max(0.5, radius)
+        
         ctx.beginPath()
-        ctx.arc(node.px, node.py, Math.max(0.5, radius), 0, Math.PI * 2)
+        ctx.arc(node.px, node.py, actualRadius, 0, Math.PI * 2)
         
         if (isFaded) {
           ctx.fillStyle = 'rgba(148, 163, 184, 0.15)'
+          ctx.fill()
         } else {
-          ctx.fillStyle = baseColor
+          // 3D Volumetric Sphere Gradient
+          const gradient = ctx.createRadialGradient(
+            node.px - actualRadius * 0.3,
+            node.py - actualRadius * 0.3,
+            actualRadius * 0.1,
+            node.px,
+            node.py,
+            actualRadius
+          )
+          
+          gradient.addColorStop(0, '#FFFFFF') // Specular highlight
+          gradient.addColorStop(0.4, baseColor) // Midtone base color
+          gradient.addColorStop(1, `color-mix(in srgb, ${baseColor}, black 40%)`) // Shadow edge
+          
+          ctx.fillStyle = gradient
+          
           if (isHighlighted || isSelected) {
             ctx.shadowColor = baseColor
-            ctx.shadowBlur = 10 * node.scale
+            ctx.shadowBlur = 15 * node.scale
           }
+          ctx.fill()
+          
+          // Glossy rim light outline
+          ctx.beginPath()
+          ctx.arc(node.px, node.py, actualRadius, 0, Math.PI * 2)
+          ctx.strokeStyle = `color-mix(in srgb, ${baseColor}, white 40%)`
+          ctx.lineWidth = Math.max(0.5, 1 * node.scale)
+          ctx.stroke()
         }
-        ctx.fill()
         
         if (isSelected || isSearchHit) {
            ctx.strokeStyle = '#FFFFFF'
@@ -359,10 +386,10 @@ function CanvasRenderer({
 
         // Draw Label if highlighted
         if (isHighlighted || isSelected) {
-          ctx.font = `${Math.max(10, 12 * Math.min(1.5, node.scale))}px Inter, sans-serif`
+          ctx.font = `${Math.max(12, 14 * Math.min(1.5, node.scale))}px Inter, sans-serif`
           ctx.fillStyle = '#E2E8F0'
           ctx.textAlign = 'center'
-          ctx.fillText(node.title, node.px, node.py - radius - (5 * node.scale))
+          ctx.fillText(node.title, node.px, node.py - radius - (6 * node.scale))
         }
       }
 

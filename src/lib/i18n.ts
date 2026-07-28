@@ -1,5 +1,5 @@
 /**
- * Lightweight i18n — UI string translations for Lam Cyberlab.
+ * Lightweight i18n — UI string translations for LAM Cyberlab.
  * Add new languages by adding a locale map below.
  */
 

@@ -346,7 +346,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
                 className="text-[13px] font-medium select-none"
                 style={{ color: 'var(--theme-accent, #B98A44)' }}
               >
-                Lam Cyberlab
+                LAM Cyberlab
               </span>
             </div>
             {/* Right spacer to balance */}

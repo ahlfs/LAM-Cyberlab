@@ -974,7 +974,7 @@ function ChatDisplaySection() {
           />
         </SettingsRow>
       </SettingsSection>
-      {/* Mobile Navigation removed — not relevant for Lam Cyberlab */}
+      {/* Mobile Navigation removed — not relevant for LAM Cyberlab */}
     </>
   )
 }

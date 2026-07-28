@@ -1,4 +1,4 @@
-// Stub — research card is a legacy feature, not used in Lam Cyberlab
+// Stub — research card is a legacy feature, not used in LAM Cyberlab
 
 export interface ResearchStep {
   id: string

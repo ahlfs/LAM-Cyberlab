@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Configure Caddy as a reverse proxy in front of Lam Cyberlab, giving it a
+# Configure Caddy as a reverse proxy in front of LAM Cyberlab, giving it a
 # custom domain with automatic HTTPS (Let's Encrypt via Caddy's built-in
 # ACME client — no manual certificate handling).
 #

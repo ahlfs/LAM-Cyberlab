@@ -69,7 +69,7 @@ function EarlyAccessRoute() {
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             {[
-              ['1', 'Star the repo', 'Star Lam Cyberlab on GitHub for updates.'],
+              ['1', 'Star the repo', 'Star LAM Cyberlab on GitHub for updates.'],
               ['2', 'Hop in Discord', 'Get notified the moment public play is live.'],
               ['3', 'Watch the trailer', 'The launch trailer drops with the public world.'],
             ].map(([i, title, copy]) => (

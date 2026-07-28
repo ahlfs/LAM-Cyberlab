@@ -59,7 +59,7 @@ export function McpScreen() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1.5">
               <p className="text-xs font-medium uppercase text-primary-500 tabular-nums">
-                Lam Cyberlab · MCP
+                LAM Cyberlab · MCP
               </p>
               <h1 className="text-2xl font-medium text-ink text-balance sm:text-3xl">
                 MCP Servers

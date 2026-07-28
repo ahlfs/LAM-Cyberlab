@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Lam Cyberlab, please report it responsibly.
+If you discover a security vulnerability in LAM Cyberlab, please report it responsibly.
 
 **Do NOT open a public GitHub issue for security vulnerabilities.**
 
@@ -12,7 +12,7 @@ We will acknowledge your report within 48 hours and aim to provide a fix within 
 
 ## Scope
 
-- Lam Cyberlab web application code
+- LAM Cyberlab web application code
 - API routes and Claude communication
 - Authentication and session management
 - Client-side data handling and rendering

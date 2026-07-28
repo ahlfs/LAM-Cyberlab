@@ -129,7 +129,7 @@ export const Route = createFileRoute('/api/hermes-tasks/$taskId')({
 
           const hasPrior = Boolean(task.session_id && priorContext)
           const briefing = [
-            'You are picking up a task from the Lam Cyberlab task board. Here is the full context:',
+            'You are picking up a task from the LAM Cyberlab task board. Here is the full context:',
             '',
             `**Task:** ${task.title}`,
             `**Status:** ${task.column}  |  **Priority:** ${task.priority}  |  **Assignee:** ${task.assignee ?? 'Unassigned'}`,
