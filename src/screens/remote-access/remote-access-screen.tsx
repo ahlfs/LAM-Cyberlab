@@ -438,6 +438,9 @@ export function RemoteAccessScreen() {
             HTTPS. The workspace itself can stay on <code>127.0.0.1</code> — only
             Caddy needs to face the internet, so you don't need "Expose to
             internet" above for this path.
+            <br />
+            <br />
+            <strong style={{ color: 'var(--theme-warning)' }}>Note:</strong> This automation script requires a Linux (Debian/Ubuntu) environment and is designed exclusively for VPS deployments, not local laptops.
           </p>
 
           <div className="min-w-0 flex-1">
