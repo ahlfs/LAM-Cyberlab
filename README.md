@@ -47,6 +47,7 @@ Start here: [docs/swarm/](./docs/swarm/)
 
 - 💬 **Chat** — Real-time SSE streaming, tool call rendering, multi-session, markdown + syntax highlighting
 - 🧠 **Memory** — Browse, search, and edit agent memory; markdown live editor
+- 🌐 **Graph** — Interactive 3D knowledge graph visualizer for your Second Brain
 - 🔗 **Links** — Personal link manager: colored folders, favorites/archive/trash, search, visit/open stats
 - 🖥️ **System** — Live host monitor: CPU (per-core), memory, disk, network, uptime
 - 🧩 **Skills** — Browse 2,000+ skills with origin badges, filters, source paths, marketplace
@@ -796,6 +797,10 @@ processed):
 
 Passes 1, 2, 5 are free (run locally). Passes 3 and 4 call the LLM, so they
 consume tokens on whatever provider `hermes` uses.
+
+### Visualization
+
+The generated `04-Wiki/` can be visualized interactively using the **Graph** page (`/graph`) in the Lam Cyberlab UI. It provides a lightweight 3D-projected force layout of all your entities and concepts.
 
 ### How it makes the AI "smarter"
 
