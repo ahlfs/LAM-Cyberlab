@@ -89,9 +89,9 @@ Before starting, ensure you have the following installed on your system:
 
 | Prerequisite | Version | Description |
 |---|---|---|
-| **Node.js** | 22+ | Required to run the Lam-Cyberlab web server |
-| **pnpm** | 9+ | Package manager (`npm install -g pnpm` or `corepack enable`) |
-| **Git** | latest | Required to clone this repository |
+| **Node.js** | 22+ | Required to run the Lam-Cyberlab web server. [Download Node.js](https://nodejs.org/) |
+| **pnpm** | 9+ | Package manager (`npm install -g pnpm`). [Installation guide](https://pnpm.io/installation) |
+| **Git** | latest | Required to clone this repository. [Download Git](https://git-scm.com/downloads) |
 | **Hermes Agent** | modified fork | **CRITICAL:** You must use the modified fork of Hermes Agent for full compatibility. See instructions at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent). |
 
 ---
