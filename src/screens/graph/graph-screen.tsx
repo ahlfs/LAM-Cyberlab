@@ -1,18 +1,10 @@
 /**
- * 3D Knowledge Graph — Second Brain Visualizer
+ * Lightweight 2D Knowledge Graph (Fake 3D Projection)
  *
- * Renders the entire Second Brain (Obsidian Wiki) as an interactive
- * force-directed 3D graph using Three.js (react-three-fiber).
- *
- * Architecture:
- *   1. Fetch graph data from /api/knowledge/graph (nodes + edges)
- *   2. Compute 3D positions via d3-force-3d simulation
- *   3. Render spheres (nodes) + lines (edges) in a <Canvas>
- *   4. User can orbit, zoom, hover, click, and search
+ * Uses d3-force-3d for physical layout, but renders completely
+ * on a standard HTML5 <canvas> to save GPU/CPU resources.
+ * No WebGL or Three.js required.
  */
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, Text, Billboard } from '@react-three/drei'
-import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import { useQuery } from '@tanstack/react-query'
 import {
   useCallback,
@@ -21,7 +13,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import * as THREE from 'three'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Search01Icon,
@@ -55,7 +46,7 @@ type LayoutNode = GraphNode & {
   connections: number
 }
 
-// ── Colors ──────────────────────────────────────────────────────────
+// ── Colors & Sizes ──────────────────────────────────────────────────
 
 const NODE_COLORS: Record<string, string> = {
   entity: '#60A5FA',
@@ -63,9 +54,10 @@ const NODE_COLORS: Record<string, string> = {
   default: '#94A3B8',
 }
 
-const EDGE_COLOR = '#334155'
-const EDGE_HOVER_COLOR = '#60A5FA'
 const BG_COLOR = '#0B0F1A'
+const EDGE_COLOR = 'rgba(148, 163, 184, 0.25)' // Slate-400 with opacity
+const EDGE_FADED_COLOR = 'rgba(148, 163, 184, 0.05)'
+const EDGE_HIGHLIGHT_COLOR = 'rgba(96, 165, 250, 0.6)' // Blue-400
 
 function getNodeColor(type?: string): string {
   if (!type) return NODE_COLORS.default
@@ -73,7 +65,7 @@ function getNodeColor(type?: string): string {
 }
 
 function getNodeRadius(connections: number): number {
-  return Math.max(0.15, Math.min(0.6, 0.15 + connections * 0.05))
+  return Math.max(3, Math.min(12, 3 + connections * 1.5))
 }
 
 // ── Force Layout Hook ───────────────────────────────────────────────
@@ -90,11 +82,9 @@ function useForceLayout(
       return
     }
 
-    // Dynamic import so d3-force-3d doesn't break SSR
     void (async () => {
       const d3 = await import('d3-force-3d')
 
-      // Count connections per node
       const connectionCount = new Map<string, number>()
       for (const node of nodes) connectionCount.set(node.id, 0)
       for (const edge of edges) {
@@ -108,7 +98,6 @@ function useForceLayout(
         )
       }
 
-      // Build simulation nodes & links
       const simNodes = nodes.map((n) => ({
         ...n,
         connections: connectionCount.get(n.id) ?? 0,
@@ -124,11 +113,10 @@ function useForceLayout(
         .forceSimulation(simNodes, 3)
         .force(
           'link',
-          d3.forceLink(simLinks).id((d: any) => d.id).distance(3).strength(0.4),
+          d3.forceLink(simLinks).id((d: any) => d.id).distance(20).strength(0.5),
         )
-        .force('charge', d3.forceManyBody().strength(-30))
+        .force('charge', d3.forceManyBody().strength(-150))
         .force('center', d3.forceCenter())
-        .force('collision', d3.forceCollide().radius(1))
         .stop()
 
       // Run simulation synchronously
@@ -153,262 +141,324 @@ function useForceLayout(
   return layout
 }
 
-// ── 3D Node Component ───────────────────────────────────────────────
+// ── Fake 3D Canvas Renderer ─────────────────────────────────────────
 
-function GraphNodeMesh({
-  node,
-  isHighlighted,
-  isSelected,
-  isFaded,
+function CanvasRenderer({
+  nodes,
+  edges,
+  hoveredNodeId,
+  selectedNodeId,
+  searchHighlightIds,
   onHover,
   onClick,
 }: {
-  node: LayoutNode
-  isHighlighted: boolean
-  isSelected: boolean
-  isFaded: boolean
-  onHover: (node: LayoutNode | null) => void
-  onClick: (node: LayoutNode) => void
-}) {
-  const meshRef = useRef<THREE.Mesh>(null)
-  const color = getNodeColor(node.type)
-  const radius = getNodeRadius(node.connections)
-  const emissiveIntensity = isSelected ? 1.2 : isHighlighted ? 0.8 : 0.3
-
-  useFrame(() => {
-    if (meshRef.current) {
-      const targetScale = isHighlighted || isSelected ? 1.3 : 1
-      const s = meshRef.current.scale.x
-      meshRef.current.scale.setScalar(s + (targetScale - s) * 0.1)
-    }
-  })
-
-  return (
-    <group position={[node.x, node.y, node.z]}>
-      <mesh
-        ref={meshRef}
-        onPointerOver={(e) => {
-          e.stopPropagation()
-          onHover(node)
-          document.body.style.cursor = 'pointer'
-        }}
-        onPointerOut={() => {
-          onHover(null)
-          document.body.style.cursor = 'auto'
-        }}
-        onClick={(e) => {
-          e.stopPropagation()
-          onClick(node)
-        }}
-      >
-        <sphereGeometry args={[radius, 24, 24]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={emissiveIntensity}
-          transparent={isFaded}
-          opacity={isFaded ? 0.15 : 1}
-          toneMapped={false}
-        />
-      </mesh>
-
-      {/* Label on hover/select */}
-      {(isHighlighted || isSelected) && (
-        <Billboard follow lockX={false} lockY={false} lockZ={false}>
-          <Text
-            position={[0, radius + 0.35, 0]}
-            fontSize={0.28}
-            color="#E2E8F0"
-            anchorX="center"
-            anchorY="bottom"
-            outlineWidth={0.02}
-            outlineColor="#0B0F1A"
-            font="/fonts/inter-latin-400-normal.woff2"
-          >
-            {node.title}
-          </Text>
-        </Billboard>
-      )}
-    </group>
-  )
-}
-
-// ── 3D Edge Component ───────────────────────────────────────────────
-
-function GraphEdgeLine({
-  from,
-  to,
-  isFaded,
-}: {
-  from: [number, number, number]
-  to: [number, number, number]
-  isFaded: boolean
-}) {
-  const points = useMemo(
-    () => [new THREE.Vector3(...from), new THREE.Vector3(...to)],
-    [from, to],
-  )
-  const geometry = useMemo(() => {
-    const geo = new THREE.BufferGeometry().setFromPoints(points)
-    return geo
-  }, [points])
-
-  return (
-    <line geometry={geometry}>
-      <lineBasicMaterial
-        color={isFaded ? '#1E293B' : EDGE_COLOR}
-        transparent
-        opacity={isFaded ? 0.08 : 0.35}
-      />
-    </line>
-  )
-}
-
-// ── Camera Auto-Focus ───────────────────────────────────────────────
-
-function CameraFocus({
-  target,
-}: {
-  target: { x: number; y: number; z: number } | null
-}) {
-  const { camera } = useThree()
-  const targetPos = useRef(new THREE.Vector3())
-  const active = useRef(false)
-
-  useEffect(() => {
-    if (target) {
-      targetPos.current.set(target.x, target.y, target.z)
-      active.current = true
-    } else {
-      active.current = false
-    }
-  }, [target])
-
-  useFrame(() => {
-    if (!active.current) return
-    const dir = targetPos.current
-      .clone()
-      .sub(camera.position)
-      .normalize()
-    const dest = targetPos.current.clone().sub(dir.multiplyScalar(8))
-    camera.position.lerp(dest, 0.03)
-    camera.lookAt(targetPos.current)
-  })
-
-  return null
-}
-
-// ── 3D Scene ────────────────────────────────────────────────────────
-
-function GraphScene({
-  nodes,
-  edges,
-  hoveredNode,
-  selectedNode,
-  searchHighlightIds,
-  focusTarget,
-  onHover,
-  onSelect,
-}: {
   nodes: LayoutNode[]
   edges: GraphEdge[]
-  hoveredNode: LayoutNode | null
-  selectedNode: LayoutNode | null
+  hoveredNodeId: string | null
+  selectedNodeId: string | null
   searchHighlightIds: Set<string>
-  focusTarget: { x: number; y: number; z: number } | null
-  onHover: (node: LayoutNode | null) => void
-  onSelect: (node: LayoutNode) => void
+  onHover: (id: string | null) => void
+  onClick: (id: string | null) => void
 }) {
-  const nodeMap = useMemo(() => {
-    const map = new Map<string, LayoutNode>()
-    for (const n of nodes) map.set(n.id, n)
-    return map
-  }, [nodes])
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  
+  // Transform state
+  const state = useRef({
+    rotX: 0,
+    rotY: 0,
+    zoom: 1,
+    isDragging: false,
+    lastMouseX: 0,
+    lastMouseY: 0,
+    width: 0,
+    height: 0,
+    hoveredId: hoveredNodeId,
+    selectedId: selectedNodeId,
+    // Store projected 2D coordinates for hit detection
+    projectedNodes: [] as Array<{
+      id: string
+      px: number
+      py: number
+      pr: number
+      z: number
+    }>,
+  })
 
-  // Determine which nodes are actively highlighted
-  const activeHighlightIds = useMemo(() => {
-    const set = new Set<string>()
-    if (searchHighlightIds.size > 0) {
-      for (const id of searchHighlightIds) set.add(id)
+  // Sync props to mutable ref so animation loop can read them without recreating closures
+  useEffect(() => {
+    state.current.hoveredId = hoveredNodeId
+    state.current.selectedId = selectedNodeId
+  }, [hoveredNodeId, selectedNodeId])
+
+  // Resize observer
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const parent = canvas.parentElement
+    if (!parent) return
+
+    const resize = () => {
+      const w = parent.clientWidth
+      const h = parent.clientHeight
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = w * dpr
+      canvas.height = h * dpr
+      canvas.style.width = `${w}px`
+      canvas.style.height = `${h}px`
+      state.current.width = w
+      state.current.height = h
     }
-    if (selectedNode) {
-      set.add(selectedNode.id)
-      for (const edge of edges) {
-        if (edge.source === selectedNode.id) set.add(edge.target)
-        if (edge.target === selectedNode.id) set.add(edge.source)
+
+    const observer = new ResizeObserver(resize)
+    observer.observe(parent)
+    resize()
+    return () => observer.disconnect()
+  }, [])
+
+  // Animation Loop
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let animationId: number
+
+    const render = () => {
+      const { width, height, rotX, rotY, zoom, hoveredId, selectedId } = state.current
+      const dpr = window.devicePixelRatio || 1
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.save()
+      ctx.scale(dpr, dpr)
+
+      // Math precomputes
+      const cx = width / 2
+      const cy = height / 2
+      const cosX = Math.cos(rotX)
+      const sinX = Math.sin(rotX)
+      const cosY = Math.cos(rotY)
+      const sinY = Math.sin(rotY)
+      const focalLength = 400 * zoom
+      const cameraDistance = 400
+
+      // Compute active highlights (search + selected + hovered + their edges)
+      const activeIds = new Set<string>()
+      for (const id of searchHighlightIds) activeIds.add(id)
+      
+      let activeEdges = new Set<string>()
+      
+      const addActive = (centerId: string) => {
+        activeIds.add(centerId)
+        for (const edge of edges) {
+          if (edge.source === centerId) {
+            activeIds.add(edge.target)
+            activeEdges.add(`${edge.source}->${edge.target}`)
+          }
+          if (edge.target === centerId) {
+            activeIds.add(edge.source)
+            activeEdges.add(`${edge.source}->${edge.target}`)
+          }
+        }
       }
-    }
-    if (hoveredNode) {
-      set.add(hoveredNode.id)
-      for (const edge of edges) {
-        if (edge.source === hoveredNode.id) set.add(edge.target)
-        if (edge.target === hoveredNode.id) set.add(edge.source)
+
+      if (selectedId) addActive(selectedId)
+      if (hoveredId) addActive(hoveredId)
+      
+      const hasFocus = activeIds.size > 0
+
+      // Project nodes 3D -> 2D
+      const projNodes = []
+      const nodeMap = new Map<string, any>()
+      
+      for (const node of nodes) {
+        // Rotate around Y
+        const r1x = node.x * cosY - node.z * sinY
+        const r1z = node.x * sinY + node.z * cosY
+        // Rotate around X
+        const r2y = node.y * cosX - r1z * sinX
+        const finalZ = node.y * sinX + r1z * cosX
+
+        // Perspective
+        const scale = focalLength / (focalLength + finalZ + cameraDistance)
+        const px = r1x * scale + cx
+        const py = r2y * scale + cy
+        const pr = getNodeRadius(node.connections) * scale
+
+        const pNode = { ...node, px, py, pr, z: finalZ, scale }
+        projNodes.push(pNode)
+        nodeMap.set(node.id, pNode)
       }
-    }
-    return set
-  }, [hoveredNode, selectedNode, searchHighlightIds, edges])
 
-  const hasFocus = activeHighlightIds.size > 0
+      // Sort by Z for proper draw order (back to front)
+      projNodes.sort((a, b) => b.z - a.z)
+      
+      // Save for hit detection
+      state.current.projectedNodes = projNodes
 
-  return (
-    <>
-      <ambientLight intensity={0.4} />
-      <pointLight position={[20, 20, 20]} intensity={0.6} />
-
-      <OrbitControls
-        makeDefault
-        enableDamping
-        dampingFactor={0.12}
-        minDistance={3}
-        maxDistance={80}
-      />
-
-      <CameraFocus target={focusTarget} />
-
-      {/* Edges */}
-      {edges.map((edge, i) => {
+      // Draw Edges
+      ctx.lineWidth = 1
+      for (const edge of edges) {
         const from = nodeMap.get(edge.source)
         const to = nodeMap.get(edge.target)
-        if (!from || !to) return null
-        const isFaded =
-          hasFocus &&
-          !activeHighlightIds.has(edge.source) &&
-          !activeHighlightIds.has(edge.target)
-        return (
-          <GraphEdgeLine
-            key={`e-${i}`}
-            from={[from.x, from.y, from.z]}
-            to={[to.x, to.y, to.z]}
-            isFaded={isFaded}
-          />
-        )
-      })}
+        if (!from || !to) continue
+        
+        // Don't draw edges behind camera
+        if (from.scale < 0 || to.scale < 0) continue
 
-      {/* Nodes */}
-      {nodes.map((node) => (
-        <GraphNodeMesh
-          key={node.id}
-          node={node}
-          isHighlighted={
-            activeHighlightIds.has(node.id) ||
-            hoveredNode?.id === node.id
+        let isFaded = hasFocus
+        let isHighlighted = false
+        
+        if (activeEdges.has(`${edge.source}->${edge.target}`) || activeEdges.has(`${edge.target}->${edge.source}`)) {
+          isFaded = false
+          isHighlighted = true
+        } else if (activeIds.has(edge.source) && activeIds.has(edge.target)) {
+          isFaded = false
+        }
+
+        ctx.beginPath()
+        ctx.moveTo(from.px, from.py)
+        ctx.lineTo(to.px, to.py)
+        ctx.strokeStyle = isHighlighted ? EDGE_HIGHLIGHT_COLOR : isFaded ? EDGE_FADED_COLOR : EDGE_COLOR
+        ctx.stroke()
+      }
+
+      // Draw Nodes
+      for (const node of projNodes) {
+        if (node.scale < 0) continue // behind camera
+        
+        const isHighlighted = activeIds.has(node.id) || hoveredId === node.id || searchHighlightIds.has(node.id)
+        const isSelected = selectedId === node.id
+        const isFaded = hasFocus && !isHighlighted
+        const isSearchHit = searchHighlightIds.has(node.id)
+        
+        const baseColor = getNodeColor(node.type)
+        const radius = isHighlighted || isSelected ? node.pr * 1.5 : node.pr
+        
+        ctx.beginPath()
+        ctx.arc(node.px, node.py, Math.max(0.5, radius), 0, Math.PI * 2)
+        
+        if (isFaded) {
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.15)'
+        } else {
+          ctx.fillStyle = baseColor
+          if (isHighlighted || isSelected) {
+            ctx.shadowColor = baseColor
+            ctx.shadowBlur = 10 * node.scale
           }
-          isSelected={selectedNode?.id === node.id}
-          isFaded={hasFocus && !activeHighlightIds.has(node.id)}
-          onHover={onHover}
-          onClick={onSelect}
-        />
-      ))}
+        }
+        ctx.fill()
+        
+        if (isSelected || isSearchHit) {
+           ctx.strokeStyle = '#FFFFFF'
+           ctx.lineWidth = 2 * node.scale
+           ctx.stroke()
+        }
+        
+        ctx.shadowBlur = 0 // reset shadow for next draw
 
-      {/* Post-processing glow */}
-      <EffectComposer>
-        <Bloom
-          luminanceThreshold={0.2}
-          luminanceSmoothing={0.9}
-          intensity={0.6}
-        />
-      </EffectComposer>
-    </>
+        // Draw Label if highlighted
+        if (isHighlighted || isSelected) {
+          ctx.font = `${Math.max(10, 12 * Math.min(1.5, node.scale))}px Inter, sans-serif`
+          ctx.fillStyle = '#E2E8F0'
+          ctx.textAlign = 'center'
+          ctx.fillText(node.title, node.px, node.py - radius - (5 * node.scale))
+        }
+      }
+
+      ctx.restore()
+      animationId = requestAnimationFrame(render)
+    }
+
+    render()
+    return () => cancelAnimationFrame(animationId)
+  }, [nodes, edges, searchHighlightIds])
+
+  // Mouse Handlers
+  const handlePointerDown = (e: React.PointerEvent) => {
+    state.current.isDragging = true
+    state.current.lastMouseX = e.clientX
+    state.current.lastMouseY = e.clientY
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  }
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const s = state.current
+    if (s.isDragging) {
+      const dx = e.clientX - s.lastMouseX
+      const dy = e.clientY - s.lastMouseY
+      // Y rotation is controlled by horizontal mouse movement
+      s.rotY += dx * 0.005
+      // X rotation is controlled by vertical mouse movement
+      s.rotX += dy * 0.005
+      s.lastMouseX = e.clientX
+      s.lastMouseY = e.clientY
+    } else {
+      // Hit detection (hover)
+      const rect = canvasRef.current!.getBoundingClientRect()
+      const mx = e.clientX - rect.left
+      const my = e.clientY - rect.top
+      
+      let hitId: string | null = null
+      // Check from front to back (projectedNodes are sorted back-to-front, so we iterate backwards)
+      for (let i = s.projectedNodes.length - 1; i >= 0; i--) {
+        const p = s.projectedNodes[i]
+        const r = Math.max(p.pr * 1.5, 5) // at least 5px hit radius
+        const distSq = (p.px - mx) ** 2 + (p.py - my) ** 2
+        if (distSq < r ** 2) {
+          hitId = p.id
+          break
+        }
+      }
+      
+      if (hitId !== s.hoveredId) {
+        onHover(hitId)
+      }
+      
+      if (canvasRef.current) {
+        canvasRef.current.style.cursor = hitId ? 'pointer' : s.isDragging ? 'grabbing' : 'grab'
+      }
+    }
+  }
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (state.current.isDragging) {
+      state.current.isDragging = false
+      ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+      if (canvasRef.current) canvasRef.current.style.cursor = state.current.hoveredId ? 'pointer' : 'grab'
+    }
+  }
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const zoomDelta = e.deltaY * -0.001
+    let newZoom = state.current.zoom * (1 + zoomDelta)
+    newZoom = Math.max(0.2, Math.min(newZoom, 5))
+    state.current.zoom = newZoom
+  }
+  
+  const handleClick = (e: React.MouseEvent) => {
+    // Only click if not dragging significantly
+    if (state.current.hoveredId) {
+      onClick(state.current.hoveredId)
+    } else {
+      onClick(null)
+    }
+  }
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 h-full w-full outline-none touch-none"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      onWheel={handleWheel}
+      onClick={handleClick}
+      style={{ cursor: 'grab', background: BG_COLOR }}
+    />
   )
 }
 
@@ -457,7 +507,6 @@ function NodeDetailPanel({
         backdropFilter: 'blur(16px)',
       }}
     >
-      {/* Header */}
       <div className="flex items-start justify-between gap-2 border-b p-4" style={{ borderColor: 'var(--theme-border)' }}>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-semibold" style={{ color: 'var(--theme-text)' }}>
@@ -485,7 +534,6 @@ function NodeDetailPanel({
         </button>
       </div>
 
-      {/* Connections */}
       <div className="max-h-64 overflow-y-auto p-4">
         <p className="mb-2 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
           Connected to
@@ -514,7 +562,6 @@ function NodeDetailPanel({
         )}
       </div>
 
-      {/* Open in Memory */}
       <div className="border-t p-3" style={{ borderColor: 'var(--theme-border)' }}>
         <a
           href={`/memory?tab=knowledge&page=${encodeURIComponent(node.id)}`}
@@ -590,16 +637,10 @@ function StatItem({
 // ── Main Export ──────────────────────────────────────────────────────
 
 export function GraphScreen() {
-  const [hoveredNode, setHoveredNode] = useState<LayoutNode | null>(null)
-  const [selectedNode, setSelectedNode] = useState<LayoutNode | null>(null)
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [focusTarget, setFocusTarget] = useState<{
-    x: number
-    y: number
-    z: number
-  } | null>(null)
 
-  // Fetch graph data
   const { data, isLoading, error } = useQuery({
     queryKey: ['knowledge-graph'],
     queryFn: async () => {
@@ -613,10 +654,8 @@ export function GraphScreen() {
   const nodes = data?.nodes ?? []
   const edges = data?.edges ?? []
 
-  // Compute 3D layout
   const layoutNodes = useForceLayout(nodes, edges)
 
-  // Search
   const searchHighlightIds = useMemo(() => {
     if (!searchQuery.trim() || !layoutNodes) return new Set<string>()
     const q = searchQuery.toLowerCase()
@@ -626,30 +665,14 @@ export function GraphScreen() {
     }
     return ids
   }, [searchQuery, layoutNodes])
+  
+  const selectedNode = useMemo(
+    () => layoutNodes?.find(n => n.id === selectedNodeId) ?? null,
+    [layoutNodes, selectedNodeId]
+  )
 
-  // Focus camera on first search result
-  useEffect(() => {
-    if (searchHighlightIds.size > 0 && layoutNodes) {
-      const firstId = searchHighlightIds.values().next().value
-      const node = layoutNodes.find((n) => n.id === firstId)
-      if (node) setFocusTarget({ x: node.x, y: node.y, z: node.z })
-    } else {
-      setFocusTarget(null)
-    }
-  }, [searchHighlightIds, layoutNodes])
-
-  const handleSelect = useCallback((node: LayoutNode) => {
-    setSelectedNode((prev) => (prev?.id === node.id ? null : node))
-    setFocusTarget({ x: node.x, y: node.y, z: node.z })
-  }, [])
-
-  // Stats
-  const entityCount = nodes.filter(
-    (n) => n.type?.toLowerCase() === 'entity',
-  ).length
-  const conceptCount = nodes.filter(
-    (n) => n.type?.toLowerCase() === 'concept',
-  ).length
+  const entityCount = nodes.filter((n) => n.type?.toLowerCase() === 'entity').length
+  const conceptCount = nodes.filter((n) => n.type?.toLowerCase() === 'concept').length
 
   if (error) {
     return (
@@ -660,7 +683,7 @@ export function GraphScreen() {
   }
 
   return (
-    <div className="relative h-full w-full" style={{ background: BG_COLOR }}>
+    <div className="relative h-full w-full overflow-hidden" style={{ background: BG_COLOR }}>
       {/* Search Bar */}
       <div
         className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-lg border px-3 py-2"
@@ -724,26 +747,17 @@ export function GraphScreen() {
         </div>
       )}
 
-      {/* 3D Canvas */}
+      {/* 2D Canvas */}
       {layoutNodes && layoutNodes.length > 0 && (
-        <Canvas
-          camera={{ position: [0, 0, 30], fov: 55 }}
-          gl={{ antialias: true, alpha: false }}
-          style={{ background: BG_COLOR }}
-          onPointerMissed={() => setSelectedNode(null)}
-        >
-          <color attach="background" args={[BG_COLOR]} />
-          <GraphScene
-            nodes={layoutNodes}
-            edges={edges}
-            hoveredNode={hoveredNode}
-            selectedNode={selectedNode}
-            searchHighlightIds={searchHighlightIds}
-            focusTarget={focusTarget}
-            onHover={setHoveredNode}
-            onSelect={handleSelect}
-          />
-        </Canvas>
+        <CanvasRenderer
+          nodes={layoutNodes}
+          edges={edges}
+          hoveredNodeId={hoveredNodeId}
+          selectedNodeId={selectedNodeId}
+          searchHighlightIds={searchHighlightIds}
+          onHover={setHoveredNodeId}
+          onClick={setSelectedNodeId}
+        />
       )}
 
       {/* Node Detail Panel */}
@@ -752,7 +766,7 @@ export function GraphScreen() {
           node={selectedNode}
           edges={edges}
           allNodes={layoutNodes}
-          onClose={() => setSelectedNode(null)}
+          onClose={() => setSelectedNodeId(null)}
         />
       )}
 
