@@ -7,6 +7,6 @@ export type ChatBackend = 'claude-enhanced' | 'openai-compat' | 'none'
 export function resolveChatBackend(): ChatBackend {
   const mode = getChatMode()
   if (mode === 'enhanced-claude') return 'claude-enhanced'
-  if (mode === 'portable') return 'openai-compat'
+  if (mode === 'portable' || mode === 'responses') return 'openai-compat'
   return 'none'
 }

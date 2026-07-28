@@ -405,24 +405,13 @@ export const Route = createFileRoute('/api/send-stream')({
                   e.baseUrl.includes('9router'),
               )
               if (routerEndpoint) {
-                const isRouterModel =
-                  requestModel.startsWith('horeg/') ||
-                  requestModel.startsWith('iyh/') ||
-                  requestModel.startsWith('ag/') ||
-                  requestModel.startsWith('openrouter/') ||
-                  requestModel.startsWith('kr/') ||
-                  requestModel.startsWith('cx/')
-                if (isRouterModel) {
-                  chatMode = 'portable'
-                  localBaseUrl = routerEndpoint.baseUrl
-                  localApiKey = routerEndpoint.apiKey
-                  bareModel = requestModel
-                }
+                // Router bypass removed so that hermes-agent gateway can intercept
+                // tool calls properly instead of forcing portable mode.
               }
             }
           }
         }
-        if (chatMode === 'portable' && sessionKey === 'new') {
+        if ((chatMode === 'portable' || chatMode === 'responses') && sessionKey === 'new') {
           sessionKey = crypto.randomUUID()
           resolvedFriendlyId = sessionKey
         }
@@ -579,7 +568,7 @@ export const Route = createFileRoute('/api/send-stream')({
             }, 10_000)
 
             try {
-              if (chatMode === 'portable') {
+              if (chatMode === 'portable' || chatMode === 'responses') {
                 const runId = crypto.randomUUID()
                 const portableSessionKey = sessionKey
 
@@ -653,15 +642,16 @@ export const Route = createFileRoute('/api/send-stream')({
                   // Responses-API streaming surface at POST /v1/responses
                   // that carries full tool args + results, unlike the
                   // /v1/chat/completions surface which only emits a thin
-                  // hermes.tool.progress lifecycle event. When the user
-                  // opts into the Responses path AND we're talking to the
-                  // local Hermes gateway (no localBaseUrl override), use
-                  // it so the TUI tool card can render INPUT JSON and
-                  // tool output text live during the run. Falls back
-                  // automatically on any error to the existing
+                  // hermes.tool.progress lifecycle event. When the gateway
+                  // probe detected /v1/responses (chatMode === 'responses')
+                  // OR the user manually opts in via HERMES_USE_RESPONSES=1,
+                  // AND we're talking to the local Hermes gateway (no
+                  // localBaseUrl override), use this path so the LLM can
+                  // invoke tools (memory, file, terminal, etc.) during chat.
+                  // Falls back automatically on any error to the existing
                   // openaiChat path.
                   const useResponsesApi =
-                    process.env.HERMES_USE_RESPONSES === '1' && !localBaseUrl
+                    (chatMode === 'responses' || process.env.HERMES_USE_RESPONSES === '1') && !localBaseUrl
                   if (useResponsesApi) {
                     const thinking = ''
                     // Track tool calls by callId so a `tool.completed`

@@ -133,6 +133,7 @@ export const Route = createFileRoute('/api/connection-status')({
             conductor: caps.conductor,
             kanban: caps.kanban,
             enhancedChat: caps.enhancedChat,
+            responsesApi: caps.responsesApi,
             dashboard: caps.dashboard.available,
           },
           claudeUrl: CLAUDE_API,

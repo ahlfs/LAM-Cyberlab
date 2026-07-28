@@ -117,9 +117,14 @@ services:
       # that sanitizes these headers — otherwise a client can spoof its IP
       # and bypass local-classification / rate limiting. See #125.
       TRUST_PROXY: ${TRUST_PROXY:-}
+      # ════════════════════════════════════════════════════════
+      # SECOND BRAIN (Knowledge Base)
+      # ════════════════════════════════════════════════════════
+      OBSIDIAN_VAULT_DIR: /vault
     volumes:
       - hermes-agent-data:/home/workspace/.hermes
       - hermes-workspace-files:/workspace
+      - ${OBSIDIAN_VAULT_DIR:-./obsidian-vault}:/vault
     ports:
       - '127.0.0.1:3000:3000'
 

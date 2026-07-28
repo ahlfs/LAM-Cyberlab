@@ -199,6 +199,15 @@ export type EnhancedCapabilities = {
    * file-backed swarm-kanban store. See v2.3.0 plan.
    */
   kanban: boolean
+  /**
+   * True when the gateway exposes `POST /v1/responses` with streaming support.
+   * This is the structured Responses API that carries full tool args + results,
+   * enabling tool-use (memory, file, terminal, etc.) during chat. Vanilla
+   * Hermes Agent (>=v0.12.x) ships this endpoint. When true, the workspace
+   * routes chat through /v1/responses instead of /v1/chat/completions so the
+   * LLM can invoke tools like Second Brain memory during conversation.
+   */
+  responsesApi: boolean
 }
 
 export type DashboardCapabilities = {
@@ -220,7 +229,7 @@ export type GatewayMode =
   | 'portable'
   | 'disconnected'
 
-export type ChatMode = 'enhanced-claude' | 'portable' | 'disconnected'
+export type ChatMode = 'enhanced-claude' | 'responses' | 'portable' | 'disconnected'
 
 export type ConnectionStatus =
   | 'connected'
@@ -245,6 +254,7 @@ let capabilities: GatewayCapabilities = {
   mcpFallback: false,
   conductor: false,
   kanban: false,
+  responsesApi: false,
   dashboard: {
     available: false,
     url: CLAUDE_DASHBOARD_URL,
@@ -454,6 +464,31 @@ async function probeEnhancedChatStream(): Promise<boolean> {
     if (res.status === 405) return false
     // 401 means auth gate is wired; treat as available so token-gated
     // setups don't get downgraded by a missing token at probe time.
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Probe the Responses API (POST /v1/responses). Vanilla Hermes Agent >=v0.12.x
+ * exposes this endpoint for structured streaming with full tool-use support.
+ * A POST with an empty body returns 400/422 (validation error) when the
+ * endpoint exists, or 404 when it doesn't.
+ */
+async function probeResponsesApi(): Promise<boolean> {
+  try {
+    const res = await fetch(`${CLAUDE_API}/v1/responses`, {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: '{}',
+      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+    })
+    // 404 = endpoint not registered → not available
+    if (res.status === 404) return false
+    // 400, 422 = validation error → endpoint exists and is functional
+    // 401 = auth required → endpoint exists behind auth gate
+    // 200 = unlikely with empty body but still means it's there
     return true
   } catch {
     return false
@@ -673,6 +708,7 @@ const OPTIONAL_APIS = new Set([
   'enhancedChat',
   'mcp',
   'mcpFallback',
+  'responsesApi',
 ])
 
 const DASHBOARD_BACKED_APIS = new Set([
@@ -729,6 +765,7 @@ function logCapabilities(next: GatewayCapabilities): void {
     'jobs',
     'mcp',
     'mcpFallback',
+    'responsesApi',
   ]
 
   for (const key of coreKeys) {
@@ -872,6 +909,10 @@ export async function probeGateway(options?: {
       isLocalhostDeployment() &&
       (await probeMcpConfigKey())
 
+    // Probe the Responses API after core probes so we know if the gateway
+    // supports structured streaming with tool-use.
+    const responsesApi = await probeResponsesApi()
+
     capabilities = {
       health,
       chatCompletions,
@@ -891,6 +932,7 @@ export async function probeGateway(options?: {
       mcpFallback,
       conductor,
       kanban,
+      responsesApi,
       dashboard,
     }
     lastProbeAt = Date.now()
@@ -951,6 +993,7 @@ export function getEnhancedCapabilities(): EnhancedCapabilities {
     mcpFallback: capabilities.mcpFallback,
     conductor: capabilities.conductor,
     kanban: capabilities.kanban,
+    responsesApi: capabilities.responsesApi,
   }
 }
 
@@ -978,6 +1021,10 @@ export function getGatewayMode(): GatewayMode {
  */
 export function getChatMode(): ChatMode {
   if (capabilities.enhancedChat) return 'enhanced-claude'
+  // Vanilla Hermes Agent (>=v0.12.x) ships /v1/responses with full tool-use
+  // (memory, file, terminal, skills, etc.). Prefer this over bare
+  // /v1/chat/completions so the chat can invoke tools like Second Brain.
+  if (capabilities.responsesApi) return 'responses'
   if (capabilities.chatCompletions || capabilities.health) return 'portable'
   return 'disconnected'
 }

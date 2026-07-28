@@ -485,7 +485,7 @@ export function ChatScreen({
     useChatMeasurements()
   useTapDebug(mainRef, { label: 'chat-main' })
   const chatMode = useChatMode()
-  const isPortableMode = chatMode === 'portable'
+  const isPortableMode = chatMode === 'portable' || chatMode === 'responses'
   const portableChatFriendlyId = isPortableMode ? 'main' : activeFriendlyId
   // --- Issue #43 fix: lift waitingForResponse into persistent Zustand store ---
   // The store survives component unmount, so navigating away mid-stream
