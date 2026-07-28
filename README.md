@@ -609,103 +609,18 @@ See `.env.example` for the full list.
 
 ---
 
-## 🧠 AI Second Brain (optional add-on)
+## 🧠 AI Second Brain
 
-An **optional** pipeline that turns raw captures — voice notes, meeting
-recordings, PDFs, images — into a searchable, interlinked Obsidian knowledge
-base, and feeds durable facts back into Hermes Agent so it gets more useful
-the more you use it. It's completely separate from the core workspace: the
-app runs fully without any of this, and none of it is needed to chat.
+The **Second Brain** is a knowledge ingestion pipeline that turns raw captures (voice notes, documents, images) into a searchable, interlinked knowledge base.
 
-> **Heads-up on setup difficulty:** unlike the core app, this add-on needs
-> Python, an Obsidian vault, and (for the AI passes) a working `hermes`
-> model with API credits. It's an "advanced" feature — see the caveats at
-> the end of this section.
+Because this feature requires background processing and direct model access, **the Second Brain engine now runs entirely within the modified Hermes Agent** (the backend). Lam-Cyberlab serves as the frontend interface to visualize and interact with this knowledge.
 
-### The vault
+### How it works
+- **Ingestion & Consolidation:** Handled autonomously by the [modified `hermes-agent`](https://github.com/ahlfs/hermes-agent). It transcribes audio, extracts text from PDFs, and synthesizes them into durable facts and interlinked `[[wikilink]]` entity/concept pages.
+- **Visualization:** Lam-Cyberlab provides the **Graph** page (`/graph`). It fetches the knowledge graph data from the backend and renders it as a lightweight, interactive 3D-projected force layout so you can visually explore how concepts connect.
+- **Integration:** The agent reads these distilled facts on every session, making the AI "smarter" and more context-aware over time.
 
-Lives **outside** this repo at `~/obsidian/memo/` (so `git` operations on
-the repo can never touch your recordings/notes). Open that folder as a vault
-in the [Obsidian](https://obsidian.md) app. Structure:
-
-```
-~/obsidian/memo/
-├── 01-Audio/            drop recordings here (.mp3/.wav/.m4a)
-├── 02-Documents/        drop PDFs / images here
-├── 03-Notes/
-│   ├── Transcripts/     generated transcripts
-│   └── Extracted-Docs/  generated text extractions
-├── 04-Wiki/             AI-maintained wiki (Entities/ + Concepts/, index, log)
-├── WIKI_SCHEMA.md       conventions the wiki follows
-└── AI_CONTEXT.md        read this first — full structure + limitations
-```
-
-### One-time setup
-
-```bash
-# Isolated Python env (this repo's system pip is PEP 668-locked)
-uv venv .venv-second-brain
-uv pip install -r requirements-second-brain.txt --python .venv-second-brain
-
-# Optional: image OCR needs the tesseract binary (needs sudo)
-sudo apt install tesseract-ocr    # skip if you don't ingest images
-```
-
-The AI passes (memory + wiki) reuse your **existing** `hermes` model and
-credentials — no separate API key. Verify `hermes` is configured (`hermes status`).
-
-### Daily use
-
-Drop files into `01-Audio/` or `02-Documents/`, then:
-
-```bash
-./scripts/sync-second-brain.sh
-```
-
-Runs five idempotent passes (safe to re-run — only new/changed files are
-processed):
-
-| Pass | Script | Cost | What it does |
-|---|---|---|---|
-| 1 Audio | `ingest_audio.py` | free, local | transcribe audio → `03-Notes/Transcripts/` (faster-whisper) |
-| 2 Docs | `ingest_docs.py` | free, local | extract PDF/image text → `03-Notes/Extracted-Docs/` (pypdf / tesseract) |
-| 3 Memory | `consolidate_memory.py` | **tokens** | agent saves durable facts into `MEMORY.md`/`USER.md` (read every chat session) |
-| 4 Wiki | `wiki_ingest.py` | **tokens** | agent builds interlinked `[[wikilink]]` entity/concept pages in `04-Wiki/` |
-| 5 Graph | `graphify update .` | free, local | refresh the **code** graph (does not touch the vault) |
-
-Passes 1, 2, 5 are free (run locally). Passes 3 and 4 call the LLM, so they
-consume tokens on whatever provider `hermes` uses.
-
-### Visualization
-
-The generated `04-Wiki/` can be visualized interactively using the **Graph** page (`/graph`) in the Lam Cyberlab UI. It provides a lightweight 3D-projected force layout of all your entities and concepts.
-
-### How it makes the AI "smarter"
-
-- **Pass 3 (memory)** is the direct path: Hermes Agent already reads
-  `MEMORY.md`/`USER.md` into context on every session, so facts distilled
-  from your notes surface automatically in later chats.
-- **Pass 4 (wiki)** is the Karpathy "LLM wiki" pattern: notes are synthesized
-  into interlinked entity/concept pages, so Obsidian's Graph View actually
-  connects and knowledge compounds. The agent proposes pages as JSON; the
-  script does all file writes with strict path validation (pages can only
-  ever land inside `04-Wiki/`), so a malicious note can't escape the vault.
-
-### Caveats (read these)
-
-- **The AI passes cost tokens** and require a configured `hermes` provider
-  with credits. Quality is LLM-judgment — spot-check `MEMORY.md` and the
-  wiki occasionally.
-- **Not real-time.** Notes only update when you run the sync script; a new
-  recording sits unprocessed until then.
-- **Image OCR / scanned PDFs** need `tesseract` (Linux, `sudo`); without it,
-  images are skipped with a clear message.
-- **No mid-chat retrieval (RAG).** The vault feeds the AI via memory (pass 3),
-  not by searching the vault live during a conversation. That's a deliberate
-  scope choice — see `~/obsidian/memo/AI_CONTEXT.md` for the reasoning.
-- Override the vault location with the `SECOND_BRAIN_VAULT` env var; override
-  the model used for the AI passes with `HERMES_WIKI_MODEL` /
-  `HERMES_CONSOLIDATE_*` (e.g. point them at a cheaper model to save cost).
+For setup instructions, vault structure, and configuration of the Second Brain engine, please refer directly to the backend repository: [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent).
 
 ---
 
