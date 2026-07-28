@@ -356,7 +356,11 @@ export const Route = createFileRoute('/api/send-stream')({
         let localApiKey: string | undefined
         const requestModel = typeof body.model === 'string' ? body.model : ''
         let bareModel = requestModel.includes('/') ? requestModel.split('/').slice(1).join('/') : requestModel
-        if (requestModel) {
+        
+        // If the gateway supports the Responses API (tool-use), we let the gateway 
+        // handle the routing to custom providers. If we bypass the gateway, we lose 
+        // tool-use capabilities and models will leak raw XML tool tags.
+        if (requestModel && chatMode !== 'responses' && chatMode !== 'enhanced-claude') {
           const discoveredModels = getDiscoveredModels()
           const localMatch = discoveredModels.find((m) => m.id === requestModel || m.id === bareModel)
           if (localMatch) {
