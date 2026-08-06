@@ -67,3 +67,4 @@ echo "    pnpm dev"
 echo " atau membangunnya untuk production dengan:"
 echo "    pnpm build && pnpm start"
 echo "=========================================================="
+# EOF

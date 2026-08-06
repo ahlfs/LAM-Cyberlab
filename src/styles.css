@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=EB+Garamond:opsz,wght@8..120,400..800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import 'devicon/devicon.min.css';
 @import 'tailwindcss';
 
 /* Tailwind v4 — enable dark: variant on .dark class (set by __root.tsx) */
@@ -1249,6 +1250,98 @@ code {
   --theme-input: #fbfdfb;
 }
 
+[data-theme='discord-nitro'] {
+  --theme-bg: #313338;
+  --theme-sidebar: #2b2d31;
+  --theme-panel: #23272a;
+  --theme-card: #2b2d31;
+  --theme-card2: #1e1f22;
+  --theme-border: rgba(0, 0, 0, 0.2);
+  --theme-border-subtle: rgba(255, 255, 255, 0.06);
+  --theme-text: #f2f3f5;
+  --theme-muted: #949ba4;
+  --theme-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --theme-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --theme-shadow-3: 0 12px 24px rgba(0, 0, 0, 0.6);
+  --theme-glass: rgba(43, 45, 49, 0.85);
+  --theme-focus: #5865f2;
+  --theme-accent: #5865f2;
+  --theme-accent-secondary: #eb459e;
+  --theme-accent-subtle: rgba(88, 101, 242, 0.15);
+  --theme-accent-border: rgba(88, 101, 242, 0.3);
+  --theme-active: #eb459e;
+  --theme-link: #00d7fe;
+  --theme-success: #23a559;
+  --theme-warning: #f1c40f;
+  --theme-danger: #da373c;
+  --theme-stripe: rgba(0, 0, 0, 0.1);
+  --theme-header-bg: #2b2d31;
+  --theme-header-border: rgba(0, 0, 0, 0.2);
+  --chat-user-bg: #5865f2;
+  --chat-user-border: #4752c4;
+  --chat-user-foreground: #ffffff;
+  --chat-assistant-bg: #2b2d31;
+  --chat-assistant-border: rgba(255, 255, 255, 0.06);
+  --chat-assistant-foreground: #f2f3f5;
+  --composer-bg: #383a40;
+  --composer-border: rgba(0, 0, 0, 0);
+  --composer-placeholder: #87898c;
+  --tool-card-bg: #1e1f22;
+  --tool-card-border: rgba(255, 255, 255, 0.06);
+  --tool-card-title: #f2f3f5;
+  --tool-card-muted: #949ba4;
+  --code-bg: #1e1f22;
+  --code-border: rgba(255, 255, 255, 0.06);
+  --code-foreground: #f2f3f5;
+  --theme-input: #383a40;
+}
+
+[data-theme='discord-nitro-light'] {
+  --theme-bg: #ffffff;
+  --theme-sidebar: #f2f3f5;
+  --theme-panel: #e3e5e8;
+  --theme-card: #f2f3f5;
+  --theme-card2: #e3e5e8;
+  --theme-border: rgba(0, 0, 0, 0.08);
+  --theme-border-subtle: rgba(0, 0, 0, 0.04);
+  --theme-text: #060607;
+  --theme-muted: #4e5058;
+  --theme-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --theme-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --theme-shadow-3: 0 12px 24px rgba(0, 0, 0, 0.15);
+  --theme-glass: rgba(242, 243, 245, 0.85);
+  --theme-focus: #5865f2;
+  --theme-accent: #5865f2;
+  --theme-accent-secondary: #eb459e;
+  --theme-accent-subtle: rgba(88, 101, 242, 0.1);
+  --theme-accent-border: rgba(88, 101, 242, 0.2);
+  --theme-active: #eb459e;
+  --theme-link: #00d7fe;
+  --theme-success: #23a559;
+  --theme-warning: #f1c40f;
+  --theme-danger: #da373c;
+  --theme-stripe: rgba(0, 0, 0, 0.03);
+  --theme-header-bg: #f2f3f5;
+  --theme-header-border: rgba(0, 0, 0, 0.08);
+  --chat-user-bg: #5865f2;
+  --chat-user-border: #4752c4;
+  --chat-user-foreground: #ffffff;
+  --chat-assistant-bg: #ffffff;
+  --chat-assistant-border: rgba(0, 0, 0, 0.08);
+  --chat-assistant-foreground: #060607;
+  --composer-bg: #ebedef;
+  --composer-border: rgba(0, 0, 0, 0);
+  --composer-placeholder: #5c5e66;
+  --tool-card-bg: #e3e5e8;
+  --tool-card-border: rgba(0, 0, 0, 0.08);
+  --tool-card-title: #060607;
+  --tool-card-muted: #4e5058;
+  --code-bg: #f8f9f9;
+  --code-border: rgba(0, 0, 0, 0.08);
+  --code-foreground: #060607;
+  --theme-input: #ebedef;
+}
+
 [data-theme='claude-nous'] html,
 [data-theme='claude-nous'] body,
 [data-theme='claude-nous'] #root,
@@ -1264,7 +1357,11 @@ code {
 [data-theme='claude-slate'] html,
 [data-theme='claude-slate'] body,
 [data-theme='claude-slate'] #root,
-[data-theme='claude-slate'] .dark {
+[data-theme='claude-slate'] .dark,
+[data-theme='discord-nitro'] html,
+[data-theme='discord-nitro'] body,
+[data-theme='discord-nitro'] #root,
+[data-theme='discord-nitro'] .dark {
   background-color: var(--theme-bg);
   color: var(--theme-text);
 }
@@ -1284,7 +1381,11 @@ code {
 [data-theme='claude-slate-light'] html,
 [data-theme='claude-slate-light'] body,
 [data-theme='claude-slate-light'] #root,
-[data-theme='claude-slate-light'] .light {
+[data-theme='claude-slate-light'] .light,
+[data-theme='discord-nitro-light'] html,
+[data-theme='discord-nitro-light'] body,
+[data-theme='discord-nitro-light'] #root,
+[data-theme='discord-nitro-light'] .light {
   background-color: var(--theme-bg);
   color: var(--theme-text);
 }
@@ -1297,7 +1398,8 @@ code {
 [data-theme='claude-nous'],
 [data-theme='claude-official'],
 [data-theme='claude-classic'],
-[data-theme='claude-slate'] {
+[data-theme='claude-slate'],
+[data-theme='discord-nitro'] {
   --color-primary-50: var(--theme-panel);
   --color-primary-100: var(--theme-card);
   --color-primary-200: var(--theme-border);
@@ -1333,7 +1435,8 @@ code {
 [data-theme='claude-nous-light'],
 [data-theme='claude-official-light'],
 [data-theme='claude-classic-light'],
-[data-theme='claude-slate-light'] {
+[data-theme='claude-slate-light'],
+[data-theme='discord-nitro-light'] {
   color-scheme: light !important;
   --color-primary-50: var(--theme-card) !important;
   --color-primary-100: var(--theme-card2) !important;

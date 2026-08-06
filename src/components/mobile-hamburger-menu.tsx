@@ -9,6 +9,7 @@ import {
   Clock01Icon,
   CommandLineIcon,
   CpuIcon,
+  CodeIcon,
   GlobeIcon,
   Link01Icon,
   DashboardSquare01Icon,
@@ -45,13 +46,6 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
     icon: DashboardSquare01Icon,
     to: '/dashboard',
     match: (p: string) => p.startsWith('/dashboard'),
-  },
-  {
-    id: 'playground',
-    label: 'HermesWorld',
-    icon: Castle02Icon,
-    to: '/playground',
-    match: (p: string) => p.startsWith('/playground'),
   },
   {
     id: 'terminal',
@@ -94,6 +88,13 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
     icon: CpuIcon,
     to: '/system',
     match: (p: string) => p.startsWith('/system'),
+  },
+  {
+    id: 'projects',
+    label: 'Projects',
+    icon: CodeIcon,
+    to: '/projects',
+    match: (p: string) => p.startsWith('/projects'),
   },
   {
     id: 'remote-access',

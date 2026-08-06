@@ -100,12 +100,56 @@ Before starting, ensure you have the following installed on your system:
 
 **1. Install prerequisites** (Node.js 22+, pnpm, git) if you haven't already.
 
-**2. Install and configure the custom `hermes-agent`**
-Please follow the exact installation instructions at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent).
-Make sure you enable the HTTP API in your `~/.hermes/.env`:
+**2. Install and configure the custom `hermes-agent` (Second Brain Edition)**
+
+This custom fork requires additional dependencies for the autonomous Second Brain pipeline.
+
+**a. Install OS Dependencies**
+- Ubuntu/Debian/WSL2: `sudo apt update && sudo apt install ffmpeg tesseract-ocr`
+- macOS (Homebrew): `brew install ffmpeg tesseract`
+
+**b. Install Hermes Base & Swap to Custom Fork**
+```bash
+# Install the base environment
+curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+
+# Replace official repo with the Ahlfs custom fork
+rm -rf ~/.hermes/hermes-agent
+git clone https://github.com/ahlfs/hermes-agent.git ~/.hermes/hermes-agent
+
+# Re-sync dependencies
+cd ~/.hermes/hermes-agent
+~/.hermes/bin/uv venv venv
+~/.hermes/bin/uv pip install --python venv -e ".[all]"
+```
+
+**c. Initialize Second Brain Environment**
+```bash
+cd ~/.hermes/hermes-agent
+bash scripts/second-brain/setup-venv.sh
+```
+
+**d. Configure Environment Variables**
+Open `~/.hermes/.env` and ensure the HTTP API is enabled (required for LAM-Cyberlab):
 ```env
 API_SERVER_ENABLED=true
 API_SERVER_KEY=<a random secret — e.g. output of: openssl rand -hex 32>
+
+# Optional: Second Brain configuration
+OBSIDIAN_VAULT_DIR=/home/user/obsidian/memo
+GITHUB_USERNAME=your_github_username
+GITHUB_REPO_SKILLS=hermes-skills
+GITHUB_REPO_SECONDBRAIN=second-brain
+```
+
+**e. First Sync & Cron (Optional)**
+```bash
+cd ~/.hermes/hermes-agent
+# Initialize data structures
+bash scripts/second-brain/sync-second-brain.sh
+bash scripts/second-brain/sync-skills.sh
+# Install cron for auto-backup
+bash scripts/second-brain/install-cron.sh
 ```
 
 **3. Start the Hermes Agent gateway** (leave this running in its own terminal)
@@ -151,7 +195,17 @@ npm install -g pnpm
 ```
 
 **2. Install and configure the custom `hermes-agent`**
-Follow the Windows installation instructions at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent).
+
+> **⚠️ WINDOWS USERS**: The Second Brain pipeline relies heavily on Linux packages (ffmpeg, tesseract) and Bash scripts. Git Bash or native PowerShell will **not** work. You **must** install and use **[WSL2](https://learn.microsoft.com/en-us/windows/wsl/install)** and follow the Linux instructions above for `hermes-agent`.
+> 
+> If you choose to run `hermes-agent` on native Windows anyway (without Second Brain features), run:
+
+```powershell
+iex (irm https://hermes-agent.nousresearch.com/install.ps1)
+rm -r -fo $env:LOCALAPPDATA\hermes\hermes-agent
+git clone https://github.com/ahlfs/hermes-agent.git $env:LOCALAPPDATA\hermes\hermes-agent
+```
+
 Make sure to configure `%LocalAppData%\hermes\.env` with:
 ```env
 API_SERVER_ENABLED=true

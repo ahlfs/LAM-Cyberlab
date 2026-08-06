@@ -179,6 +179,18 @@ export function useEmptyTrash() {
   })
 }
 
+export function useImportLinks() {
+  const invalidate = useInvalidateAll()
+  return useMutation({
+    mutationFn: (payload: any) =>
+      apiJson<{ importedFolders: number; importedLinks: number }>('/api/links/import', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: invalidate,
+  })
+}
+
 /** Fire-and-forget: records the "Dibuka" (opened-in-app) counter when a link's detail/edit view opens. */
 export function recordLinkOpened(id: number): void {
   void fetch(`/api/links/item/${id}`).catch(() => {})

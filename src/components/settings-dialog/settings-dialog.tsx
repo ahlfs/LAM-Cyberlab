@@ -1514,6 +1514,7 @@ const ENTERPRISE_THEME_FAMILIES: Array<ThemeId> = [
   'claude-official',
   'claude-classic',
   'claude-slate',
+  'discord-nitro',
 ]
 
 const ENTERPRISE_THEMES = THEMES.map((theme) => ({
@@ -1600,7 +1601,23 @@ const ENTERPRISE_THEMES = THEMES.map((theme) => ({
                         accent: '#BF9EEE',
                         text: '#F6F6F4',
                       }
-                    : theme.id === 'dracula-light'
+                    : theme.id === 'discord-nitro'
+                      ? {
+                          bg: '#313338',
+                          panel: '#2b2d31',
+                          border: 'rgba(255, 255, 255, 0.06)',
+                          accent: '#5865f2',
+                          text: '#f2f3f5',
+                        }
+                      : theme.id === 'discord-nitro-light'
+                        ? {
+                            bg: '#ffffff',
+                            panel: '#f2f3f5',
+                            border: 'rgba(0, 0, 0, 0.08)',
+                            accent: '#5865f2',
+                            text: '#060607',
+                          }
+                        : theme.id === 'dracula-light'
                       ? {
                           bg: '#FFFBEB',
                           panel: '#FFFDF5',

@@ -442,3 +442,73 @@ export function recordOpen(id: number): LinkuLink {
     [t],
   )
 }
+
+/** Import folders and links from a JSON payload, skipping duplicate URLs and mapping folder IDs. */
+export function importData(data: { folders: LinkuFolder[]; links: LinkuLink[] }): { importedFolders: number; importedLinks: number } {
+  let importedFolders = 0
+  let importedLinks = 0
+
+  const runner = getDb().transaction(() => {
+    // 1. Map old folder ID to new folder ID
+    const folderIdMap = new Map<number, number>()
+    const existingFolders = listFolders()
+    
+    for (const folder of data.folders) {
+      // Find by name to avoid duplicates
+      const existing = existingFolders.find(f => f.name === folder.name)
+      if (existing) {
+        folderIdMap.set(folder.id, existing.id)
+      } else {
+        const t = now()
+        const maxOrder = getDb()
+          .prepare(`SELECT COALESCE(MAX(sort_order), -1) AS m FROM folders`)
+          .get() as { m: number }
+        const info = getDb()
+          .prepare(
+            `INSERT INTO folders (name, color, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+          )
+          .run(folder.name, folder.color, maxOrder.m + 1, folder.createdAt || t, folder.updatedAt || t)
+        folderIdMap.set(folder.id, Number(info.lastInsertRowid))
+        importedFolders++
+      }
+    }
+
+    // 2. Insert links, skipping existing URLs
+    const existingUrls = new Set(
+      (getDb().prepare(`SELECT url FROM links`).all() as { url: string }[]).map(r => r.url)
+    )
+
+    for (const link of data.links) {
+      if (existingUrls.has(link.url)) continue // skip duplicate URL
+      // Skip trashed links
+      if (link.isTrashed) continue
+
+      const newFolderId = link.folderId ? folderIdMap.get(link.folderId) ?? null : null
+      const t = now()
+
+      getDb()
+        .prepare(
+          `INSERT INTO links (folder_id, url, title, favicon_url, description, is_favorite, is_archived, is_trashed, visited_count, opened_count, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`
+        )
+        .run(
+          newFolderId,
+          link.url,
+          link.title,
+          link.faviconUrl ?? null,
+          link.description ?? null,
+          link.isFavorite ? 1 : 0,
+          link.isArchived ? 1 : 0,
+          link.visitedCount || 0,
+          link.openedCount || 0,
+          link.createdAt || t,
+          link.updatedAt || t
+        )
+      existingUrls.add(link.url)
+      importedLinks++
+    }
+  })
+  
+  runner()
+  return { importedFolders, importedLinks }
+}

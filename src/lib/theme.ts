@@ -13,6 +13,8 @@ export type ThemeId =
   | 'scifi-light'
   | 'dracula'
   | 'dracula-light'
+  | 'discord-nitro'
+  | 'discord-nitro-light'
 
 export const THEMES: Array<{
   id: ThemeId
@@ -31,6 +33,18 @@ export const THEMES: Array<{
     label: 'Dracula Light',
     description: 'Alucard-style cream paper with deep violet accents',
     icon: String.fromCodePoint(0x1f987),
+  },
+  {
+    id: 'discord-nitro',
+    label: 'Discord Nitro',
+    description: 'Vibrant Blurple and Fuchsia neon on a dark background',
+    icon: '✨',
+  },
+  {
+    id: 'discord-nitro-light',
+    label: 'Discord Nitro Light',
+    description: 'Vibrant Blurple and Fuchsia neon on a white background',
+    icon: '✨',
   },
   {
     id: 'claude-nous',
@@ -120,6 +134,7 @@ const LIGHT_THEME_MAP: Record<
   'claude-slate': 'claude-slate-light',
   'scifi': 'scifi-light',
   'dracula': 'dracula-light',
+  'discord-nitro': 'discord-nitro-light',
 }
 const DARK_THEME_MAP: Record<
   Extract<ThemeId, `${string}-light`>,
@@ -132,6 +147,7 @@ const DARK_THEME_MAP: Record<
   'claude-slate-light': 'claude-slate',
   'scifi-light': 'scifi',
   'dracula-light': 'dracula',
+  'discord-nitro-light': 'discord-nitro',
 }
 
 const LIGHT_THEMES = new Set<ThemeId>([
@@ -142,6 +158,7 @@ const LIGHT_THEMES = new Set<ThemeId>([
   'claude-slate-light',
   'scifi-light',
   'dracula-light',
+  'discord-nitro-light',
 ])
 
 export function isValidTheme(

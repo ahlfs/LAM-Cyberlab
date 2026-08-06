@@ -65,11 +65,12 @@ function readRuntimeMeta(profilePath: string): RuntimeMeta {
 }
 
 function gitBranch(cwd: string): string | null {
+  if (!existsSync(join(cwd, '.git'))) return null
   try {
     const out = execFileSync(
       'git',
       ['-C', cwd, 'rev-parse', '--abbrev-ref', 'HEAD'],
-      { encoding: 'utf-8', timeout: 1500 },
+      { encoding: 'utf-8', timeout: 1500, stdio: ['ignore', 'pipe', 'ignore'] },
     )
     const branch = out.trim()
     return branch && branch !== 'HEAD' ? branch : null
@@ -79,10 +80,12 @@ function gitBranch(cwd: string): string | null {
 }
 
 function gitChangedFiles(cwd: string, max = 25): Array<string> {
+  if (!existsSync(join(cwd, '.git'))) return []
   try {
     const out = execFileSync('git', ['-C', cwd, 'status', '--porcelain'], {
       encoding: 'utf-8',
       timeout: 2000,
+      stdio: ['ignore', 'pipe', 'ignore'],
     })
     return out
       .split('\n')

@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorldRouteImport } from './routes/world'
 import { Route as VtCapitalRouteImport } from './routes/vt-capital'
 import { Route as TerminalRouteImport } from './routes/terminal'
 import { Route as TasksRouteImport } from './routes/tasks'
@@ -20,16 +19,16 @@ import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReserveRouteImport } from './routes/reserve'
 import { Route as RemoteAccessRouteImport } from './routes/remote-access'
+import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfilesRouteImport } from './routes/profiles'
-import { Route as PlaygroundRouteImport } from './routes/playground'
 import { Route as OperationsRouteImport } from './routes/operations'
 import { Route as MemoryRouteImport } from './routes/memory'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LinksRouteImport } from './routes/links'
 import { Route as JobsRouteImport } from './routes/jobs'
-import { Route as HermesWorldRouteImport } from './routes/hermes-world'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as FilesRouteImport } from './routes/files'
+import { Route as EditorRouteImport } from './routes/editor'
 import { Route as EchoStudioRouteImport } from './routes/echo-studio'
 import { Route as EarlyAccessRouteImport } from './routes/early-access'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -85,6 +84,7 @@ import { Route as ApiSessionHistoryRouteImport } from './routes/api/session-hist
 import { Route as ApiSendStreamRouteImport } from './routes/api/send-stream'
 import { Route as ApiSendRouteImport } from './routes/api/send'
 import { Route as ApiProviderUsageRouteImport } from './routes/api/provider-usage'
+import { Route as ApiProjectsRouteImport } from './routes/api/projects'
 import { Route as ApiPreviewFileRouteImport } from './routes/api/preview-file'
 import { Route as ApiPluginsRouteImport } from './routes/api/plugins'
 import { Route as ApiPlaygroundNpcRouteImport } from './routes/api/playground-npc'
@@ -165,7 +165,9 @@ import { Route as ApiMcpConfigureRouteImport } from './routes/api/mcp/configure'
 import { Route as ApiMcpNameRouteImport } from './routes/api/mcp/$name'
 import { Route as ApiLinksTrashEmptyRouteImport } from './routes/api/links.trash-empty'
 import { Route as ApiLinksScrapeRouteImport } from './routes/api/links.scrape'
+import { Route as ApiLinksImportRouteImport } from './routes/api/links.import'
 import { Route as ApiLinksFoldersRouteImport } from './routes/api/links.folders'
+import { Route as ApiLinksExportRouteImport } from './routes/api/links.export'
 import { Route as ApiKnowledgeSyncRouteImport } from './routes/api/knowledge/sync'
 import { Route as ApiKnowledgeSearchRouteImport } from './routes/api/knowledge/search'
 import { Route as ApiKnowledgeReadRouteImport } from './routes/api/knowledge/read'
@@ -197,11 +199,6 @@ import { Route as ApiLinksItemIdRestoreRouteImport } from './routes/api/links.it
 import { Route as ApiLinksItemIdFavoriteRouteImport } from './routes/api/links.item.$id.favorite'
 import { Route as ApiLinksItemIdArchiveRouteImport } from './routes/api/links.item.$id.archive'
 
-const WorldRoute = WorldRouteImport.update({
-  id: '/world',
-  path: '/world',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const VtCapitalRoute = VtCapitalRouteImport.update({
   id: '/vt-capital',
   path: '/vt-capital',
@@ -252,14 +249,14 @@ const RemoteAccessRoute = RemoteAccessRouteImport.update({
   path: '/remote-access',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfilesRoute = ProfilesRouteImport.update({
   id: '/profiles',
   path: '/profiles',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlaygroundRoute = PlaygroundRouteImport.update({
-  id: '/playground',
-  path: '/playground',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OperationsRoute = OperationsRouteImport.update({
@@ -287,11 +284,6 @@ const JobsRoute = JobsRouteImport.update({
   path: '/jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HermesWorldRoute = HermesWorldRouteImport.update({
-  id: '/hermes-world',
-  path: '/hermes-world',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const GraphRoute = GraphRouteImport.update({
   id: '/graph',
   path: '/graph',
@@ -300,6 +292,11 @@ const GraphRoute = GraphRouteImport.update({
 const FilesRoute = FilesRouteImport.update({
   id: '/files',
   path: '/files',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditorRoute = EditorRouteImport.update({
+  id: '/editor',
+  path: '/editor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EchoStudioRoute = EchoStudioRouteImport.update({
@@ -576,6 +573,11 @@ const ApiSendRoute = ApiSendRouteImport.update({
 const ApiProviderUsageRoute = ApiProviderUsageRouteImport.update({
   id: '/api/provider-usage',
   path: '/api/provider-usage',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProjectsRoute = ApiProjectsRouteImport.update({
+  id: '/api/projects',
+  path: '/api/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPreviewFileRoute = ApiPreviewFileRouteImport.update({
@@ -979,9 +981,19 @@ const ApiLinksScrapeRoute = ApiLinksScrapeRouteImport.update({
   path: '/scrape',
   getParentRoute: () => ApiLinksRoute,
 } as any)
+const ApiLinksImportRoute = ApiLinksImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => ApiLinksRoute,
+} as any)
 const ApiLinksFoldersRoute = ApiLinksFoldersRouteImport.update({
   id: '/folders',
   path: '/folders',
+  getParentRoute: () => ApiLinksRoute,
+} as any)
+const ApiLinksExportRoute = ApiLinksExportRouteImport.update({
+  id: '/export',
+  path: '/export',
   getParentRoute: () => ApiLinksRoute,
 } as any)
 const ApiKnowledgeSyncRoute = ApiKnowledgeSyncRouteImport.update({
@@ -1150,16 +1162,16 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/early-access': typeof EarlyAccessRoute
   '/echo-studio': typeof EchoStudioRoute
+  '/editor': typeof EditorRoute
   '/files': typeof FilesRoute
   '/graph': typeof GraphRoute
-  '/hermes-world': typeof HermesWorldRoute
   '/jobs': typeof JobsRoute
   '/links': typeof LinksRoute
   '/mcp': typeof McpRoute
   '/memory': typeof MemoryRoute
   '/operations': typeof OperationsRoute
-  '/playground': typeof PlaygroundRoute
   '/profiles': typeof ProfilesRoute
+  '/projects': typeof ProjectsRoute
   '/remote-access': typeof RemoteAccessRoute
   '/reserve': typeof ReserveRouteWithChildren
   '/settings': typeof SettingsRouteWithChildren
@@ -1170,7 +1182,6 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof TasksRoute
   '/terminal': typeof TerminalRoute
   '/vt-capital': typeof VtCapitalRoute
-  '/world': typeof WorldRoute
   '/api/agent-bus': typeof ApiAgentBusRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
   '/api/auth': typeof ApiAuthRoute
@@ -1209,6 +1220,7 @@ export interface FileRoutesByFullPath {
   '/api/playground-npc': typeof ApiPlaygroundNpcRoute
   '/api/plugins': typeof ApiPluginsRoute
   '/api/preview-file': typeof ApiPreviewFileRoute
+  '/api/projects': typeof ApiProjectsRoute
   '/api/provider-usage': typeof ApiProviderUsageRoute
   '/api/send': typeof ApiSendRoute
   '/api/send-stream': typeof ApiSendStreamRoute
@@ -1275,7 +1287,9 @@ export interface FileRoutesByFullPath {
   '/api/knowledge/read': typeof ApiKnowledgeReadRoute
   '/api/knowledge/search': typeof ApiKnowledgeSearchRoute
   '/api/knowledge/sync': typeof ApiKnowledgeSyncRoute
+  '/api/links/export': typeof ApiLinksExportRoute
   '/api/links/folders': typeof ApiLinksFoldersRouteWithChildren
+  '/api/links/import': typeof ApiLinksImportRoute
   '/api/links/scrape': typeof ApiLinksScrapeRoute
   '/api/links/trash-empty': typeof ApiLinksTrashEmptyRoute
   '/api/mcp/$name': typeof ApiMcpNameRouteWithChildren
@@ -1339,16 +1353,16 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/early-access': typeof EarlyAccessRoute
   '/echo-studio': typeof EchoStudioRoute
+  '/editor': typeof EditorRoute
   '/files': typeof FilesRoute
   '/graph': typeof GraphRoute
-  '/hermes-world': typeof HermesWorldRoute
   '/jobs': typeof JobsRoute
   '/links': typeof LinksRoute
   '/mcp': typeof McpRoute
   '/memory': typeof MemoryRoute
   '/operations': typeof OperationsRoute
-  '/playground': typeof PlaygroundRoute
   '/profiles': typeof ProfilesRoute
+  '/projects': typeof ProjectsRoute
   '/remote-access': typeof RemoteAccessRoute
   '/reserve': typeof ReserveRouteWithChildren
   '/skills': typeof SkillsRoute
@@ -1358,7 +1372,6 @@ export interface FileRoutesByTo {
   '/tasks': typeof TasksRoute
   '/terminal': typeof TerminalRoute
   '/vt-capital': typeof VtCapitalRoute
-  '/world': typeof WorldRoute
   '/api/agent-bus': typeof ApiAgentBusRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
   '/api/auth': typeof ApiAuthRoute
@@ -1397,6 +1410,7 @@ export interface FileRoutesByTo {
   '/api/playground-npc': typeof ApiPlaygroundNpcRoute
   '/api/plugins': typeof ApiPluginsRoute
   '/api/preview-file': typeof ApiPreviewFileRoute
+  '/api/projects': typeof ApiProjectsRoute
   '/api/provider-usage': typeof ApiProviderUsageRoute
   '/api/send': typeof ApiSendRoute
   '/api/send-stream': typeof ApiSendStreamRoute
@@ -1463,7 +1477,9 @@ export interface FileRoutesByTo {
   '/api/knowledge/read': typeof ApiKnowledgeReadRoute
   '/api/knowledge/search': typeof ApiKnowledgeSearchRoute
   '/api/knowledge/sync': typeof ApiKnowledgeSyncRoute
+  '/api/links/export': typeof ApiLinksExportRoute
   '/api/links/folders': typeof ApiLinksFoldersRouteWithChildren
+  '/api/links/import': typeof ApiLinksImportRoute
   '/api/links/scrape': typeof ApiLinksScrapeRoute
   '/api/links/trash-empty': typeof ApiLinksTrashEmptyRoute
   '/api/mcp/$name': typeof ApiMcpNameRouteWithChildren
@@ -1528,16 +1544,16 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/early-access': typeof EarlyAccessRoute
   '/echo-studio': typeof EchoStudioRoute
+  '/editor': typeof EditorRoute
   '/files': typeof FilesRoute
   '/graph': typeof GraphRoute
-  '/hermes-world': typeof HermesWorldRoute
   '/jobs': typeof JobsRoute
   '/links': typeof LinksRoute
   '/mcp': typeof McpRoute
   '/memory': typeof MemoryRoute
   '/operations': typeof OperationsRoute
-  '/playground': typeof PlaygroundRoute
   '/profiles': typeof ProfilesRoute
+  '/projects': typeof ProjectsRoute
   '/remote-access': typeof RemoteAccessRoute
   '/reserve': typeof ReserveRouteWithChildren
   '/settings': typeof SettingsRouteWithChildren
@@ -1548,7 +1564,6 @@ export interface FileRoutesById {
   '/tasks': typeof TasksRoute
   '/terminal': typeof TerminalRoute
   '/vt-capital': typeof VtCapitalRoute
-  '/world': typeof WorldRoute
   '/api/agent-bus': typeof ApiAgentBusRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
   '/api/auth': typeof ApiAuthRoute
@@ -1587,6 +1602,7 @@ export interface FileRoutesById {
   '/api/playground-npc': typeof ApiPlaygroundNpcRoute
   '/api/plugins': typeof ApiPluginsRoute
   '/api/preview-file': typeof ApiPreviewFileRoute
+  '/api/projects': typeof ApiProjectsRoute
   '/api/provider-usage': typeof ApiProviderUsageRoute
   '/api/send': typeof ApiSendRoute
   '/api/send-stream': typeof ApiSendStreamRoute
@@ -1653,7 +1669,9 @@ export interface FileRoutesById {
   '/api/knowledge/read': typeof ApiKnowledgeReadRoute
   '/api/knowledge/search': typeof ApiKnowledgeSearchRoute
   '/api/knowledge/sync': typeof ApiKnowledgeSyncRoute
+  '/api/links/export': typeof ApiLinksExportRoute
   '/api/links/folders': typeof ApiLinksFoldersRouteWithChildren
+  '/api/links/import': typeof ApiLinksImportRoute
   '/api/links/scrape': typeof ApiLinksScrapeRoute
   '/api/links/trash-empty': typeof ApiLinksTrashEmptyRoute
   '/api/mcp/$name': typeof ApiMcpNameRouteWithChildren
@@ -1719,16 +1737,16 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/early-access'
     | '/echo-studio'
+    | '/editor'
     | '/files'
     | '/graph'
-    | '/hermes-world'
     | '/jobs'
     | '/links'
     | '/mcp'
     | '/memory'
     | '/operations'
-    | '/playground'
     | '/profiles'
+    | '/projects'
     | '/remote-access'
     | '/reserve'
     | '/settings'
@@ -1739,7 +1757,6 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/terminal'
     | '/vt-capital'
-    | '/world'
     | '/api/agent-bus'
     | '/api/artifacts'
     | '/api/auth'
@@ -1778,6 +1795,7 @@ export interface FileRouteTypes {
     | '/api/playground-npc'
     | '/api/plugins'
     | '/api/preview-file'
+    | '/api/projects'
     | '/api/provider-usage'
     | '/api/send'
     | '/api/send-stream'
@@ -1844,7 +1862,9 @@ export interface FileRouteTypes {
     | '/api/knowledge/read'
     | '/api/knowledge/search'
     | '/api/knowledge/sync'
+    | '/api/links/export'
     | '/api/links/folders'
+    | '/api/links/import'
     | '/api/links/scrape'
     | '/api/links/trash-empty'
     | '/api/mcp/$name'
@@ -1908,16 +1928,16 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/early-access'
     | '/echo-studio'
+    | '/editor'
     | '/files'
     | '/graph'
-    | '/hermes-world'
     | '/jobs'
     | '/links'
     | '/mcp'
     | '/memory'
     | '/operations'
-    | '/playground'
     | '/profiles'
+    | '/projects'
     | '/remote-access'
     | '/reserve'
     | '/skills'
@@ -1927,7 +1947,6 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/terminal'
     | '/vt-capital'
-    | '/world'
     | '/api/agent-bus'
     | '/api/artifacts'
     | '/api/auth'
@@ -1966,6 +1985,7 @@ export interface FileRouteTypes {
     | '/api/playground-npc'
     | '/api/plugins'
     | '/api/preview-file'
+    | '/api/projects'
     | '/api/provider-usage'
     | '/api/send'
     | '/api/send-stream'
@@ -2032,7 +2052,9 @@ export interface FileRouteTypes {
     | '/api/knowledge/read'
     | '/api/knowledge/search'
     | '/api/knowledge/sync'
+    | '/api/links/export'
     | '/api/links/folders'
+    | '/api/links/import'
     | '/api/links/scrape'
     | '/api/links/trash-empty'
     | '/api/mcp/$name'
@@ -2096,16 +2118,16 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/early-access'
     | '/echo-studio'
+    | '/editor'
     | '/files'
     | '/graph'
-    | '/hermes-world'
     | '/jobs'
     | '/links'
     | '/mcp'
     | '/memory'
     | '/operations'
-    | '/playground'
     | '/profiles'
+    | '/projects'
     | '/remote-access'
     | '/reserve'
     | '/settings'
@@ -2116,7 +2138,6 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/terminal'
     | '/vt-capital'
-    | '/world'
     | '/api/agent-bus'
     | '/api/artifacts'
     | '/api/auth'
@@ -2155,6 +2176,7 @@ export interface FileRouteTypes {
     | '/api/playground-npc'
     | '/api/plugins'
     | '/api/preview-file'
+    | '/api/projects'
     | '/api/provider-usage'
     | '/api/send'
     | '/api/send-stream'
@@ -2221,7 +2243,9 @@ export interface FileRouteTypes {
     | '/api/knowledge/read'
     | '/api/knowledge/search'
     | '/api/knowledge/sync'
+    | '/api/links/export'
     | '/api/links/folders'
+    | '/api/links/import'
     | '/api/links/scrape'
     | '/api/links/trash-empty'
     | '/api/mcp/$name'
@@ -2286,16 +2310,16 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   EarlyAccessRoute: typeof EarlyAccessRoute
   EchoStudioRoute: typeof EchoStudioRoute
+  EditorRoute: typeof EditorRoute
   FilesRoute: typeof FilesRoute
   GraphRoute: typeof GraphRoute
-  HermesWorldRoute: typeof HermesWorldRoute
   JobsRoute: typeof JobsRoute
   LinksRoute: typeof LinksRoute
   McpRoute: typeof McpRoute
   MemoryRoute: typeof MemoryRoute
   OperationsRoute: typeof OperationsRoute
-  PlaygroundRoute: typeof PlaygroundRoute
   ProfilesRoute: typeof ProfilesRoute
+  ProjectsRoute: typeof ProjectsRoute
   RemoteAccessRoute: typeof RemoteAccessRoute
   ReserveRoute: typeof ReserveRouteWithChildren
   SettingsRoute: typeof SettingsRouteWithChildren
@@ -2306,7 +2330,6 @@ export interface RootRouteChildren {
   TasksRoute: typeof TasksRoute
   TerminalRoute: typeof TerminalRoute
   VtCapitalRoute: typeof VtCapitalRoute
-  WorldRoute: typeof WorldRoute
   ApiAgentBusRoute: typeof ApiAgentBusRoute
   ApiArtifactsRoute: typeof ApiArtifactsRouteWithChildren
   ApiAuthRoute: typeof ApiAuthRoute
@@ -2345,6 +2368,7 @@ export interface RootRouteChildren {
   ApiPlaygroundNpcRoute: typeof ApiPlaygroundNpcRoute
   ApiPluginsRoute: typeof ApiPluginsRoute
   ApiPreviewFileRoute: typeof ApiPreviewFileRoute
+  ApiProjectsRoute: typeof ApiProjectsRoute
   ApiProviderUsageRoute: typeof ApiProviderUsageRoute
   ApiSendRoute: typeof ApiSendRoute
   ApiSendStreamRoute: typeof ApiSendStreamRoute
@@ -2430,13 +2454,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/world': {
-      id: '/world'
-      path: '/world'
-      fullPath: '/world'
-      preLoaderRoute: typeof WorldRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/vt-capital': {
       id: '/vt-capital'
       path: '/vt-capital'
@@ -2507,18 +2524,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RemoteAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profiles': {
       id: '/profiles'
       path: '/profiles'
       fullPath: '/profiles'
       preLoaderRoute: typeof ProfilesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/playground': {
-      id: '/playground'
-      path: '/playground'
-      fullPath: '/playground'
-      preLoaderRoute: typeof PlaygroundRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/operations': {
@@ -2556,13 +2573,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JobsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/hermes-world': {
-      id: '/hermes-world'
-      path: '/hermes-world'
-      fullPath: '/hermes-world'
-      preLoaderRoute: typeof HermesWorldRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/graph': {
       id: '/graph'
       path: '/graph'
@@ -2575,6 +2585,13 @@ declare module '@tanstack/react-router' {
       path: '/files'
       fullPath: '/files'
       preLoaderRoute: typeof FilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/editor': {
+      id: '/editor'
+      path: '/editor'
+      fullPath: '/editor'
+      preLoaderRoute: typeof EditorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/echo-studio': {
@@ -2960,6 +2977,13 @@ declare module '@tanstack/react-router' {
       path: '/api/provider-usage'
       fullPath: '/api/provider-usage'
       preLoaderRoute: typeof ApiProviderUsageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/projects': {
+      id: '/api/projects'
+      path: '/api/projects'
+      fullPath: '/api/projects'
+      preLoaderRoute: typeof ApiProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/preview-file': {
@@ -3522,11 +3546,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLinksScrapeRouteImport
       parentRoute: typeof ApiLinksRoute
     }
+    '/api/links/import': {
+      id: '/api/links/import'
+      path: '/import'
+      fullPath: '/api/links/import'
+      preLoaderRoute: typeof ApiLinksImportRouteImport
+      parentRoute: typeof ApiLinksRoute
+    }
     '/api/links/folders': {
       id: '/api/links/folders'
       path: '/folders'
       fullPath: '/api/links/folders'
       preLoaderRoute: typeof ApiLinksFoldersRouteImport
+      parentRoute: typeof ApiLinksRoute
+    }
+    '/api/links/export': {
+      id: '/api/links/export'
+      path: '/export'
+      fullPath: '/api/links/export'
+      preLoaderRoute: typeof ApiLinksExportRouteImport
       parentRoute: typeof ApiLinksRoute
     }
     '/api/knowledge/sync': {
@@ -3844,7 +3882,9 @@ const ApiLinksItemIdRouteWithChildren = ApiLinksItemIdRoute._addFileChildren(
 )
 
 interface ApiLinksRouteChildren {
+  ApiLinksExportRoute: typeof ApiLinksExportRoute
   ApiLinksFoldersRoute: typeof ApiLinksFoldersRouteWithChildren
+  ApiLinksImportRoute: typeof ApiLinksImportRoute
   ApiLinksScrapeRoute: typeof ApiLinksScrapeRoute
   ApiLinksTrashEmptyRoute: typeof ApiLinksTrashEmptyRoute
   ApiLinksGoIdRoute: typeof ApiLinksGoIdRoute
@@ -3852,7 +3892,9 @@ interface ApiLinksRouteChildren {
 }
 
 const ApiLinksRouteChildren: ApiLinksRouteChildren = {
+  ApiLinksExportRoute: ApiLinksExportRoute,
   ApiLinksFoldersRoute: ApiLinksFoldersRouteWithChildren,
+  ApiLinksImportRoute: ApiLinksImportRoute,
   ApiLinksScrapeRoute: ApiLinksScrapeRoute,
   ApiLinksTrashEmptyRoute: ApiLinksTrashEmptyRoute,
   ApiLinksGoIdRoute: ApiLinksGoIdRoute,
@@ -4010,16 +4052,16 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   EarlyAccessRoute: EarlyAccessRoute,
   EchoStudioRoute: EchoStudioRoute,
+  EditorRoute: EditorRoute,
   FilesRoute: FilesRoute,
   GraphRoute: GraphRoute,
-  HermesWorldRoute: HermesWorldRoute,
   JobsRoute: JobsRoute,
   LinksRoute: LinksRoute,
   McpRoute: McpRoute,
   MemoryRoute: MemoryRoute,
   OperationsRoute: OperationsRoute,
-  PlaygroundRoute: PlaygroundRoute,
   ProfilesRoute: ProfilesRoute,
+  ProjectsRoute: ProjectsRoute,
   RemoteAccessRoute: RemoteAccessRoute,
   ReserveRoute: ReserveRouteWithChildren,
   SettingsRoute: SettingsRouteWithChildren,
@@ -4030,7 +4072,6 @@ const rootRouteChildren: RootRouteChildren = {
   TasksRoute: TasksRoute,
   TerminalRoute: TerminalRoute,
   VtCapitalRoute: VtCapitalRoute,
-  WorldRoute: WorldRoute,
   ApiAgentBusRoute: ApiAgentBusRoute,
   ApiArtifactsRoute: ApiArtifactsRouteWithChildren,
   ApiAuthRoute: ApiAuthRoute,
@@ -4069,6 +4110,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPlaygroundNpcRoute: ApiPlaygroundNpcRoute,
   ApiPluginsRoute: ApiPluginsRoute,
   ApiPreviewFileRoute: ApiPreviewFileRoute,
+  ApiProjectsRoute: ApiProjectsRoute,
   ApiProviderUsageRoute: ApiProviderUsageRoute,
   ApiSendRoute: ApiSendRoute,
   ApiSendStreamRoute: ApiSendStreamRoute,

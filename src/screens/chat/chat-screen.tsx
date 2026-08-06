@@ -1941,6 +1941,16 @@ export function ChatScreen({
         })
       const enrichedBody = body + textBlocks.join('')
 
+      // ── Editor breadcrumb injection ─────────────────────────────────
+      // When the user is chatting from the embedded editor panel, prepend
+      // a lightweight context hint so the agent knows which file is open.
+      // This costs only ~15 tokens per message (vs sending the full file).
+      const editorFile = useWorkspaceStore.getState().activeEditorFile
+      let finalBody = enrichedBody
+      if (embedded && editorFile) {
+        finalBody = `[Editor Context: User is currently editing file "${editorFile}"]\n\n${enrichedBody}`
+      }
+
       let optimisticClientId = existingClientId
       setResearchResetKey((current) => current + 1)
       if (!skipOptimistic) {
@@ -2032,7 +2042,7 @@ export function ChatScreen({
       void startStreaming({
         sessionKey,
         friendlyId,
-        message: enrichedBody,
+        message: finalBody,
         history,
         attachments:
           payloadAttachments.length > 0 ? payloadAttachments : undefined,

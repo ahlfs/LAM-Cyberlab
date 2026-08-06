@@ -11,6 +11,8 @@ type WorkspaceState = {
   chatPanelOpen: boolean
   /** Session key for the chat panel (defaults to 'main') */
   chatPanelSessionKey: string
+  /** File path currently open in the Code Editor — used for breadcrumb context injection */
+  activeEditorFile: string | null
   /** Mobile keyboard / composer focus — hides tab bar */
   mobileKeyboardOpen: boolean
   mobileKeyboardInset: number
@@ -25,6 +27,7 @@ type WorkspaceState = {
   toggleChatPanel: () => void
   setChatPanelOpen: (open: boolean) => void
   setChatPanelSessionKey: (key: string) => void
+  setActiveEditorFile: (path: string | null) => void
   setMobileKeyboardOpen: (open: boolean) => void
   setMobileKeyboardInset: (inset: number) => void
   setMobileComposerFocused: (focused: boolean) => void
@@ -39,6 +42,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       activeSubPage: null,
       chatPanelOpen: false,
       chatPanelSessionKey: 'main',
+      activeEditorFile: null,
       mobileKeyboardOpen: false,
       mobileKeyboardInset: 0,
       mobileComposerFocused: false,
@@ -55,6 +59,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setActiveSubPage: (page) => set({ activeSubPage: page }),
       toggleChatPanel: () => set((s) => ({ chatPanelOpen: !s.chatPanelOpen })),
       setChatPanelOpen: (open) => set({ chatPanelOpen: open }),
+      setActiveEditorFile: (path) => set({ activeEditorFile: path }),
       setMobileKeyboardOpen: (open) => set({ mobileKeyboardOpen: open }),
       setMobileKeyboardInset: (inset) => set({ mobileKeyboardInset: inset }),
       setMobileComposerFocused: (focused) =>

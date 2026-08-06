@@ -5,6 +5,13 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { 
+  InformationCircleIcon, 
+  CheckmarkCircle02Icon, 
+  Alert01Icon, 
+  CancelCircleIcon 
+} from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 
 type ToastType = 'info' | 'success' | 'warning' | 'error'
@@ -35,17 +42,17 @@ export function toast(
 }
 
 const typeStyles: Record<ToastType, string> = {
-  info: 'bg-accent-600 text-white',
-  success: 'bg-green-600 text-white',
-  warning: 'bg-amber-500 text-white',
-  error: 'bg-red-600 text-white',
+  info: 'border-blue-500/30 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.15)] text-blue-200',
+  success: 'border-emerald-500/30 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] text-emerald-200',
+  warning: 'border-amber-500/30 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.15)] text-amber-200',
+  error: 'border-rose-500/30 bg-rose-500/10 shadow-[0_0_20px_rgba(225,29,72,0.15)] text-rose-200',
 }
 
-const defaultIcons: Record<ToastType, string> = {
-  info: 'ℹ️',
-  success: '✅',
-  warning: '⚠️',
-  error: '❌',
+const defaultIcons: Record<ToastType, any> = {
+  info: InformationCircleIcon,
+  success: CheckmarkCircle02Icon,
+  warning: Alert01Icon,
+  error: CancelCircleIcon,
 }
 
 export function Toaster() {
@@ -81,20 +88,30 @@ export function Toaster() {
         <div
           key={t.id}
           className={cn(
-            'pointer-events-auto flex w-full max-w-[calc(100vw-1rem)] items-start gap-2.5 rounded-xl px-4 py-3 text-sm font-medium shadow-lg backdrop-blur-sm animate-in slide-in-from-right-5 fade-in duration-200 sm:w-auto',
+            'pointer-events-auto flex w-full max-w-[calc(100vw-1rem)] items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium backdrop-blur-md animate-in slide-in-from-right-5 fade-in duration-300 sm:w-auto',
             typeStyles[t.type],
           )}
         >
-          <span className="text-base">{t.icon ?? defaultIcons[t.type]}</span>
-          <span className="min-w-0 break-words">{t.message}</span>
+          <div className="flex items-center justify-center size-8 rounded-full bg-black/20 shrink-0 shadow-inner">
+            {t.icon ? (
+              t.icon.includes('devicon') ? (
+                <i className={cn('text-xl drop-shadow-md', t.icon)}></i>
+              ) : (
+                <span className="text-xl drop-shadow-md">{t.icon}</span>
+              )
+            ) : (
+              <HugeiconsIcon icon={defaultIcons[t.type]} size={20} className="drop-shadow-md" />
+            )}
+          </div>
+          <span className="min-w-0 flex-1 break-words leading-relaxed drop-shadow-sm text-[var(--theme-text)]">
+            {t.message}
+          </span>
           <button
             type="button"
-            onClick={() =>
-              setToasts((prev) => prev.filter((x) => x.id !== t.id))
-            }
-            className="ml-2 shrink-0 rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100"
+            onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+            className="ml-2 shrink-0 rounded-full p-1.5 opacity-60 transition-all hover:bg-black/20 hover:opacity-100"
           >
-            ✕
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         </div>
       ))}

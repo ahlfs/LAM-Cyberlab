@@ -5,6 +5,8 @@ import {
   ArrowLeft01Icon,
   Delete02Icon,
   Search01Icon,
+  Download01Icon,
+  Upload01Icon,
 } from '@hugeicons/core-free-icons'
 import { toast } from '@/components/ui/toast'
 import type { LinkuFolder, LinkuLink } from '@/server/linku-db'
@@ -15,6 +17,7 @@ import {
   useEmptyTrash,
   useFolders,
   useLinks,
+  useImportLinks,
 } from './lib/use-linku'
 import { LinksRail } from './components/links-rail'
 import { FolderGrid } from './components/folder-grid'
@@ -83,6 +86,40 @@ export function LinksScreen() {
     })
   }
 
+  const importLinks = useImportLinks()
+
+  const handleExport = () => {
+    window.location.href = '/api/links/export'
+  }
+
+  const handleImport = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'application/json'
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        try {
+          const payload = JSON.parse(ev.target?.result as string)
+          importLinks.mutate(payload, {
+            onSuccess: (res) => {
+              toast(`Imported ${res.importedFolders} folders and ${res.importedLinks} links`, { type: 'success' })
+            },
+            onError: (err) => {
+              toast(err instanceof Error ? err.message : 'Import failed', { type: 'error' })
+            }
+          })
+        } catch (err) {
+          toast('Invalid JSON file', { type: 'error' })
+        }
+      }
+      reader.readAsText(file)
+    }
+    input.click()
+  }
+
   return (
     <div className="min-h-full overflow-y-auto bg-surface text-ink">
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-6 pb-[calc(var(--tabbar-h,80px)+1.5rem)] sm:px-6 lg:px-8">
@@ -117,7 +154,27 @@ export function LinksScreen() {
               }
             />
           </div>
-          <div className="flex shrink-0 gap-2">
+          <div className="flex flex-wrap shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={importLinks.isPending}
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-text)' }}
+              title="Import links from JSON"
+            >
+              <HugeiconsIcon icon={Upload01Icon} size={16} className={importLinks.isPending ? "animate-bounce" : ""} />
+            </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-text)' }}
+              title="Export links to JSON"
+            >
+              <HugeiconsIcon icon={Download01Icon} size={16} />
+            </button>
+            <div className="w-px h-6 bg-[var(--theme-border)] mx-1 self-center" />
             <button
               type="button"
               onClick={() => setFolderDialog({ open: true, folder: null })}

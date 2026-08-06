@@ -164,3 +164,6 @@ graphify-out/
 
 # Session handoff export (local meta, not repo content)
 HANDOFF-CONTEXT.md
+
+# Antigravity IDE assistant configuration
+.agents/

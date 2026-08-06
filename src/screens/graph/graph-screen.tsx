@@ -49,9 +49,12 @@ type LayoutNode = GraphNode & {
 // ── Colors & Sizes ──────────────────────────────────────────────────
 
 const NODE_COLORS: Record<string, string> = {
-  entity: '#60A5FA',
-  concept: '#A78BFA',
-  default: '#94A3B8',
+  entity: '#00F0FF',    // Cyan
+  concept: '#FF00FF',   // Magenta
+  action: '#FFE600',    // Yellow
+  file: '#39FF14',      // Neon Green
+  folder: '#FF003C',    // Cyberpunk Red
+  default: '#00F0FF',
 }
 
 const BG_COLOR = '#0B0F1A'
@@ -339,44 +342,45 @@ function CanvasRenderer({
         
         const actualRadius = Math.max(0.5, radius)
         
-        ctx.beginPath()
-        ctx.arc(node.px, node.py, actualRadius, 0, Math.PI * 2)
-        
+        // Helper to draw hexagon
+        const drawHexagon = (x: number, y: number, r: number) => {
+          ctx.beginPath()
+          for (let i = 0; i < 6; i++) {
+            // Pointy top hexagon (rotate -30 deg)
+            const angle = (Math.PI / 3) * i - Math.PI / 6
+            const hx = x + r * Math.cos(angle)
+            const hy = y + r * Math.sin(angle)
+            if (i === 0) ctx.moveTo(hx, hy)
+            else ctx.lineTo(hx, hy)
+          }
+          ctx.closePath()
+        }
+
         if (isFaded) {
+          drawHexagon(node.px, node.py, actualRadius)
           ctx.fillStyle = 'rgba(148, 163, 184, 0.15)'
           ctx.fill()
         } else {
-          // 3D Volumetric Sphere Gradient
-          const gradient = ctx.createRadialGradient(
-            node.px - actualRadius * 0.3,
-            node.py - actualRadius * 0.3,
-            actualRadius * 0.1,
-            node.px,
-            node.py,
-            actualRadius
-          )
-          
-          gradient.addColorStop(0, '#FFFFFF') // Specular highlight
-          gradient.addColorStop(0.4, baseColor) // Midtone base color
-          gradient.addColorStop(1, `color-mix(in srgb, ${baseColor}, black 40%)`) // Shadow edge
-          
-          ctx.fillStyle = gradient
+          // Sci-Fi solid fill
+          drawHexagon(node.px, node.py, actualRadius)
+          ctx.fillStyle = `color-mix(in srgb, ${baseColor} 20%, transparent)`
           
           if (isHighlighted || isSelected) {
             ctx.shadowColor = baseColor
             ctx.shadowBlur = 15 * node.scale
+            ctx.fillStyle = `color-mix(in srgb, ${baseColor} 40%, transparent)`
           }
           ctx.fill()
           
-          // Glossy rim light outline
-          ctx.beginPath()
-          ctx.arc(node.px, node.py, actualRadius, 0, Math.PI * 2)
-          ctx.strokeStyle = `color-mix(in srgb, ${baseColor}, white 40%)`
-          ctx.lineWidth = Math.max(0.5, 1 * node.scale)
+          // Sharp neon stroke
+          drawHexagon(node.px, node.py, actualRadius)
+          ctx.strokeStyle = baseColor
+          ctx.lineWidth = Math.max(0.8, 1.5 * node.scale)
           ctx.stroke()
         }
         
         if (isSelected || isSearchHit) {
+           drawHexagon(node.px, node.py, actualRadius + (2 * node.scale))
            ctx.strokeStyle = '#FFFFFF'
            ctx.lineWidth = 2 * node.scale
            ctx.stroke()

@@ -107,6 +107,8 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     if (path === '/swarm' || path.startsWith('/swarm2')) return 5
     if (path.startsWith('/echo-studio')) return 5
     if (path.startsWith('/system')) return 6
+    if (path.startsWith('/projects')) return 6.5
+    if (path.startsWith('/editor')) return 6.7
     if (path.startsWith('/remote-access')) return 7
     if (path.startsWith('/memory')) return 8
     if (path.startsWith('/links')) return 9
@@ -184,6 +186,8 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     if (pathname.startsWith('/operations')) return 'Operations'
     if (pathname.startsWith('/swarm2') || pathname === '/swarm') return 'Swarm'
     if (pathname.startsWith('/system')) return 'System'
+    if (pathname.startsWith('/projects')) return 'Projects'
+    if (pathname.startsWith('/editor')) return 'Code Editor'
     if (pathname.startsWith('/remote-access')) return 'Remote Access'
     if (pathname.startsWith('/echo-studio')) return 'Echo Studio'
     if (pathname.startsWith('/memory')) return 'Memory'
@@ -201,11 +205,10 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const activeFriendlyId = chatMatch ? chatMatch[1] : 'main'
   const isOnChatRoute = Boolean(chatMatch) || pathname === '/new'
   const isOnTerminalRoute = pathname.startsWith('/terminal')
-  const isOnPlaygroundRoute = pathname === '/playground' || pathname.startsWith('/playground/')
-  const isOnHermesWorldLandingRoute = pathname === '/hermes-world' || pathname.startsWith('/hermes-world/') || pathname === '/world' || pathname.startsWith('/world/')
+  const isOnEditorRoute = pathname.startsWith('/editor')
   const isEmbeddedSurface =
-    search?.embed === '1' || search?.embed === 'true' || search?.mode === 'embed'
-  const isChromeFreeSurface = isEmbeddedSurface || isOnHermesWorldLandingRoute
+    (search as any)?.embed === '1' || (search as any)?.embed === 'true' || (search as any)?.mode === 'embed'
+  const isChromeFreeSurface = isEmbeddedSurface
   const hideChatSidebar = isOnChatRoute && chatFocusMode
   const showDesktopSidebarBackdrop =
     !isChromeFreeSurface && !isMobile && !isOnChatRoute && !sidebarCollapsed
@@ -303,8 +306,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   }, [isMobile, setSidebarCollapsed, toggleSidebar])
 
   // Public/launch surfaces should behave like normal web pages, not app-shell panes.
-  // This keeps /hermes-world and /world scrollable at the document level and avoids
-  // local-only workspace chrome for X/GitHub traffic.
+  // This avoids local-only workspace chrome for embedded traffic.
   if (isChromeFreeSurface) {
     return <>{children}</>
   }
@@ -452,16 +454,16 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             </div>
           </main>
 
-          {/* Chat panel — visible on non-chat routes (but not in HermesWorld, which has its own in-game chat) */}
-          {!isOnChatRoute && !isOnPlaygroundRoute && !isChromeFreeSurface && !isMobile && (
+          {/* Chat panel — visible on non-chat and non-editor routes */}
+          {!isOnChatRoute && !isOnEditorRoute && !isChromeFreeSurface && !isMobile && (
             <Suspense fallback={null}>
               <ChatPanel />
             </Suspense>
           )}
         </div>
 
-        {/* Floating chat toggle — visible on non-chat routes (but not in HermesWorld) */}
-        {!isChromeFreeSurface && !isOnChatRoute && !isOnPlaygroundRoute && !isMobile && <ChatPanelToggle />}
+        {/* Floating chat toggle — visible on non-chat and non-editor routes */}
+        {!isChromeFreeSurface && !isOnChatRoute && !isOnEditorRoute && !isMobile && <ChatPanelToggle />}
 
         {showDesktopSidebarBackdrop ? (
           <button
