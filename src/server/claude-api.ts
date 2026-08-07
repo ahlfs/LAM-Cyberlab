@@ -158,6 +158,7 @@ export async function createSession(opts?: {
   id?: string
   title?: string
   model?: string
+  provider?: string
 }): Promise<ClaudeSession> {
   if (getCapabilities().dashboard.available) {
     const resp = await createDashboardSession(opts || {})
@@ -376,6 +377,7 @@ export async function streamChat(
   body: {
     message: string
     model?: string
+    provider?: string
     system_message?: string
     attachments?: Array<Record<string, unknown>>
   },

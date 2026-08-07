@@ -100,6 +100,7 @@ type ChatComposerProps = {
    * must stay inline instead of docking fixed to the viewport bottom. */
   embedded?: boolean
   hideModelSelector?: boolean
+  currentModel?: string
 }
 
 type ChatComposerHelpers = {
@@ -882,6 +883,7 @@ function ChatComposerComponent({
   onAbort,
   embedded = false,
   hideModelSelector = false,
+  currentModel: externalCurrentModel,
 }: ChatComposerProps) {
   const queryClient = useQueryClient()
   const mobileKeyboardInset = useWorkspaceStore((s) => s.mobileKeyboardInset)
@@ -1003,11 +1005,25 @@ function ChatComposerComponent({
     },
   })
   const currentModelQuery = useQuery({
-    queryKey: ['claude', 'session-status-model', sessionKey || 'main'],
-    queryFn: () => fetchCurrentModelFromStatus(sessionKey),
-    refetchInterval: 30_000,
+    queryKey: ['session-status', sessionKey],
+    queryFn: async () => {
+      if (!sessionKey || sessionKey === 'new' || sessionKey === 'main') {
+        return null
+      }
+      const res = await fetch(`/api/session-status?sessionKey=${sessionKey}`)
+      if (!res.ok) throw new Error('status failed')
+      return (await res.json()) as SessionStatusApiResponse
+    },
+    select: (data) => {
+      const payload = data?.payload as { model?: string }
+      return payload?.model || ''
+    },
+    staleTime: 10 * 60 * 1000,
     retry: false,
   })
+
+  const fetchedModel = currentModelQuery.data ?? ''
+  const currentModel = externalCurrentModel ?? fetchedModel
   const sttConfigQuery = useQuery({
     queryKey: ['claude', 'config', 'stt'],
     queryFn: async () => {
@@ -1192,8 +1208,6 @@ function ChatComposerComponent({
     shortPathLabel(detectedWorkspacePath) ||
     'Workspace'
 
-  const currentModel = currentModelQuery.data ?? ''
-
   // Auto-switch to hermes-agent model on mount (LAM Cyberlab uses Hermes Agent)
   // Removed: auto-switch to hermes-agent. The workspace respects the
   // model/provider configured in ~/.hermes/config.yaml. Users switch
@@ -1229,7 +1243,7 @@ function ChatComposerComponent({
   // Derive the label directly from the store so navigation between sessions
   // updates without a render-window flash from a stale React-state mirror.
   const modelButtonLabel =
-    persistedSessionModel || currentModel || configuredModel || '⚕ Hermes Agent'
+    externalCurrentModel || persistedSessionModel || currentModel || configuredModel || '⚕ Hermes Agent'
 
   // Measure composer height and set CSS variable for scroll padding
   useLayoutEffect(() => {
@@ -2826,7 +2840,7 @@ function ChatComposerComponent({
                       <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
                     </button>
                     {isControlsMenuOpen ? (
-                      <div className="absolute bottom-full left-0 z-[190] mb-2 w-[min(32rem,calc(100vw-2rem))] min-w-[18rem] overflow-visible rounded-2xl border border-neutral-200 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150 dark:border-neutral-700 dark:bg-neutral-900">
+                      <div className="absolute bottom-full left-0 z-[190] mb-2 w-[15rem] sm:w-[20rem] overflow-visible rounded-2xl border border-neutral-200 bg-white p-2 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150 dark:border-neutral-700 dark:bg-neutral-900">
                         <div className="mb-2 px-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
                           Chat controls
                         </div>
@@ -2966,7 +2980,7 @@ function ChatComposerComponent({
                             {isModelMenuOpen && (
                               <>
                                 <div className="fixed inset-0 z-[199]" onClick={() => setIsModelMenuOpen(false)} />
-                                <div className="absolute bottom-full left-0 mb-2 z-[200] w-[min(28rem,calc(100vw-2rem))] min-w-[18rem] origin-bottom-left overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-900 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                                <div className="absolute bottom-full right-0 mb-2 z-[200] w-64 sm:w-72 origin-bottom-right overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-900 animate-in fade-in slide-in-from-bottom-2 duration-150">
                                   <div className="max-h-[20rem] overflow-y-auto overflow-x-hidden p-1">
                                     {(() => {
                                       const allModels = modelsQuery.data?.models ?? []

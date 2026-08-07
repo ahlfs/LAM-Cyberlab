@@ -354,8 +354,27 @@ export const Route = createFileRoute('/api/send-stream')({
         let chatMode = getChatMode()
         let localBaseUrl: string | undefined
         let localApiKey: string | undefined
-        const requestModel = typeof body.model === 'string' ? body.model : ''
+        const requestModel = typeof body.model === 'string' ? body.model : ''; console.log("LAM-CYBERLAB RECEIVED MODEL:", requestModel, "ORIGINAL BODY:", body.model);
         let bareModel = requestModel.includes('/') ? requestModel.split('/').slice(1).join('/') : requestModel
+
+        // Resolve Gateway Provider if it's a custom model (fixes routing when Gateway uses default provider)
+        let resolvedGatewayProvider: string | undefined
+        if (requestModel) {
+          const configuredLiveModels = await fetchConfiguredLiveModels().catch(() => [])
+          const liveMatch = configuredLiveModels.find((m) => {
+            if (m.id === requestModel || m.id === bareModel) return true
+            if (m.provider && requestModel === `${m.provider}/${m.id}`) return true
+            if (m.provider && requestModel.startsWith(`${m.provider}/`) && requestModel.slice(m.provider.length + 1) === m.id) return true
+            return false
+          })
+          if (liveMatch) {
+             const prov = (liveMatch as any).endpointProvider || liveMatch.provider;
+             if (prov) {
+                resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
+             }
+          }
+        }
+
         
         // If the gateway supports the Responses API (tool-use), we let the gateway 
         // handle the routing to custom providers. If we bypass the gateway, we lose 
@@ -384,7 +403,7 @@ export const Route = createFileRoute('/api/send-stream')({
               chatMode = 'portable'
               localBaseUrl = (liveMatch as any).baseUrl
               localApiKey = (liveMatch as any).apiKey
-              bareModel = liveMatch.id
+              bareModel = liveMatch.id || ''
             }
           }
 
@@ -674,6 +693,7 @@ export const Route = createFileRoute('/api/send-stream')({
                         conversationHistory: effectiveHistory,
                         model:
                           typeof body.model === 'string' ? body.model : undefined,
+                        provider: resolvedGatewayProvider || undefined,
                         sessionId: portableSessionKey,
                         signal: abortController.signal,
                       })
@@ -972,7 +992,12 @@ export const Route = createFileRoute('/api/send-stream')({
                   sessionKey = reused
                   resolvedFriendlyId = reused
                 } else {
-                  const session = await createSession()
+                  const sessionOpts = {
+                    model: typeof body.model === 'string' ? body.model : undefined,
+                    provider: resolvedGatewayProvider || undefined
+                  }
+                  console.log("LAM-CYBERLAB CREATING SESSION:", sessionOpts)
+                  const session = await createSession(sessionOpts)
                   sessionKey = session.id
                   resolvedFriendlyId = session.id
                 }
@@ -1064,6 +1089,7 @@ export const Route = createFileRoute('/api/send-stream')({
                   message: scopedMessage,
                   model:
                     typeof body.model === 'string' ? body.model : undefined,
+                  provider: resolvedGatewayProvider || undefined,
                   system_message: thinking,
                   attachments: attachments || undefined,
                 },

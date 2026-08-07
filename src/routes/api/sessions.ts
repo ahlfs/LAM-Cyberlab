@@ -13,6 +13,7 @@ import {
   toSessionSummary,
   updateSession,
 } from '../../server/claude-api'
+import { fetchConfiguredLiveModels } from './models'
 import { createCapabilityUnavailablePayload } from '@/lib/feature-gates'
 import {
   deleteLocalSession,
@@ -131,10 +132,30 @@ export const Route = createFileRoute('/api/sessions')({
             })
           }
 
+          
+          let resolvedGatewayProvider: string | undefined
+          if (model) {
+            const configuredLiveModels = await fetchConfiguredLiveModels().catch(() => [])
+            const bareModel = model.includes('/') ? model.split('/').slice(1).join('/') : model
+            const liveMatch = configuredLiveModels.find((m) => {
+              if (m.id === model || m.id === bareModel) return true
+              if (m.provider && model === `${m.provider}/${m.id}`) return true
+              if (m.provider && model.startsWith(`${m.provider}/`) && model.slice(m.provider.length + 1) === m.id) return true
+              return false
+            })
+            if (liveMatch) {
+               const prov = (liveMatch as any).endpointProvider || liveMatch.provider;
+               if (prov) {
+                  resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
+               }
+            }
+          }
+
           const session = await createSession({
             id: friendlyId || randomUUID(),
             title: label,
             model,
+            provider: resolvedGatewayProvider || undefined,
           })
 
           return json({

@@ -293,12 +293,13 @@ export function useChatHistory({
       explicitRouteSessionKey,
     ]
     const match = candidates.find((candidate) => candidate.length > 0)
-    return match || 'main'
+    return match || activeFriendlyId || 'main'
   }, [
     explicitRouteSessionKey,
     isNewChat,
     normalizedActiveSessionKey,
     normalizedForcedSessionKey,
+    activeFriendlyId,
   ])
   const hasDirectSessionKey = Boolean(
     normalizedForcedSessionKey ||

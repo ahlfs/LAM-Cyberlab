@@ -84,6 +84,7 @@ export type OpenAICompatMessage = {
 }
 
 export type OpenAIChatOptions = {
+  apiKey?: string
   model?: string
   stream?: boolean
   temperature?: number

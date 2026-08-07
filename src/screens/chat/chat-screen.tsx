@@ -1064,11 +1064,17 @@ export function ChatScreen({
       resolvedSessionKey ||
       activeCanonicalKey ||
       activeSessionKey ||
+      activeFriendlyId ||
       'main'
 
-  const persistedSessionModel = useSessionModelStore((s) =>
-    s.getModel(activeSessionKeyForModel),
-  )
+  const persistedSessionModel = useSessionModelStore((s) => {
+    const primary = s.getModel(activeSessionKeyForModel)
+    if (primary) return primary
+    if (activeFriendlyId && activeFriendlyId !== activeSessionKeyForModel && activeFriendlyId !== 'new') {
+      return s.getModel(activeFriendlyId)
+    }
+    return undefined
+  })
 
   const gatewayModel = currentModelQuery.data || ''
   const currentModel =
@@ -2039,17 +2045,26 @@ export function ChatScreen({
         }
       }
 
-      void startStreaming({
-        sessionKey,
-        friendlyId,
-        message: finalBody,
-        history,
-        attachments:
-          payloadAttachments.length > 0 ? payloadAttachments : undefined,
-        thinking:
-          currentThinkingLevel === 'off' ? undefined : currentThinkingLevel,
-        fastMode,
-        model: currentModel || undefined,
+        let modelProvider: string | undefined
+        if (currentModel && modelsQuery.data?.models) {
+          const found = modelsQuery.data.models.find((m: any) => m.id === currentModel)
+          if (found) {
+            modelProvider = found.endpointProvider || found.provider
+          }
+        }
+
+        void startStreaming({
+          sessionKey,
+          friendlyId,
+          message: finalBody,
+          history,
+          attachments:
+            payloadAttachments.length > 0 ? payloadAttachments : undefined,
+          thinking:
+            currentThinkingLevel === 'off' ? undefined : currentThinkingLevel,
+          fastMode,
+          model: currentModel || undefined,
+          provider: modelProvider,
         idempotencyKey: optimisticClientId || crypto.randomUUID(),
       }).catch((err: unknown) => {
         const messageText = err instanceof Error ? err.message : String(err)
@@ -2511,7 +2526,7 @@ export function ChatScreen({
 
       const sessionKeyForSend = isPortableMode
         ? 'main'
-        : forcedSessionKey || resolvedSessionKey || activeSessionKey || 'main'
+        : forcedSessionKey || resolvedSessionKey || activeSessionKey || activeFriendlyId || 'main'
       sendMessage(
         sessionKeyForSend,
         isPortableMode ? 'main' : activeFriendlyId,
@@ -2917,7 +2932,8 @@ export function ChatScreen({
                   : forcedSessionKey ||
                     resolvedSessionKey ||
                     activeCanonicalKey ||
-                    activeSessionKey
+                    activeSessionKey ||
+                    activeFriendlyId
               }
               wrapperRef={composerRef}
               composerRef={composerHandleRef}
@@ -2926,6 +2942,7 @@ export function ChatScreen({
               focusKey={`${isNewChat ? 'new' : activeFriendlyId}:${activeCanonicalKey ?? ''}`}
               thinkingLevel={thinkingLevel}
               onThinkingLevelChange={handleThinkingLevelChange}
+              currentModel={currentModel}
             />
           ) : null}
         </main>

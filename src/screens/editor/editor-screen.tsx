@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/toast'
 import { FileTree, type FileEntry } from './components/file-tree'
 import { useWorkspaceStore } from '@/stores/workspace-store'
+import { useChatSessions } from '@/screens/chat/hooks/use-chat-sessions'
 
 const EditorTerminal = lazy(() =>
   import('./components/editor-terminal').then((m) => ({
@@ -115,7 +116,10 @@ export function EditorScreen() {
   const [loadingFile, setLoadingFile] = useState(false)
   const [terminalOpen, setTerminalOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(true)
+  const [chatSessionId, setChatSessionId] = useState('editor-chat')
   const [terminalKey, setTerminalKey] = useState(0)
+
+  const { sessions } = useChatSessions({ activeFriendlyId: chatSessionId, isNewChat: false })
   const editorRef = useRef<any>(null)
 
   // Folder selector
@@ -755,6 +759,45 @@ export function EditorScreen() {
           className="w-[420px] shrink-0 border-l flex flex-col z-10"
           style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-bg)' }}
         >
+          {/* Agent Session Header */}
+          <div 
+            className="flex h-10 shrink-0 items-center justify-between border-b px-3"
+            style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card)' }}
+          >
+            <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
+              Agent
+            </span>
+            <select
+              value={chatSessionId}
+              onChange={(e) => {
+                if (e.target.value === '_new') {
+                  setChatSessionId('editor-' + Date.now().toString(36))
+                } else {
+                  setChatSessionId(e.target.value)
+                }
+              }}
+              className="max-w-[200px] truncate rounded border px-2 py-1 text-[11px] outline-none transition-colors"
+              style={{
+                borderColor: 'var(--theme-border)',
+                background: 'var(--theme-bg)',
+                color: 'var(--theme-text)',
+              }}
+            >
+              <option value="_new" style={{ color: 'var(--theme-accent, #60a5fa)', fontWeight: 'bold' }}>
+                + New Session
+              </option>
+              <option disabled>──────────</option>
+              <option value="editor-chat">Editor Chat</option>
+              <option value="main">Main Session</option>
+              <option disabled>──────────</option>
+              {sessions.filter((s) => s.key !== 'editor-chat' && s.key !== 'main').map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.title || 'Untitled Session'}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <Suspense
             fallback={
               <div className="flex flex-1 items-center justify-center">
@@ -763,7 +806,7 @@ export function EditorScreen() {
             }
           >
             <EditorChatScreen
-              activeFriendlyId="editor-chat"
+              activeFriendlyId={chatSessionId}
               compact
               embedded
             />

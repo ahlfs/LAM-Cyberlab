@@ -51,6 +51,7 @@ export type ResponsesChatRequest = {
   conversationHistory?: Array<{ role: string; content: string }>
   instructions?: string
   model?: string
+  provider?: string
   sessionId?: string
   signal?: AbortSignal
 }
@@ -121,6 +122,7 @@ export async function* streamResponses(
   if (req.conversationHistory) body.conversation_history = req.conversationHistory
   if (req.instructions) body.instructions = req.instructions
   if (req.model) body.model = req.model
+  if (req.provider) body.provider = req.provider
   if (req.sessionId) body.session_id = req.sessionId
 
   const res = await fetch(`${CLAUDE_API}/v1/responses`, {

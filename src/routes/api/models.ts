@@ -302,6 +302,7 @@ export async function fetchConfiguredLiveModels(): Promise<Array<ModelEntry>> {
           .map((entry) => ({
             ...entry,
             provider: readString(entry.provider) || endpoint.provider,
+            endpointProvider: endpoint.provider,
             baseUrl: endpoint.baseUrl,
             apiKey: endpoint.apiKey,
             source: 'live-proxy',
