@@ -1,6 +1,7 @@
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
+  Atom02Icon,
   BrainIcon,
   Building01Icon,
   Cancel01Icon,
@@ -19,6 +20,7 @@ import {
   PuzzleIcon,
   Rocket01Icon,
   Settings01Icon,
+  SourceCodeSquareIcon,
   UserGroupIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons'
@@ -97,6 +99,13 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
     match: (p: string) => p.startsWith('/projects'),
   },
   {
+    id: 'editor',
+    label: 'Code Editor',
+    icon: SourceCodeSquareIcon,
+    to: '/editor',
+    match: (p: string) => p.startsWith('/editor'),
+  },
+  {
     id: 'remote-access',
     label: 'Remote Access',
     icon: GlobeIcon,
@@ -117,6 +126,13 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
     icon: BrainIcon,
     to: '/memory',
     match: (p: string) => p.startsWith('/memory'),
+  },
+  {
+    id: 'graph',
+    label: 'Graph',
+    icon: Atom02Icon,
+    to: '/graph',
+    match: (p: string) => p.startsWith('/graph'),
   },
   {
     id: 'links',
@@ -284,7 +300,7 @@ export function MobileHamburgerMenu() {
         </div>
 
         {/* Nav items */}
-        <nav className="flex flex-col gap-1 px-3 pt-4 flex-1">
+        <nav className="flex flex-col gap-1 px-3 pt-4 flex-1 overflow-y-auto overscroll-contain no-swipe scrollbar-thin">
           {visibleNavItems.map((item) => {
             const isActive = item.match(pathname)
             return (

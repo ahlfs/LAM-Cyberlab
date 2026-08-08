@@ -22,6 +22,8 @@ import {
 
 // ── Types ───────────────────────────────────────────────────────────
 
+import { HamburgerTrigger } from '@/components/mobile-hamburger-menu'
+
 type GraphNode = {
   id: string
   title: string
@@ -49,18 +51,18 @@ type LayoutNode = GraphNode & {
 // ── Colors & Sizes ──────────────────────────────────────────────────
 
 const NODE_COLORS: Record<string, string> = {
-  entity: '#00F0FF',    // Cyan
-  concept: '#FF00FF',   // Magenta
-  action: '#FFE600',    // Yellow
-  file: '#39FF14',      // Neon Green
-  folder: '#FF003C',    // Cyberpunk Red
+  entity: '#00FFFF',    // Pure Cyan
+  concept: '#FFFFFF',   // White
+  action: '#FFCC00',    // Bright Yellow
+  file: '#3B82F6',      // Neon Blue
+  folder: '#FF0055',    // Laser Red
   default: '#00F0FF',
 }
 
-const BG_COLOR = '#0B0F1A'
-const EDGE_COLOR = 'rgba(148, 163, 184, 0.25)' // Slate-400 with opacity
-const EDGE_FADED_COLOR = 'rgba(148, 163, 184, 0.05)'
-const EDGE_HIGHLIGHT_COLOR = 'rgba(96, 165, 250, 0.6)' // Blue-400
+const BG_COLOR = '#02040A' // Deep space black
+const EDGE_COLOR = 'rgba(255, 255, 255, 0.15)' 
+const EDGE_FADED_COLOR = 'rgba(255, 255, 255, 0.03)'
+const EDGE_HIGHLIGHT_COLOR = 'rgba(0, 240, 255, 0.7)' // Cyan highlight
 
 function getNodeColor(type?: string): string {
   if (!type) return NODE_COLORS.default
@@ -85,61 +87,20 @@ function useForceLayout(
       return
     }
 
-    void (async () => {
-      const d3 = await import('d3-force-3d')
+    // Spawn Web Worker for heavy d3-force-3d layout calculation
+    const worker = new Worker(
+      new URL('./workers/force-layout.worker.ts', import.meta.url),
+      { type: 'module' }
+    )
 
-      const connectionCount = new Map<string, number>()
-      for (const node of nodes) connectionCount.set(node.id, 0)
-      for (const edge of edges) {
-        connectionCount.set(
-          edge.source,
-          (connectionCount.get(edge.source) ?? 0) + 1,
-        )
-        connectionCount.set(
-          edge.target,
-          (connectionCount.get(edge.target) ?? 0) + 1,
-        )
-      }
+    worker.onmessage = (event) => {
+      setLayout(event.data.layout)
+    }
 
-      const simNodes = nodes.map((n) => ({
-        ...n,
-        connections: connectionCount.get(n.id) ?? 0,
-      }))
-      const simLinks = edges
-        .filter(
-          (e) =>
-            connectionCount.has(e.source) && connectionCount.has(e.target),
-        )
-        .map((e) => ({ source: e.source, target: e.target }))
+    worker.postMessage({ nodes, edges })
 
-      const simulation = d3
-        .forceSimulation(simNodes, 3)
-        .force(
-          'link',
-          d3.forceLink(simLinks).id((d: any) => d.id).distance(250).strength(0.2),
-        )
-        .force('charge', d3.forceManyBody().strength(-1500))
-        .force('center', d3.forceCenter())
-        .force('collide', d3.forceCollide().radius(40))
-        .stop()
-
-      // Run simulation synchronously
-      const iterations = 300
-      for (let i = 0; i < iterations; i++) simulation.tick()
-
-      setLayout(
-        simNodes.map((n: any) => ({
-          id: n.id,
-          title: n.title,
-          type: n.type,
-          tags: n.tags,
-          x: n.x ?? 0,
-          y: n.y ?? 0,
-          z: n.z ?? 0,
-          connections: n.connections,
-        })),
-      )
-    })()
+    // Cleanup worker if component unmounts or data changes
+    return () => worker.terminate()
   }, [nodes, edges])
 
   return layout
@@ -165,12 +126,15 @@ function CanvasRenderer({
   onClick: (id: string | null) => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const projDataRef = useRef<Float32Array | null>(null)
+  const drawOrderRef = useRef<Uint16Array | null>(null)
+  const nodeIndexMapRef = useRef<Map<string, number>>(new Map())
   
   // Transform state
   const state = useRef({
-    rotX: 0,
-    rotY: 0,
-    zoom: 1,
+    rotX: -0.3,
+    rotY: 0.4,
+    zoom: 1.2,
     isDragging: false,
     lastMouseX: 0,
     lastMouseY: 0,
@@ -178,21 +142,44 @@ function CanvasRenderer({
     height: 0,
     hoveredId: hoveredNodeId,
     selectedId: selectedNodeId,
-    // Store projected 2D coordinates for hit detection
-    projectedNodes: [] as Array<{
-      id: string
-      px: number
-      py: number
-      pr: number
-      z: number
-    }>,
+    pointers: new Map<number, { x: number, y: number }>(),
+    lastPinchDist: 0,
   })
+
+  const activeIdsRef = useRef<Set<string>>(new Set())
+  const activeEdgesRef = useRef<Set<string>>(new Set())
 
   // Sync props to mutable ref so animation loop can read them without recreating closures
   useEffect(() => {
     state.current.hoveredId = hoveredNodeId
     state.current.selectedId = selectedNodeId
-  }, [hoveredNodeId, selectedNodeId])
+    
+    // Precompute active sets to eliminate GC pressure inside render loop
+    const activeIds = new Set<string>()
+    for (const id of searchHighlightIds) activeIds.add(id)
+    
+    let activeEdges = new Set<string>()
+    const addActive = (centerId: string) => {
+      activeIds.add(centerId)
+      for (const edge of edges) {
+        if (edge.source === centerId) {
+          activeIds.add(edge.target)
+          activeEdges.add(`${edge.source}->${edge.target}`)
+        }
+        if (edge.target === centerId) {
+          activeIds.add(edge.source)
+          activeEdges.add(`${edge.target}->${edge.source}`)
+        }
+      }
+    }
+    
+    if (selectedNodeId) addActive(selectedNodeId)
+    if (hoveredNodeId) addActive(hoveredNodeId)
+    
+    activeIdsRef.current = activeIds
+    activeEdgesRef.current = activeEdges
+    
+  }, [hoveredNodeId, selectedNodeId, searchHighlightIds, edges])
 
   // Resize observer
   useEffect(() => {
@@ -219,6 +206,22 @@ function CanvasRenderer({
     return () => observer.disconnect()
   }, [])
 
+  // Allocate typed arrays once when nodes change
+  useEffect(() => {
+    if (nodes && nodes.length > 0) {
+      if (!projDataRef.current || projDataRef.current.length < nodes.length * 5) {
+        projDataRef.current = new Float32Array(nodes.length * 5)
+        drawOrderRef.current = new Uint16Array(nodes.length)
+      }
+      const drawOrder = drawOrderRef.current!
+      for (let i = 0; i < nodes.length; i++) drawOrder[i] = i
+      
+      const map = new Map<string, number>()
+      nodes.forEach((n, i) => map.set(n.id, i))
+      nodeIndexMapRef.current = map
+    }
+  }, [nodes])
+
   // Animation Loop
   useEffect(() => {
     const canvas = canvasRef.current
@@ -228,7 +231,44 @@ function CanvasRenderer({
 
     let animationId: number
 
+    // Optimize Black Hole Accretion Disk by caching its particle as a Sprite
+    const glowSprite = document.createElement('canvas')
+    glowSprite.width = 64
+    glowSprite.height = 64
+    const spriteCtx = glowSprite.getContext('2d')
+    if (spriteCtx) {
+      spriteCtx.beginPath()
+      spriteCtx.arc(32, 32, 4, 0, 2 * Math.PI)
+      spriteCtx.fillStyle = '#FFFFFF'
+      spriteCtx.shadowColor = '#FFaa00'
+      spriteCtx.shadowBlur = 18
+      spriteCtx.fill()
+    }
+
+    // Optimize Comets by caching them as well
+    const cometSprite = document.createElement('canvas')
+    cometSprite.width = 64
+    cometSprite.height = 64
+    const cometCtx = cometSprite.getContext('2d')
+    if (cometCtx) {
+      cometCtx.beginPath()
+      cometCtx.arc(32, 32, 4, 0, 2 * Math.PI)
+      cometCtx.fillStyle = '#FFFFFF'
+      cometCtx.shadowColor = '#00FFFF'
+      cometCtx.shadowBlur = 18
+      cometCtx.fill()
+    }
+
+    // Pre-allocate TypedArray for Accretion Disk particles (350 points * 4 values: px, py, scale, z)
+    const diskCount = 150 + 100 + 100
+    const diskProj = new Float32Array(diskCount * 4)
+
     const render = () => {
+      // Auto-rotation when idle (no drag, no hover, no selection)
+      if (!state.current.isDragging && !state.current.hoveredId && !state.current.selectedId) {
+        state.current.rotY += 0.002 // Slow horizontal spin
+      }
+      
       const { width, height, rotX, rotY, zoom, hoveredId, selectedId } = state.current
       const dpr = window.devicePixelRatio || 1
       
@@ -245,37 +285,24 @@ function CanvasRenderer({
       const sinY = Math.sin(rotY)
       const focalLength = 600
       const cameraDistance = 350
-
-      // Compute active highlights (search + selected + hovered + their edges)
-      const activeIds = new Set<string>()
-      for (const id of searchHighlightIds) activeIds.add(id)
       
-      let activeEdges = new Set<string>()
-      
-      const addActive = (centerId: string) => {
-        activeIds.add(centerId)
-        for (const edge of edges) {
-          if (edge.source === centerId) {
-            activeIds.add(edge.target)
-            activeEdges.add(`${edge.source}->${edge.target}`)
-          }
-          if (edge.target === centerId) {
-            activeIds.add(edge.source)
-            activeEdges.add(`${edge.source}->${edge.target}`)
-          }
-        }
-      }
-
-      if (selectedId) addActive(selectedId)
-      if (hoveredId) addActive(hoveredId)
-      
+      const activeIds = activeIdsRef.current
+      const activeEdges = activeEdgesRef.current
       const hasFocus = activeIds.size > 0
 
-      // Project nodes 3D -> 2D
-      const projNodes = []
-      const nodeMap = new Map<string, any>()
+      // TypedArrays for Zero GC
+      const projData = projDataRef.current
+      const drawOrder = drawOrderRef.current
+      const nodeIndexMap = nodeIndexMapRef.current
       
-      for (const node of nodes) {
+      if (!projData || !drawOrder) {
+        animationId = requestAnimationFrame(render)
+        return
+      }
+
+      // Project nodes 3D -> 2D
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i]
         // Rotate around Y
         const r1x = node.x * cosY - node.z * sinY
         const r1z = node.x * sinY + node.z * cosY
@@ -290,26 +317,206 @@ function CanvasRenderer({
         const py = r2y * scale + cy
         const pr = getNodeRadius(node.connections) * scale
 
-        const pNode = { ...node, px, py, pr, z: finalZ, scale }
-        projNodes.push(pNode)
-        nodeMap.set(node.id, pNode)
+        const idx = i * 5
+        projData[idx + 0] = px
+        projData[idx + 1] = py
+        projData[idx + 2] = pr
+        projData[idx + 3] = finalZ
+        projData[idx + 4] = scale
       }
 
-      // Sort by Z for proper draw order (back to front)
-      projNodes.sort((a, b) => b.z - a.z)
+      // Sort indices by Z for proper draw order (back to front)
+      drawOrder.sort((a, b) => projData[b * 5 + 3] - projData[a * 5 + 3])
+
+      // Helper for projecting a 3D point
+      const projectPoint = (x: number, y: number, z: number) => {
+        const r1x = x * cosY - z * sinY
+        const r1z = x * sinY + z * cosY
+        const r2y = y * cosX - r1z * sinX
+        const finalZ = y * sinX + r1z * cosX
+        if (finalZ < -focalLength) return null
+        const scale = (focalLength / (focalLength + finalZ + cameraDistance)) * zoom
+        return { px: r1x * scale + cx, py: r2y * scale + cy, scale }
+      }
+
+      // Helper for 3D rotation independent of camera
+      const rotate3D = (x: number, y: number, z: number, rx: number, ry: number, rz: number) => {
+        let x1 = x * Math.cos(rz) - y * Math.sin(rz), y1 = x * Math.sin(rz) + y * Math.cos(rz), z1 = z
+        let y2 = y1 * Math.cos(rx) - z1 * Math.sin(rx), z2 = y1 * Math.sin(rx) + z1 * Math.cos(rx), x2 = x1
+        let x3 = x2 * Math.cos(ry) + z2 * Math.sin(ry), z3 = -x2 * Math.sin(ry) + z2 * Math.cos(ry), y3 = y2
+        return [x3, y3, z3]
+      }
+
+      // Draw Glowing Core (Black Hole)
+      const coreProj = projectPoint(0, 0, 0)
+      if (coreProj) {
+        const time = performance.now() * 0.001
+
+        // 1. Far outer glow (Event Horizon Aura)
+        const gradient = ctx.createRadialGradient(coreProj.px, coreProj.py, 15 * coreProj.scale, coreProj.px, coreProj.py, 70 * coreProj.scale)
+        gradient.addColorStop(0, 'rgba(255, 100, 0, 0.8)')
+        gradient.addColorStop(0.3, 'rgba(255, 50, 0, 0.3)')
+        gradient.addColorStop(1, 'transparent')
+        ctx.beginPath()
+        ctx.arc(coreProj.px, coreProj.py, 70 * coreProj.scale, 0, 2 * Math.PI)
+        ctx.fillStyle = gradient
+        ctx.fill()
+
+        // 2. Accretion Disks (3D Rings intersecting like an atom)
+        let diskIdx = 0
+        const createRing = (rx: number, ry: number, rz: number, count: number, baseRadius: number) => {
+           for (let i = 0; i < count; i++) {
+             const angle = (i / count) * Math.PI * 2
+             const rDisk = baseRadius + Math.sin(angle * 6 + time * 3) * 3
+             const px = Math.cos(angle) * rDisk
+             const pz = Math.sin(angle) * rDisk
+             const py = Math.cos(angle * 3 + time * 2) * 2 // slight vertical wobble
+             
+             const [x3, y3, z3] = rotate3D(px, py, pz, rx, ry, rz)
+             
+             // Inline projectPoint to grab the finalZ for depth sorting
+             const r1x = x3 * cosY - z3 * sinY
+             const r1z = x3 * sinY + z3 * cosY
+             const r2y = y3 * cosX - r1z * sinX
+             const finalZ = y3 * sinX + r1z * cosX
+             if (finalZ >= -focalLength) {
+                const scale = (focalLength / (focalLength + finalZ + cameraDistance)) * zoom
+                diskProj[diskIdx++] = r1x * scale + cx
+                diskProj[diskIdx++] = r2y * scale + cy
+                diskProj[diskIdx++] = scale
+                diskProj[diskIdx++] = finalZ
+             }
+           }
+        }
+        
+        createRing(0, 0, 0, 150, 32) // Horizontal
+        createRing(Math.PI / 2, 0, 0, 100, 38) // Vertical 1
+        createRing(0, Math.PI / 2, 0, 100, 38) // Vertical 2
+
+        // Draw Back Disk (Z < 0)
+        for (let i = 0; i < diskIdx; i += 4) {
+           if (diskProj[i + 3] < 0) {
+              const size = 32 * diskProj[i + 2]
+              ctx.drawImage(glowSprite, diskProj[i] - size / 2, diskProj[i + 1] - size / 2, size, size)
+           }
+        }
+
+        // 3. The Black Hole (Event Horizon - Turbulent Anomaly)
+        ctx.beginPath()
+        const baseBHRadius = 22 * coreProj.scale
+        for (let i = 0; i <= 60; i++) {
+           const a = (i / 60) * Math.PI * 2
+           // Chaotic ripples to the radius based on angle and time
+           const ripple = Math.sin(a * 5 + time * 8) * 1.5 + Math.cos(a * 3 - time * 6) * 1.5
+           const rBH = baseBHRadius + ripple * coreProj.scale
+           
+           const px = coreProj.px + Math.cos(a) * rBH
+           const py = coreProj.py + Math.sin(a) * rBH
+           
+           if (i === 0) ctx.moveTo(px, py)
+           else ctx.lineTo(px, py)
+        }
+        ctx.closePath()
+        
+        ctx.fillStyle = '#000000' // Pure void
+        ctx.shadowBlur = 0
+        ctx.fill()
+        // Bright rippling rim light for the black hole
+        ctx.lineWidth = 1.5 * coreProj.scale
+        ctx.strokeStyle = 'rgba(255, 180, 50, 0.9)'
+        ctx.stroke()
+
+        // Draw front half of the disks (overlapping the black hole)
+        // Draw Front Disk (Z >= 0)
+        for (let i = 0; i < diskIdx; i += 4) {
+           if (diskProj[i + 3] >= 0) {
+              const size = 32 * diskProj[i + 2]
+              ctx.drawImage(glowSprite, diskProj[i] - size / 2, diskProj[i + 1] - size / 2, size, size)
+           }
+        }
+        
+        // 4. Sucked-in particles (Comets falling in)
+        for (let i = 0; i < 6; i++) {
+           const t = (time * 1.2 + i * 0.33) % 1 // loops from 0 to 1
+           const angle = i * (Math.PI * 2 / 6) + time * 2
+           const r = 70 - t * 48 // spirals inwards from 70 to 22
+           const p = projectPoint(Math.cos(angle) * r, (Math.sin(time + i) - 0.5) * 15, Math.sin(angle) * r)
+           if (p) {
+             const size = 32 * p.scale
+             ctx.drawImage(cometSprite, p.px - size / 2, p.py - size / 2, size, size)
+           }
+        }
+        
+        ctx.shadowBlur = 0 // reset
+      }
+
+      // Draw Spherical Wireframe (Equator & Meridians)
+      const r = 400
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'
+      ctx.lineWidth = 1
       
-      // Save for hit detection
-      state.current.projectedNodes = projNodes
+      // Equator and Latitudes
+      for (let lat = -2; lat <= 2; lat++) {
+         const latAngle = (lat / 5) * (Math.PI / 2)
+         const latR = Math.cos(latAngle) * r
+         const latY = Math.sin(latAngle) * r
+         
+         ctx.beginPath()
+         for (let i = 0; i <= 60; i++) {
+           const lonAngle = (i / 60) * Math.PI * 2
+           const x = latR * Math.cos(lonAngle)
+           const z = latR * Math.sin(lonAngle)
+           const proj = projectPoint(x, latY, z)
+           if (proj) {
+             if (i === 0) ctx.moveTo(proj.px, proj.py)
+             else ctx.lineTo(proj.px, proj.py)
+           }
+         }
+         ctx.stroke()
+      }
+
+      // Longitudes
+      for (let j = 0; j < 12; j++) {
+         const lonAngle = (j / 12) * Math.PI * 2
+         ctx.beginPath()
+         for (let i = 0; i <= 60; i++) {
+            const latAngle = (i / 60) * Math.PI * 2
+            const x = r * Math.cos(latAngle) * Math.cos(lonAngle)
+            const y = r * Math.sin(latAngle)
+            const z = r * Math.cos(latAngle) * Math.sin(lonAngle)
+
+            const proj = projectPoint(x, y, z)
+            if (proj) {
+              if (i === 0) ctx.moveTo(proj.px, proj.py)
+              else ctx.lineTo(proj.px, proj.py)
+            }
+         }
+         ctx.stroke()
+      }
 
       // Draw Edges
       ctx.lineWidth = 1
       for (const edge of edges) {
-        const from = nodeMap.get(edge.source)
-        const to = nodeMap.get(edge.target)
-        if (!from || !to) continue
+        const fromIdx = nodeIndexMap.get(edge.source)
+        const toIdx = nodeIndexMap.get(edge.target)
+        if (fromIdx === undefined || toIdx === undefined) continue
+        
+        const fScale = projData[fromIdx * 5 + 4]
+        const tScale = projData[toIdx * 5 + 4]
         
         // Don't draw edges behind camera
-        if (from.scale < 0 || to.scale < 0) continue
+        if (fScale < 0 && tScale < 0) continue
+        
+        const fx = projData[fromIdx * 5 + 0]
+        const fy = projData[fromIdx * 5 + 1]
+        const tx = projData[toIdx * 5 + 0]
+        const ty = projData[toIdx * 5 + 1]
+        
+        // Edge Frustum Culling
+        if ((fx < 0 && tx < 0) || (fx > width && tx > width) || 
+            (fy < 0 && ty < 0) || (fy > height && ty > height)) {
+            continue
+        }
 
         let isFaded = hasFocus
         let isHighlighted = false
@@ -322,15 +529,24 @@ function CanvasRenderer({
         }
 
         ctx.beginPath()
-        ctx.moveTo(from.px, from.py)
-        ctx.lineTo(to.px, to.py)
+        ctx.moveTo(fx, fy)
+        ctx.lineTo(tx, ty)
         ctx.strokeStyle = isHighlighted ? EDGE_HIGHLIGHT_COLOR : isFaded ? EDGE_FADED_COLOR : EDGE_COLOR
         ctx.stroke()
       }
 
       // Draw Nodes
-      for (const node of projNodes) {
-        if (node.scale < 0) continue // behind camera
+      for (let i = 0; i < drawOrder.length; i++) {
+        const nodeIdx = drawOrder[i]
+        const idx = nodeIdx * 5
+        const scale = projData[idx + 4]
+        
+        if (scale < 0) continue // behind camera
+        
+        const px = projData[idx + 0]
+        const py = projData[idx + 1]
+        const pr = projData[idx + 2]
+        const node = nodes[nodeIdx]
         
         const isHighlighted = activeIds.has(node.id) || hoveredId === node.id || searchHighlightIds.has(node.id)
         const isSelected = selectedId === node.id
@@ -338,51 +554,39 @@ function CanvasRenderer({
         const isSearchHit = searchHighlightIds.has(node.id)
         
         const baseColor = getNodeColor(node.type)
-        const radius = isHighlighted || isSelected ? node.pr * 1.5 : node.pr
+        const radius = isHighlighted || isSelected ? pr * 1.5 : pr
         
         const actualRadius = Math.max(0.5, radius)
         
-        // Helper to draw hexagon
-        const drawHexagon = (x: number, y: number, r: number) => {
+        // Helper to draw circle
+        const drawCircle = (x: number, y: number, r: number) => {
           ctx.beginPath()
-          for (let i = 0; i < 6; i++) {
-            // Pointy top hexagon (rotate -30 deg)
-            const angle = (Math.PI / 3) * i - Math.PI / 6
-            const hx = x + r * Math.cos(angle)
-            const hy = y + r * Math.sin(angle)
-            if (i === 0) ctx.moveTo(hx, hy)
-            else ctx.lineTo(hx, hy)
-          }
+          ctx.arc(x, y, r, 0, 2 * Math.PI)
           ctx.closePath()
         }
 
         if (isFaded) {
-          drawHexagon(node.px, node.py, actualRadius)
-          ctx.fillStyle = 'rgba(148, 163, 184, 0.15)'
+          drawCircle(px, py, actualRadius)
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.05)'
           ctx.fill()
         } else {
-          // Sci-Fi solid fill
-          drawHexagon(node.px, node.py, actualRadius)
-          ctx.fillStyle = `color-mix(in srgb, ${baseColor} 20%, transparent)`
+          // Stardust / Data Bits design (clean, tiny squares)
+          ctx.fillStyle = baseColor
+          // Faint opacity for background stars, bright for highlighted
+          ctx.globalAlpha = isHighlighted || isSelected ? 1.0 : 0.6
           
-          if (isHighlighted || isSelected) {
-            ctx.shadowColor = baseColor
-            ctx.shadowBlur = 15 * node.scale
-            ctx.fillStyle = `color-mix(in srgb, ${baseColor} 40%, transparent)`
-          }
-          ctx.fill()
+          // Draw as a tiny square (data bit)
+          const size = Math.max(1.5, actualRadius * 0.8)
+          ctx.fillRect(px - size / 2, py - size / 2, size, size)
           
-          // Sharp neon stroke
-          drawHexagon(node.px, node.py, actualRadius)
-          ctx.strokeStyle = baseColor
-          ctx.lineWidth = Math.max(0.8, 1.5 * node.scale)
-          ctx.stroke()
+          ctx.globalAlpha = 1.0 // reset alpha
         }
         
         if (isSelected || isSearchHit) {
-           drawHexagon(node.px, node.py, actualRadius + (2 * node.scale))
+           ctx.shadowBlur = 0 // turn off shadow for ring
+           drawCircle(px, py, actualRadius + (4 * scale))
            ctx.strokeStyle = '#FFFFFF'
-           ctx.lineWidth = 2 * node.scale
+           ctx.lineWidth = 1.5 * scale
            ctx.stroke()
         }
         
@@ -390,10 +594,10 @@ function CanvasRenderer({
 
         // Draw Label if highlighted
         if (isHighlighted || isSelected) {
-          ctx.font = `${Math.max(12, 14 * Math.min(1.5, node.scale))}px Inter, sans-serif`
-          ctx.fillStyle = '#E2E8F0'
+          ctx.font = `bold ${Math.max(10, 12 * Math.min(1.5, scale))}px 'JetBrains Mono', 'Courier New', monospace`
+          ctx.fillStyle = '#FFFFFF'
           ctx.textAlign = 'center'
-          ctx.fillText(node.title, node.px, node.py - radius - (6 * node.scale))
+          ctx.fillText(node.title.toUpperCase(), px, py - radius - (8 * scale))
         }
       }
 
@@ -405,17 +609,45 @@ function CanvasRenderer({
     return () => cancelAnimationFrame(animationId)
   }, [nodes, edges, searchHighlightIds])
 
-  // Mouse Handlers
+  // Mouse / Touch Handlers
   const handlePointerDown = (e: React.PointerEvent) => {
-    state.current.isDragging = true
-    state.current.lastMouseX = e.clientX
-    state.current.lastMouseY = e.clientY
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    state.current.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (state.current.pointers.size === 1) {
+      state.current.isDragging = true
+      state.current.lastMouseX = e.clientX
+      state.current.lastMouseY = e.clientY
+    } else if (state.current.pointers.size === 2) {
+      state.current.isDragging = false // disable rotation when pinching
+      const pts = Array.from(state.current.pointers.values())
+      state.current.lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)
+    }
+    try {
+      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    } catch {}
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
     const s = state.current
-    if (s.isDragging) {
+    if (s.pointers.has(e.pointerId)) {
+      s.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    }
+
+    if (s.pointers.size === 2) {
+      // Pinch to zoom
+      const pts = Array.from(s.pointers.values())
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)
+      if (s.lastPinchDist > 0) {
+        const delta = dist - s.lastPinchDist
+        const zoomDelta = delta * 0.01 // Sensitivity
+        let newZoom = s.zoom * (1 + zoomDelta)
+        newZoom = Math.max(0.2, Math.min(newZoom, 5))
+        s.zoom = newZoom
+      }
+      s.lastPinchDist = dist
+      return // skip drag rotation
+    }
+
+    if (s.isDragging && s.pointers.size === 1) {
       const dx = e.clientX - s.lastMouseX
       const dy = e.clientY - s.lastMouseY
       // Y rotation is controlled by horizontal mouse movement
@@ -424,21 +656,33 @@ function CanvasRenderer({
       s.rotX += dy * 0.005
       s.lastMouseX = e.clientX
       s.lastMouseY = e.clientY
-    } else {
-      // Hit detection (hover)
+    } else if (s.pointers.size === 0) {
+      // Hit detection (hover) only when not interacting
       const rect = canvasRef.current!.getBoundingClientRect()
       const mx = e.clientX - rect.left
       const my = e.clientY - rect.top
       
       let hitId: string | null = null
-      // Check from front to back (projectedNodes are sorted back-to-front, so we iterate backwards)
-      for (let i = s.projectedNodes.length - 1; i >= 0; i--) {
-        const p = s.projectedNodes[i]
-        const r = Math.max(p.pr * 1.5, 5) // at least 5px hit radius
-        const distSq = (p.px - mx) ** 2 + (p.py - my) ** 2
-        if (distSq < r ** 2) {
-          hitId = p.id
-          break
+      // Check from front to back (drawOrder is sorted back-to-front, so we iterate backwards)
+      if (projDataRef.current && drawOrderRef.current) {
+        const projData = projDataRef.current
+        const drawOrder = drawOrderRef.current
+        for (let i = drawOrder.length - 1; i >= 0; i--) {
+          const nodeIdx = drawOrder[i]
+          const idx = nodeIdx * 5
+          const scale = projData[idx + 4]
+          if (scale < 0) continue
+          
+          const px = projData[idx + 0]
+          const py = projData[idx + 1]
+          const pr = projData[idx + 2]
+          
+          const r = Math.max(pr * 1.5, 5) // at least 5px hit radius
+          const distSq = (px - mx) ** 2 + (py - my) ** 2
+          if (distSq < r ** 2) {
+            hitId = nodes[nodeIdx].id
+            break
+          }
         }
       }
       
@@ -453,10 +697,25 @@ function CanvasRenderer({
   }
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (state.current.isDragging) {
+    state.current.pointers.delete(e.pointerId)
+    
+    if (state.current.pointers.size === 0) {
       state.current.isDragging = false
+      state.current.lastPinchDist = 0
+    } else if (state.current.pointers.size === 1) {
+      const remaining = Array.from(state.current.pointers.values())[0]
+      state.current.isDragging = true
+      state.current.lastMouseX = remaining.x
+      state.current.lastMouseY = remaining.y
+      state.current.lastPinchDist = 0
+    }
+
+    try {
       ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
-      if (canvasRef.current) canvasRef.current.style.cursor = state.current.hoveredId ? 'pointer' : 'grab'
+    } catch {}
+    
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = state.current.hoveredId ? 'pointer' : 'grab'
     }
   }
 
@@ -469,9 +728,38 @@ function CanvasRenderer({
   }
   
   const handleClick = (e: React.MouseEvent) => {
-    // Only click if not dragging significantly
-    if (state.current.hoveredId) {
-      onClick(state.current.hoveredId)
+    if (!canvasRef.current || !projDataRef.current || !drawOrderRef.current) return
+    
+    // Perform hit detection directly on click for mobile tap support
+    const rect = canvasRef.current.getBoundingClientRect()
+    const mx = e.clientX - rect.left
+    const my = e.clientY - rect.top
+    
+    let hitId: string | null = null
+    const projData = projDataRef.current
+    const drawOrder = drawOrderRef.current
+    
+    // Check from front to back
+    for (let i = drawOrder.length - 1; i >= 0; i--) {
+      const nodeIdx = drawOrder[i]
+      const idx = nodeIdx * 5
+      const scale = projData[idx + 4]
+      if (scale < 0) continue
+      
+      const px = projData[idx + 0]
+      const py = projData[idx + 1]
+      const pr = projData[idx + 2]
+      
+      const r = Math.max(pr * 1.5, 5) // at least 5px hit radius
+      const distSq = (px - mx) ** 2 + (py - my) ** 2
+      if (distSq < r ** 2) {
+        hitId = nodes[nodeIdx].id
+        break
+      }
+    }
+
+    if (hitId) {
+      onClick(hitId)
     } else {
       onClick(null)
     }
@@ -531,60 +819,61 @@ function NodeDetailPanel({
 
   return (
     <div
-      className="absolute right-4 top-4 z-10 w-80 overflow-hidden rounded-xl border shadow-2xl"
+      className="absolute right-4 top-16 z-10 w-80 overflow-hidden rounded-2xl border"
       style={{
-        background: 'color-mix(in srgb, var(--theme-bg) 92%, transparent)',
-        borderColor: 'var(--theme-border)',
-        backdropFilter: 'blur(16px)',
+        background: 'linear-gradient(135deg, rgba(15, 20, 35, 0.8), rgba(5, 10, 20, 0.95))',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        backdropFilter: 'blur(24px)',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
       }}
     >
-      <div className="flex items-start justify-between gap-2 border-b p-4" style={{ borderColor: 'var(--theme-border)' }}>
+      <div className="flex items-start justify-between gap-2 border-b border-white/5 p-5">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-semibold" style={{ color: 'var(--theme-text)' }}>
+          <h3 className="truncate text-base font-semibold tracking-wide text-white">
             {node.title}
           </h3>
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-2 flex items-center gap-2">
             <span
               className="inline-block h-2 w-2 rounded-full"
-              style={{ backgroundColor: typeColor }}
+              style={{ backgroundColor: typeColor, boxShadow: `0 0 8px ${typeColor}` }}
             />
-            <span className="text-xs capitalize" style={{ color: 'var(--theme-muted)' }}>
+            <span className="text-xs font-medium uppercase tracking-wider text-slate-300">
               {node.type ?? 'unknown'}
             </span>
-            <span className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-              - {node.connections} connection{node.connections !== 1 ? 's' : ''}
+            <span className="text-xs text-slate-500">
+              • {node.connections} links
             </span>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="shrink-0 rounded-lg p-1 transition-colors hover:bg-[var(--theme-card2)]"
+          className="shrink-0 rounded-full bg-white/5 p-1.5 text-slate-400 transition-all hover:bg-white/10 hover:text-white"
           aria-label="Close detail panel"
         >
-          <HugeiconsIcon icon={Cancel01Icon} size={16} style={{ color: 'var(--theme-muted)' }} />
+          <HugeiconsIcon icon={Cancel01Icon} size={16} />
         </button>
       </div>
 
-      <div className="max-h-64 overflow-y-auto p-4">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
-          Connected to
+      <div className="max-h-64 overflow-y-auto p-3">
+        <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+          Connected Nodes
         </p>
         {connections.length === 0 ? (
-          <p className="text-xs italic" style={{ color: 'var(--theme-muted)' }}>
-            No connections
+          <p className="px-2 py-4 text-center text-xs italic text-slate-500">
+            No connections found.
           </p>
         ) : (
           <ul className="space-y-1">
             {connections.map((c) => (
               <li
                 key={c.id}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-[var(--theme-card2)]"
+                className="group flex cursor-default items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/5"
               >
                 <span
                   className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: getNodeColor(c.type) }}
+                  style={{ backgroundColor: getNodeColor(c.type), boxShadow: `0 0 6px ${getNodeColor(c.type)}` }}
                 />
-                <span className="truncate" style={{ color: 'var(--theme-text)' }}>
+                <span className="truncate text-xs font-medium text-slate-300 transition-colors group-hover:text-white">
                   {c.title}
                 </span>
               </li>
@@ -593,17 +882,13 @@ function NodeDetailPanel({
         )}
       </div>
 
-      <div className="border-t p-3" style={{ borderColor: 'var(--theme-border)' }}>
+      <div className="border-t border-white/5 p-4">
         <a
           href={`/memory?tab=knowledge&page=${encodeURIComponent(node.id)}`}
-          className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors"
-          style={{
-            background: 'var(--theme-card2)',
-            color: 'var(--theme-text)',
-          }}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600/20 px-4 py-2.5 text-xs font-semibold text-indigo-300 transition-all hover:bg-indigo-600/30 hover:text-indigo-200"
         >
-          Open in Memory
-          <HugeiconsIcon icon={ArrowRight01Icon} size={12} />
+          View in Databank
+          <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
         </a>
       </div>
     </div>
@@ -627,15 +912,15 @@ function StatsBar({
     <div
       className="absolute bottom-4 left-4 z-10 flex items-center gap-4 rounded-lg border px-3 py-2"
       style={{
-        background: 'color-mix(in srgb, var(--theme-bg) 85%, transparent)',
-        borderColor: 'var(--theme-border)',
+        background: 'color-mix(in srgb, #02040A 85%, transparent)',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
         backdropFilter: 'blur(12px)',
       }}
     >
       <StatItem label="Nodes" value={nodeCount} />
       <StatItem label="Edges" value={edgeCount} />
-      <StatItem label="Entities" value={entityCount} color="#60A5FA" />
-      <StatItem label="Concepts" value={conceptCount} color="#A78BFA" />
+      <StatItem label="Entities" value={entityCount} color="#00FFFF" />
+      <StatItem label="Concepts" value={conceptCount} color="#FFFFFF" />
     </div>
   )
 }
@@ -654,15 +939,56 @@ function StatItem({
       {color && (
         <span
           className="inline-block h-2 w-2 rounded-full"
-          style={{ backgroundColor: color }}
+          style={{ backgroundColor: color, boxShadow: `0 0 5px ${color}` }}
         />
       )}
-      <span style={{ color: 'var(--theme-muted)' }}>{label}</span>
-      <span className="font-mono font-semibold" style={{ color: 'var(--theme-text)' }}>
+      <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>{label}</span>
+      <span className="font-mono font-semibold" style={{ color: '#FFFFFF' }}>
         {value}
       </span>
     </div>
   )
+}
+
+// ── Dummy Data Generator ──────────────────────────────────────────────
+function getDummyGraphData(): GraphResponse {
+  const nodes: GraphNode[] = []
+  const edges: GraphEdge[] = []
+  
+  const types = ['entity', 'concept', 'action', 'file', 'folder']
+  
+  // Create 1000 nodes
+  for (let i = 0; i < 1000; i++) {
+    nodes.push({
+      id: `node_${i}`,
+      title: `Node ${Math.random().toString(36).substring(7)}`.toUpperCase(),
+      type: types[Math.floor(Math.random() * types.length)],
+      tags: ['dummy']
+    })
+  }
+
+  // Create clusters (hubs)
+  const hubs = [0, 20, 40, 60, 80]
+  
+  for (let i = 0; i < 1000; i++) {
+    if (hubs.includes(i)) continue // Skip hubs themselves
+    
+    // Connect most nodes to a random hub (clustering effect)
+    if (Math.random() > 0.3) {
+      const randomHub = hubs[Math.floor(Math.random() * hubs.length)]
+      edges.push({ source: `node_${i}`, target: `node_${randomHub}` })
+    }
+    
+    // Add some random cross-connections
+    if (Math.random() > 0.95) { // Reduce cross-connection probability to prevent excessive edges
+      const randomTarget = Math.floor(Math.random() * 1000)
+      if (i !== randomTarget) {
+        edges.push({ source: `node_${i}`, target: `node_${randomTarget}` })
+      }
+    }
+  }
+
+  return { nodes, edges }
 }
 
 // ── Main Export ──────────────────────────────────────────────────────
@@ -673,11 +999,16 @@ export function GraphScreen() {
   const [searchQuery, setSearchQuery] = useState('')
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['knowledge-graph'],
+    queryKey: ['knowledge-graph', 'dummy-data-preview'],
     queryFn: async () => {
+      // TEMP: Return dummy data for preview
+      return getDummyGraphData()
+      
+      /*
       const res = await fetch('/api/knowledge/graph')
       if (!res.ok) throw new Error('Failed to fetch graph')
       return (await res.json()) as GraphResponse
+      */
     },
     staleTime: 60_000,
   })
@@ -715,38 +1046,46 @@ export function GraphScreen() {
 
   return (
     <div className="relative h-full w-full overflow-hidden" style={{ background: BG_COLOR }}>
-      {/* Search Bar */}
-      <div
-        className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-lg border px-3 py-2"
-        style={{
-          background: 'color-mix(in srgb, var(--theme-bg) 85%, transparent)',
-          borderColor: 'var(--theme-border)',
-          backdropFilter: 'blur(12px)',
-          width: 280,
-        }}
+      {/* Header / Search Bar */}
+      <div 
+        className="absolute left-2 right-2 top-2 md:left-4 md:right-auto md:top-4 z-50 flex gap-2"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <HugeiconsIcon icon={Search01Icon} size={14} style={{ color: 'var(--theme-muted)' }} />
-        <input
-          type="text"
-          placeholder="Search nodes..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 bg-transparent text-xs outline-none"
-          style={{ color: 'var(--theme-text)' }}
-        />
-        {searchQuery && (
-          <button
-            onClick={() => setSearchQuery('')}
-            className="rounded p-0.5 hover:bg-[var(--theme-card2)]"
-          >
-            <HugeiconsIcon icon={Cancel01Icon} size={12} style={{ color: 'var(--theme-muted)' }} />
-          </button>
-        )}
-        {searchHighlightIds.size > 0 && (
-          <span className="text-[10px] tabular-nums" style={{ color: 'var(--theme-muted)' }}>
-            {searchHighlightIds.size} found
-          </span>
-        )}
+        {/* Mobile Hamburger Trigger */}
+        <HamburgerTrigger className="md:hidden shrink-0 bg-white/10 backdrop-blur-sm border border-white/10 shadow-lg" />
+        
+        {/* Search Input */}
+        <div
+          className="flex-1 md:w-[280px] flex items-center gap-2 rounded-lg border px-3 py-2"
+          style={{
+            background: 'color-mix(in srgb, #02040A 85%, transparent)',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          <HugeiconsIcon icon={Search01Icon} size={14} style={{ color: 'rgba(255, 255, 255, 0.5)' }} />
+          <input
+            type="text"
+            placeholder="Search nodes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 bg-transparent text-xs outline-none min-w-0"
+            style={{ color: '#FFFFFF' }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="rounded p-0.5 hover:bg-white/10 shrink-0"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} size={12} style={{ color: 'rgba(255, 255, 255, 0.5)' }} />
+            </button>
+          )}
+          {searchHighlightIds.size > 0 && (
+            <span className="text-[10px] tabular-nums shrink-0" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+              {searchHighlightIds.size} found
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Loading state */}
@@ -777,7 +1116,7 @@ export function GraphScreen() {
           </div>
         </div>
       )}
-
+      
       {/* 2D Canvas */}
       {layoutNodes && layoutNodes.length > 0 && (
         <CanvasRenderer

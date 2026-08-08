@@ -110,6 +110,7 @@ export function RemoteAccessScreen() {
   const [ipError, setIpError] = useState<string | null>(null)
 
   const [domain, setDomain] = useState('')
+  const [domain9Router, setDomain9Router] = useState('')
   const [checkingDns, setCheckingDns] = useState(false)
   const [dnsResult, setDnsResult] = useState<{
     resolvedIps?: Array<string>
@@ -133,6 +134,29 @@ export function RemoteAccessScreen() {
         enabled
           ? 'Expose to internet enabled — restart the server to apply'
           : 'Expose to internet disabled — restart the server to apply',
+        { type: enabled ? 'warning' : 'success' },
+      )
+      void queryClient.invalidateQueries({ queryKey: ['remote-access-status'] })
+    },
+    onError: (err: Error) => toast(err.message, { type: 'error' }),
+  })
+
+  const expose9RouterMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const res = await fetch('/api/remote-access/expose-9router', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to update 9router expose status')
+      return data
+    },
+    onSuccess: (_data, enabled) => {
+      toast(
+        enabled
+          ? '9router expose enabled — restart 9router to apply'
+          : '9router expose disabled — restart 9router to apply',
         { type: enabled ? 'warning' : 'success' },
       )
       void queryClient.invalidateQueries({ queryKey: ['remote-access-status'] })
@@ -351,23 +375,46 @@ export function RemoteAccessScreen() {
 
         {/* ── Expose toggle ───────────────────────────────────────────── */}
         <Panel title="Expose to internet" icon={GlobeIcon}>
-          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
-                Bind to 0.0.0.0
-              </p>
-              <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-                {passwordConfigured
-                  ? 'Combine with an open firewall port on your VPS to reach this workspace publicly.'
-                  : 'Set a password above first — this stays off until you do.'}
-              </p>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+                  Workspace (Bind to 0.0.0.0)
+                </p>
+                <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
+                  {passwordConfigured
+                    ? 'Combine with an open firewall port on your VPS to reach this workspace publicly.'
+                    : 'Set a password above first — this stays off until you do.'}
+                </p>
+              </div>
+              <Switch
+                checked={diskExposed}
+                disabled={!passwordConfigured || exposeMutation.isPending}
+                onCheckedChange={(checked) => exposeMutation.mutate(checked)}
+                aria-label="Expose to internet"
+              />
             </div>
-            <Switch
-              checked={diskExposed}
-              disabled={!passwordConfigured || exposeMutation.isPending}
-              onCheckedChange={(checked) => exposeMutation.mutate(checked)}
-              aria-label="Expose to internet"
-            />
+
+            <div className="border-t pt-4" style={{ borderColor: 'var(--theme-border)' }}>
+              <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+                    9router (Bind to 0.0.0.0)
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
+                    {passwordConfigured
+                      ? 'Allows 9router to be reachable publicly on port 20128.'
+                      : 'Set a password above first — this stays off until you do.'}
+                  </p>
+                </div>
+                <Switch
+                  checked={status?.nineRouterExposed ?? false}
+                  disabled={!passwordConfigured || expose9RouterMutation.isPending}
+                  onCheckedChange={(checked) => expose9RouterMutation.mutate(checked)}
+                  aria-label="Expose 9router to internet"
+                />
+              </div>
+            </div>
           </div>
         </Panel>
 
@@ -451,86 +498,134 @@ export function RemoteAccessScreen() {
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              type="text"
-              placeholder="yourdomain.com"
-              value={domain}
-              onChange={(e) => {
-                setDomain(e.target.value)
-                setDnsResult(null)
-              }}
-              disabled={!passwordConfigured}
-              aria-label="Custom domain"
-              className="max-w-xs"
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleCheckDns}
-              disabled={!passwordConfigured || !domain.trim() || checkingDns}
-            >
-              <HugeiconsIcon
-                icon={Refresh01Icon}
-                size={14}
-                className={checkingDns ? 'animate-spin' : undefined}
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[250px]">
+              <label className="mb-1.5 block text-xs font-medium" style={{ color: 'var(--theme-text)' }}>
+                Workspace Domain
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  type="text"
+                  placeholder="workspace.yourdomain.com"
+                  value={domain}
+                  onChange={(e) => {
+                    setDomain(e.target.value)
+                    setDnsResult(null)
+                  }}
+                  disabled={!passwordConfigured}
+                  aria-label="Workspace custom domain"
+                  className="w-full sm:w-auto flex-1"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCheckDns}
+                  disabled={!passwordConfigured || !domain.trim() || checkingDns}
+                >
+                  <HugeiconsIcon
+                    icon={Refresh01Icon}
+                    size={14}
+                    className={checkingDns ? 'animate-spin' : undefined}
+                  />
+                  Check DNS
+                </Button>
+              </div>
+
+              {dnsResult ? (
+                dnsResult.error ? (
+                  <span className="mt-2 block text-xs" style={{ color: 'var(--theme-danger)' }}>
+                    {dnsResult.error}
+                  </span>
+                ) : (
+                  <div className="mt-2 flex items-center gap-2 text-xs">
+                    <StatusDot
+                      color={
+                        dnsResult.matchesExpectedIp
+                          ? 'var(--theme-success)'
+                          : 'var(--theme-warning)'
+                      }
+                    />
+                    <span style={{ color: 'var(--theme-text)' }}>
+                      {dnsResult.matchesExpectedIp
+                        ? 'Points to this server'
+                        : `Resolves to ${dnsResult.resolvedIps?.join(', ')}${publicIp ? ` (this server is ${publicIp})` : ''}`}
+                    </span>
+                  </div>
+                )
+              ) : null}
+
+              {domain.trim() && passwordConfigured ? (
+                <div
+                  className="mt-2 flex items-center gap-2 rounded-lg border px-2.5 py-1.5"
+                  style={{ borderColor: 'var(--theme-border)' }}
+                >
+                  <code
+                    className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-xs"
+                    style={{ color: 'var(--theme-text)' }}
+                  >
+                    sudo ./scripts/setup-remote-access.sh --domain {domain.trim()} --port{' '}
+                    {status?.port ?? 3000}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyText(
+                        `sudo ./scripts/setup-remote-access.sh --domain ${domain.trim()} --port ${status?.port ?? 3000}`,
+                      )
+                    }
+                    className="shrink-0 rounded p-1 hover:bg-[var(--theme-card2)]"
+                    aria-label="Copy setup command"
+                  >
+                    <HugeiconsIcon icon={Copy01Icon} size={13} style={{ color: 'var(--theme-muted)' }} />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex-1 min-w-[250px]">
+              <label className="mb-1.5 block text-xs font-medium" style={{ color: 'var(--theme-text)' }}>
+                9router Domain
+              </label>
+              <Input
+                type="text"
+                placeholder="router.yourdomain.com"
+                value={domain9Router}
+                onChange={(e) => setDomain9Router(e.target.value)}
+                disabled={!passwordConfigured}
+                aria-label="9router custom domain"
+                className="w-full"
               />
-              Check DNS
-            </Button>
+
+              {domain9Router.trim() && passwordConfigured ? (
+                <div
+                  className="mt-2 flex items-center gap-2 rounded-lg border px-2.5 py-1.5"
+                  style={{ borderColor: 'var(--theme-border)' }}
+                >
+                  <code
+                    className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-xs"
+                    style={{ color: 'var(--theme-text)' }}
+                  >
+                    sudo ./scripts/setup-remote-access.sh --domain {domain9Router.trim()} --port 20128
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyText(
+                        `sudo ./scripts/setup-remote-access.sh --domain ${domain9Router.trim()} --port 20128`,
+                      )
+                    }
+                    className="shrink-0 rounded p-1 hover:bg-[var(--theme-card2)]"
+                    aria-label="Copy setup command"
+                  >
+                    <HugeiconsIcon icon={Copy01Icon} size={13} style={{ color: 'var(--theme-muted)' }} />
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
 
-          {dnsResult ? (
-            dnsResult.error ? (
-              <span className="text-xs" style={{ color: 'var(--theme-danger)' }}>
-                {dnsResult.error}
-              </span>
-            ) : (
-              <div className="flex items-center gap-2 text-xs">
-                <StatusDot
-                  color={
-                    dnsResult.matchesExpectedIp
-                      ? 'var(--theme-success)'
-                      : 'var(--theme-warning)'
-                  }
-                />
-                <span style={{ color: 'var(--theme-text)' }}>
-                  {dnsResult.matchesExpectedIp
-                    ? 'Points to this server'
-                    : `Resolves to ${dnsResult.resolvedIps?.join(', ')}${publicIp ? ` (this server is ${publicIp})` : ''}`}
-                </span>
-              </div>
-            )
-          ) : null}
-
-          {domain.trim() && passwordConfigured ? (
-            <div
-              className="flex items-center gap-2 rounded-lg border px-2.5 py-1.5"
-              style={{ borderColor: 'var(--theme-border)' }}
-            >
-              <code
-                className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-xs"
-                style={{ color: 'var(--theme-text)' }}
-              >
-                sudo ./scripts/setup-remote-access.sh --domain {domain.trim()} --port{' '}
-                {status?.port ?? 3000}
-              </code>
-              <button
-                type="button"
-                onClick={() =>
-                  copyText(
-                    `sudo ./scripts/setup-remote-access.sh --domain ${domain.trim()} --port ${status?.port ?? 3000}`,
-                  )
-                }
-                className="shrink-0 rounded p-1 hover:bg-[var(--theme-card2)]"
-                aria-label="Copy setup command"
-              >
-                <HugeiconsIcon icon={Copy01Icon} size={13} style={{ color: 'var(--theme-muted)' }} />
-              </button>
-            </div>
-          ) : null}
-
-          <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-            Run this yourself in a terminal on the server — it installs Caddy if
+          <p className="mt-2 text-xs" style={{ color: 'var(--theme-muted)' }}>
+            Run these commands yourself in a terminal on the server — it installs Caddy if
             needed and needs root. The workspace never runs system setup
             commands on its own.
           </p>

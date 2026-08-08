@@ -6,6 +6,8 @@ import {
   AttachmentIcon,
   Cancel01Icon,
   Delete01Icon,
+  DocumentCodeIcon,
+  Folder01Icon,
   Mic01Icon,
   StopIcon,
 } from '@hugeicons/core-free-icons'
@@ -1690,6 +1692,62 @@ function ChatComposerComponent({
     fastMode,
   ])
 
+  const activeEditorFile = useWorkspaceStore((s) => s.activeEditorFile)
+  const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath)
+
+  const handleShareWorkspace = useCallback((event: React.MouseEvent) => {
+    event.preventDefault()
+    if (!activeWorkspacePath) return
+    const textToInsert = `[Workspace: ${activeWorkspacePath}] `
+    if (promptRef.current) {
+      const el = promptRef.current
+      const start = el.selectionStart
+      const end = el.selectionEnd
+      const current = value
+      const next = current.slice(0, start) + textToInsert + current.slice(end)
+      setComposerValue(next)
+      setTimeout(() => {
+        el.selectionStart = el.selectionEnd = start + textToInsert.length
+        el.focus()
+      }, 0)
+    } else {
+      setComposerValue((v) => v + textToInsert)
+      focusPrompt()
+    }
+  }, [activeWorkspacePath, value, setComposerValue, focusPrompt])
+
+  const handleAttachActiveFile = useCallback(async (event: React.MouseEvent) => {
+    event.preventDefault()
+    if (!activeEditorFile) return
+    
+    try {
+      toast(`Attaching ${activeEditorFile.split('/').pop()}...`)
+      const res = await fetch(`/api/files?action=read&path=${encodeURIComponent(activeEditorFile)}`)
+      if (!res.ok) throw new Error('Failed to read file')
+      const data = await res.json()
+      
+      const content = data.content || ''
+      const name = activeEditorFile.split('/').pop() || 'file.txt'
+      
+      const attachment: ChatComposerAttachment = {
+        id: crypto.randomUUID(),
+        name,
+        contentType: 'text/plain',
+        size: new TextEncoder().encode(content).length,
+        dataUrl: content,
+        kind: 'file'
+      }
+      
+      setAttachments(prev => {
+        if (prev.find(a => a.name === name)) return prev
+        return [...prev, attachment]
+      })
+      focusPrompt()
+    } catch (e: any) {
+      toast(`Error attaching file: ${e.message}`, { type: 'error' })
+    }
+  }, [activeEditorFile, setAttachments, focusPrompt])
+
   // Fire queued submit once all in-flight attachment processing finishes
   useEffect(() => {
     if (attachmentProcessingCount !== 0) return
@@ -2777,6 +2835,32 @@ function ChatComposerComponent({
                     />
                   </Button>
                 </PromptInputAction>
+                
+                <PromptInputAction tooltip={activeWorkspacePath ? `Share workspace location (${activeWorkspacePath.split('/').pop() || activeWorkspacePath})` : 'Share workspace location (No workspace selected)'}>
+                  <Button
+                    type="button"
+                    onClick={handleShareWorkspace}
+                    disabled={disabled || !activeWorkspacePath}
+                    size="icon-sm"
+                    variant="ghost"
+                    className="rounded-lg text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-800 hover:text-primary-500 disabled:opacity-50"
+                  >
+                    <HugeiconsIcon icon={Folder01Icon} size={20} strokeWidth={1.5} />
+                  </Button>
+                </PromptInputAction>
+
+                <PromptInputAction tooltip={activeEditorFile ? `Attach ${activeEditorFile.split('/').pop()}` : 'Attach active file (No file open)'}>
+                  <Button
+                    type="button"
+                    onClick={handleAttachActiveFile}
+                    disabled={disabled || !activeEditorFile}
+                    size="icon-sm"
+                    variant="ghost"
+                    className="rounded-lg text-primary-500 hover:bg-primary-100 dark:hover:bg-primary-800 hover:text-primary-500 disabled:opacity-50"
+                  >
+                    <HugeiconsIcon icon={DocumentCodeIcon} size={20} strokeWidth={1.5} />
+                  </Button>
+                </PromptInputAction>
                 {hasDraft && !isLoading && (
                   <PromptInputAction tooltip="Clear draft">
                     <Button
@@ -2934,8 +3018,10 @@ function ChatComposerComponent({
                               <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
                             </button>
                             {isThinkingMenuOpen && (
-                              <div className="absolute bottom-full left-0 z-[200] mb-2 min-w-[10rem] overflow-hidden rounded-xl border border-neutral-200 bg-white p-1 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150 dark:border-neutral-700 dark:bg-neutral-900">
-                                {([
+                              <>
+                                <div className="fixed inset-0 z-[9999]" onClick={() => setIsThinkingMenuOpen(false)} />
+                                <div className="absolute bottom-full left-0 z-[10000] mb-2 min-w-[10rem] overflow-hidden rounded-xl border border-neutral-200 bg-white p-1 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150 dark:border-neutral-700 dark:bg-neutral-900">
+                                  {([
                                   ['off', 'None'],
                                   ['low', 'Low'],
                                   ['medium', 'Medium'],
@@ -2957,6 +3043,7 @@ function ChatComposerComponent({
                                   </button>
                                 ))}
                               </div>
+                              </>
                             )}
                           </div>
 
@@ -2979,8 +3066,8 @@ function ChatComposerComponent({
                             </button>
                             {isModelMenuOpen && (
                               <>
-                                <div className="fixed inset-0 z-[199]" onClick={() => setIsModelMenuOpen(false)} />
-                                <div className="absolute bottom-full right-0 mb-2 z-[200] w-64 sm:w-72 origin-bottom-right overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-900 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                                <div className="fixed inset-0 z-[9999]" onClick={() => setIsModelMenuOpen(false)} />
+                                <div className="absolute bottom-full left-0 sm:-left-4 md:-left-12 mb-2 z-[10000] w-64 sm:w-72 origin-bottom-left overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-900 animate-in fade-in slide-in-from-bottom-2 duration-150">
                                   <div className="max-h-[20rem] overflow-y-auto overflow-x-hidden p-1">
                                     {(() => {
                                       const allModels = modelsQuery.data?.models ?? []

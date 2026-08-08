@@ -18,12 +18,11 @@ import {
   textFromMessage,
 } from './utils'
 import {
-  
   advanceStickyStreamingText,
   createOptimisticMessage,
   createResponseWaitSnapshot,
   isTerminalActiveRunStatus,
-  shouldClearWaitingForAssistantMessage
+  shouldClearWaitingForAssistantMessage,
 } from './chat-screen-utils'
 import {
   appendHistoryMessage,
@@ -71,7 +70,7 @@ import type {
   ChatRunCommandDetail,
   ChatSubmitSelectionDetail,
 } from './chat-events'
-import type {ResponseWaitSnapshot} from './chat-screen-utils';
+import type { ResponseWaitSnapshot } from './chat-screen-utils'
 import type {
   ChatComposerAttachment,
   ChatComposerHandle,
@@ -80,7 +79,7 @@ import type {
 } from './components/chat-composer'
 import type { ApprovalRequest } from '@/screens/gateway/lib/approvals-store'
 import type { ChatAttachment, ChatMessage, SessionMeta } from './types'
-import type {AgentActivity} from '@/stores/chat-activity-store';
+import type { AgentActivity } from '@/stores/chat-activity-store'
 import { useChatSettingsStore } from '@/hooks/use-chat-settings'
 import { playChatComplete } from '@/lib/sounds'
 import {
@@ -111,13 +110,16 @@ import { useResearchCard } from '@/hooks/use-research-card'
 // MOBILE_TAB_BAR_OFFSET removed — tab bar always hidden in chat
 import { useTapDebug } from '@/hooks/use-tap-debug'
 import { useChatMode } from '@/hooks/use-chat-mode'
-import {  useChatActivityStore } from '@/stores/chat-activity-store'
+import { useChatActivityStore } from '@/stores/chat-activity-store'
 
 export let _localModelOverride = ''
-export function setLocalModelOverride(model: string) { _localModelOverride = model }
+export function setLocalModelOverride(model: string) {
+  _localModelOverride = model
+}
 
 type ChatScreenProps = {
   activeFriendlyId: string
+  activeSessionKey?: string
   isNewChat?: boolean
   onSessionResolved?: (payload: {
     sessionKey: string
@@ -466,7 +468,8 @@ function stripQueuedWrapperFromUserMessage(message: ChatMessage): ChatMessage {
 
 export function ChatScreen({
   activeFriendlyId,
-  isNewChat = false,
+  activeSessionKey: activeSessionKeyProp,
+  isNewChat: isNewChatProp = false,
   onSessionResolved,
   forcedSessionKey,
   compact = false,
@@ -487,6 +490,7 @@ export function ChatScreen({
   const chatMode = useChatMode()
   const isPortableMode = chatMode === 'portable' || chatMode === 'responses'
   const portableChatFriendlyId = isPortableMode ? 'main' : activeFriendlyId
+  const routeIsNewChat = isNewChatProp || activeFriendlyId === 'new'
   // --- Issue #43 fix: lift waitingForResponse into persistent Zustand store ---
   // The store survives component unmount, so navigating away mid-stream
   const [liveToolActivity, setLiveToolActivity] = useState<
@@ -509,7 +513,13 @@ export function ChatScreen({
     if (typeof window === 'undefined') return 'low'
     const key = `claude-thinking-${activeFriendlyId || 'new'}`
     const stored = window.sessionStorage.getItem(key)
-    if (stored === 'off' || stored === 'low' || stored === 'medium' || stored === 'high' || stored === 'adaptive')
+    if (
+      stored === 'off' ||
+      stored === 'low' ||
+      stored === 'medium' ||
+      stored === 'high' ||
+      stored === 'adaptive'
+    )
       return stored
     return 'low'
   })
@@ -519,7 +529,8 @@ export function ChatScreen({
   useEffect(() => {
     if (typeof window === 'undefined') return
     const key = `claude-thinking-${activeFriendlyId || 'new'}`
-    thinkingInitializedByUserRef.current = window.sessionStorage.getItem(key) !== null
+    thinkingInitializedByUserRef.current =
+      window.sessionStorage.getItem(key) !== null
   }, [activeFriendlyId])
   const { alertOpen, alertThreshold, alertPercent, dismissAlert } =
     useContextAlert()
@@ -534,10 +545,11 @@ export function ChatScreen({
     friendlyId: string
     clientId: string
   } | null>(null)
+  const embeddedResolvedSessionRef = useRef('')
+  const previousActiveFriendlyIdRef = useRef(activeFriendlyId)
   const [fileExplorerCollapsed, setFileExplorerCollapsed] = useState(() => {
     if (typeof window === 'undefined') return true
-    const stored = localStorage.getItem('claude-file-explorer-collapsed')
-    return stored === null ? true : stored === 'true'
+    return window.localStorage.getItem('claude-file-explorer-collapsed') === '1'
   })
   const { isMobile } = useChatMobile(queryClient)
   const mobileKeyboardInset = useWorkspaceStore((s) => s.mobileKeyboardInset)
@@ -555,6 +567,20 @@ export function ChatScreen({
   const { renameSession, renaming: renamingSessionTitle } = useRenameSession()
   const sseConnectionState = useChatStore((s) => s.connectionState)
 
+  useEffect(() => {
+    const previousActiveFriendlyId = previousActiveFriendlyIdRef.current
+    previousActiveFriendlyIdRef.current = activeFriendlyId
+
+    if (activeFriendlyId && activeFriendlyId !== 'new') {
+      embeddedResolvedSessionRef.current = activeFriendlyId
+      return
+    }
+
+    if (activeFriendlyId === 'new' && previousActiveFriendlyId !== 'new') {
+      embeddedResolvedSessionRef.current = ''
+    }
+  }, [activeFriendlyId])
+
   const {
     sessionsQuery,
     sessions,
@@ -566,7 +592,12 @@ export function ChatScreen({
     sessionsLoading: _sessionsLoading,
     sessionsFetching: _sessionsFetching,
     refetchSessions: _refetchSessions,
-  } = useChatSessions({ activeFriendlyId, isNewChat, forcedSessionKey })
+  } = useChatSessions({
+    activeFriendlyId,
+    isNewChat: routeIsNewChat,
+    forcedSessionKey,
+  })
+  const effectiveActiveSessionKey = activeSessionKeyProp || activeSessionKey
   const {
     historyQuery,
     historyMessages,
@@ -577,9 +608,9 @@ export function ChatScreen({
     sessionKeyForHistory,
   } = useChatHistory({
     activeFriendlyId: portableChatFriendlyId,
-    activeSessionKey,
+    activeSessionKey: effectiveActiveSessionKey,
     forcedSessionKey,
-    isNewChat,
+    isNewChat: routeIsNewChat,
     isRedirecting,
     activeExists,
     sessionsReady: sessionsQuery.isSuccess,
@@ -590,6 +621,8 @@ export function ChatScreen({
 
   // --- Waiting state management (Issue #43 + #449) ---
   // resolvedSessionKey is now available (defined above from useChatHistory).
+  const isNewChat = routeIsNewChat || resolvedSessionKey === 'new'
+
   const storeWaiting = useChatStore((s) => s.waitingSessionKeys)
   const sessionKeyForWaiting = useRef<string | undefined>(undefined)
   const pendingVerifySessionKeyRef = useRef<string | undefined>(undefined)
@@ -662,7 +695,8 @@ export function ChatScreen({
   // If so, re-set waitingForResponse in the store so the UI shows the spinner.
   useActiveRunCheck({
     sessionKey: resolvedSessionKey ?? '',
-    enabled: !isNewChat && Boolean(resolvedSessionKey) && historyQuery.isSuccess,
+    enabled:
+      !isNewChat && Boolean(resolvedSessionKey) && historyQuery.isSuccess,
     onCheckComplete: useCallback(() => {
       setActiveRunCheckDone(true)
     }, []),
@@ -688,9 +722,9 @@ export function ChatScreen({
       : isNewChat
         ? 'new'
         : resolvedSessionKey ||
-        sessionKeyForHistory ||
-        activeCanonicalKey ||
-        'main',
+          sessionKeyForHistory ||
+          activeCanonicalKey ||
+          'main',
     friendlyId: portableChatFriendlyId,
     historyMessages,
     portableMode: isPortableMode,
@@ -722,7 +756,9 @@ export function ChatScreen({
       if (
         approvalId &&
         currentApprovals.some((entry) => {
-          return entry.status === 'pending' && entry.gatewayApprovalId === approvalId
+          return (
+            entry.status === 'pending' && entry.gatewayApprovalId === approvalId
+          )
         })
       ) {
         setPendingApprovals(
@@ -913,10 +949,7 @@ export function ChatScreen({
     // hasn't processed the user's POST yet, the optimistic message vanishes.
     const historySessionKey = isPortableMode
       ? 'main'
-      : activeSessionKey ||
-        sessionKeyForHistory ||
-        resolvedSessionKey ||
-        'main'
+      : activeSessionKey || sessionKeyForHistory || resolvedSessionKey || 'main'
     const reInjectOptimistic = snapshotOptimisticUserMessages(
       queryClient,
       portableChatFriendlyId,
@@ -1006,7 +1039,8 @@ export function ChatScreen({
     ],
     queryFn: async () => {
       try {
-        const statusSessionKey = resolvedSessionKey || activeFriendlyId || 'main'
+        const statusSessionKey =
+          resolvedSessionKey || activeFriendlyId || 'main'
         const query = statusSessionKey
           ? `?sessionKey=${encodeURIComponent(statusSessionKey)}`
           : ''
@@ -1038,11 +1072,22 @@ export function ChatScreen({
       try {
         const res = await fetch('/api/hermes-config')
         if (!res.ok) return 'low'
-        const data = await res.json() as { config?: Record<string, unknown> }
+        const data = (await res.json()) as { config?: Record<string, unknown> }
         const agentSection = data?.config?.agent
-        if (agentSection && typeof agentSection === 'object' && !Array.isArray(agentSection)) {
-          const effort = (agentSection as Record<string, unknown>).reasoning_effort
-          if (effort === 'off' || effort === 'low' || effort === 'medium' || effort === 'high') return effort
+        if (
+          agentSection &&
+          typeof agentSection === 'object' &&
+          !Array.isArray(agentSection)
+        ) {
+          const effort = (agentSection as Record<string, unknown>)
+            .reasoning_effort
+          if (
+            effort === 'off' ||
+            effort === 'low' ||
+            effort === 'medium' ||
+            effort === 'high'
+          )
+            return effort
         }
         return 'low'
       } catch {
@@ -1070,7 +1115,11 @@ export function ChatScreen({
   const persistedSessionModel = useSessionModelStore((s) => {
     const primary = s.getModel(activeSessionKeyForModel)
     if (primary) return primary
-    if (activeFriendlyId && activeFriendlyId !== activeSessionKeyForModel && activeFriendlyId !== 'new') {
+    if (
+      activeFriendlyId &&
+      activeFriendlyId !== activeSessionKeyForModel &&
+      activeFriendlyId !== 'new'
+    ) {
       return s.getModel(activeFriendlyId)
     }
     return undefined
@@ -1113,7 +1162,12 @@ export function ChatScreen({
     if (thinkingInitializedByUserRef.current) return
     const configEffort = reasoningEffortQuery.data
     if (!configEffort) return
-    if (configEffort === 'off' || configEffort === 'low' || configEffort === 'medium' || configEffort === 'high') {
+    if (
+      configEffort === 'off' ||
+      configEffort === 'low' ||
+      configEffort === 'medium' ||
+      configEffort === 'high'
+    ) {
       setThinkingLevel(configEffort)
     }
   }, [reasoningEffortQuery.data])
@@ -1197,36 +1251,39 @@ export function ChatScreen({
       },
       [queryClient],
     ),
-    onComplete: useCallback((message: ChatMessage) => {
-      const activeSend = activeSendRef.current
-      if (activeSend?.clientId) {
-        updateHistoryMessageByClientIdEverywhere(
-          queryClient,
-          activeSend.clientId,
-          (message) => ({
-            ...message,
-            status: 'done',
-          }),
-        )
-      }
-      if (activeSend?.sessionKey) {
-        persistRecoveryMessage(activeSend.sessionKey, message)
-        clearPendingSendForSession(
-          activeSend.sessionKey,
-          activeSend.friendlyId,
-        )
-      }
-      activeSendRef.current = null
-      refreshHistoryRef.current()
-      setSending(false)
-      // Clear waitingForResponse so ThinkingBubble hides and message renders
-      streamFinish()
-      // Play notification sound if the user opted in (Settings → Chat).
-      // Read directly from the store to avoid re-creating this callback on every settings change.
-      if (useChatSettingsStore.getState().settings.soundOnChatComplete) {
-        playChatComplete()
-      }
-    }, [queryClient, streamFinish]),
+    onComplete: useCallback(
+      (message: ChatMessage) => {
+        const activeSend = activeSendRef.current
+        if (activeSend?.clientId) {
+          updateHistoryMessageByClientIdEverywhere(
+            queryClient,
+            activeSend.clientId,
+            (message) => ({
+              ...message,
+              status: 'done',
+            }),
+          )
+        }
+        if (activeSend?.sessionKey) {
+          persistRecoveryMessage(activeSend.sessionKey, message)
+          clearPendingSendForSession(
+            activeSend.sessionKey,
+            activeSend.friendlyId,
+          )
+        }
+        activeSendRef.current = null
+        refreshHistoryRef.current()
+        setSending(false)
+        // Clear waitingForResponse so ThinkingBubble hides and message renders
+        streamFinish()
+        // Play notification sound if the user opted in (Settings → Chat).
+        // Read directly from the store to avoid re-creating this callback on every settings change.
+        if (useChatSettingsStore.getState().settings.soundOnChatComplete) {
+          playChatComplete()
+        }
+      },
+      [queryClient, streamFinish],
+    ),
     onError: useCallback(
       (messageText: string) => {
         const activeSend = activeSendRef.current
@@ -1298,8 +1355,6 @@ export function ChatScreen({
     handoffTimeoutMs: modelsQuery.data?.streamHandoffTimeoutMs,
   })
 
-
-
   const activeIsRealtimeStreaming = isPortableMode
     ? localIsStreaming
     : isRealtimeStreaming
@@ -1310,10 +1365,12 @@ export function ChatScreen({
     activeRealtimeStreamingText,
     activeIsRealtimeStreaming,
   )
-  const stickyStreamingTextRef = useRef<{ runId: string | null; text: string }>({
-    runId: null,
-    text: '',
-  })
+  const stickyStreamingTextRef = useRef<{ runId: string | null; text: string }>(
+    {
+      runId: null,
+      text: '',
+    },
+  )
   stickyStreamingTextRef.current = advanceStickyStreamingText({
     isStreaming: activeIsRealtimeStreaming,
     runId: streamingRunId ?? null,
@@ -1449,11 +1506,12 @@ export function ChatScreen({
       // message is potentially the same response — match by text overlap
       if (streamingText.length > 0) {
         const msgText = textFromMessage(msg).trim()
-        if (msgText.length > 0 && (
-          msgText === streamingText ||
-          msgText.startsWith(streamingText) ||
-          streamingText.startsWith(msgText)
-        )) {
+        if (
+          msgText.length > 0 &&
+          (msgText === streamingText ||
+            msgText.startsWith(streamingText) ||
+            streamingText.startsWith(msgText))
+        ) {
           return true
         }
       }
@@ -1461,10 +1519,15 @@ export function ChatScreen({
       // calls as the streaming placeholder, it's the same response
       if (streamToolCalls.length > 0) {
         const msgContent = Array.isArray(msg.content) ? msg.content : []
-        const msgToolCalls = msgContent.filter((p: any) => p.type === 'toolCall')
-        if (msgToolCalls.length > 0 && msgToolCalls.length === streamToolCalls.length) {
+        const msgToolCalls = msgContent.filter(
+          (p: any) => p.type === 'toolCall',
+        )
+        if (
+          msgToolCalls.length > 0 &&
+          msgToolCalls.length === streamToolCalls.length
+        ) {
           return streamToolCalls.every((stc: any) =>
-            msgToolCalls.some((mtc: any) => mtc.name === stc.name)
+            msgToolCalls.some((mtc: any) => mtc.name === stc.name),
           )
         }
       }
@@ -1621,9 +1684,9 @@ export function ChatScreen({
   }, [suggestion, resolvedSessionKey, dismiss])
 
   // Sync chat activity to global store for sidebar orchestrator avatar
-  const setLocalActivity = useChatActivityStore(
-    (s) => s.setLocalActivity,
-  ) as (next: AgentActivity) => void
+  const setLocalActivity = useChatActivityStore((s) => s.setLocalActivity) as (
+    next: AgentActivity,
+  ) => void
   useEffect(() => {
     if (liveToolActivity.length > 0) {
       setLocalActivity('tool-use')
@@ -1844,6 +1907,7 @@ export function ChatScreen({
   ])
 
   const hideUi = shouldRedirectToNew || isRedirecting
+
   const isFocusMode = !compact && chatFocusMode
   const showComposer = !isRedirecting
 
@@ -2045,26 +2109,28 @@ export function ChatScreen({
         }
       }
 
-        let modelProvider: string | undefined
-        if (currentModel && modelsQuery.data?.models) {
-          const found = modelsQuery.data.models.find((m: any) => m.id === currentModel)
-          if (found) {
-            modelProvider = found.endpointProvider || found.provider
-          }
+      let modelProvider: string | undefined
+      if (currentModel && modelsQuery.data?.models) {
+        const found = modelsQuery.data.models.find(
+          (m: any) => m.id === currentModel,
+        )
+        if (found) {
+          modelProvider = found.endpointProvider || found.provider
         }
+      }
 
-        void startStreaming({
-          sessionKey,
-          friendlyId,
-          message: finalBody,
-          history,
-          attachments:
-            payloadAttachments.length > 0 ? payloadAttachments : undefined,
-          thinking:
-            currentThinkingLevel === 'off' ? undefined : currentThinkingLevel,
-          fastMode,
-          model: currentModel || undefined,
-          provider: modelProvider,
+      void startStreaming({
+        sessionKey,
+        friendlyId,
+        message: finalBody,
+        history,
+        attachments:
+          payloadAttachments.length > 0 ? payloadAttachments : undefined,
+        thinking:
+          currentThinkingLevel === 'off' ? undefined : currentThinkingLevel,
+        fastMode,
+        model: currentModel || undefined,
+        provider: modelProvider,
         idempotencyKey: optimisticClientId || crypto.randomUUID(),
       }).catch((err: unknown) => {
         const messageText = err instanceof Error ? err.message : String(err)
@@ -2435,7 +2501,7 @@ export function ChatScreen({
   )
 
   const send = useCallback(
-    (
+    async (
       body: string,
       attachments: Array<ChatComposerAttachment>,
       fastMode: boolean,
@@ -2473,10 +2539,12 @@ export function ChatScreen({
         }),
       )
 
-      if (isNewChat) {
+      const existingResolvedSessionKey = embeddedResolvedSessionRef.current
+      let threadId: string
+      if (isNewChat && !existingResolvedSessionKey) {
         // In portable mode, use 'main' — no server-side sessions exist.
         // In enhanced mode, create a UUID thread for the sessions API.
-        const threadId = isPortableMode ? 'main' : crypto.randomUUID()
+        threadId = isPortableMode ? 'main' : crypto.randomUUID()
         const draftModel = useSessionModelStore.getState().getModel('new')
         if (draftModel) {
           useSessionModelStore.getState().setModel(threadId, draftModel)
@@ -2485,22 +2553,50 @@ export function ChatScreen({
           trimmedBody,
           attachmentPayload,
         )
+        const fromFriendlyId = isPortableMode
+          ? 'main'
+          : activeFriendlyId || 'main'
+        const fromSessionKey = isPortableMode
+          ? 'main'
+          : activeSessionKey || activeFriendlyId || 'main'
+        appendHistoryMessage(
+          queryClient,
+          fromFriendlyId,
+          fromSessionKey,
+          optimisticMessage,
+        )
+
+        // Force the resolvedSessionKey to update so onSessionResolved triggers in embedded mode
+        queryClient.setQueryData(
+          chatQueryKeys.history(fromFriendlyId, fromSessionKey),
+          (old: any) => {
+            if (!old)
+              return { sessionKey: threadId, messages: [optimisticMessage] }
+            return {
+              ...old,
+              sessionKey: threadId,
+            }
+          },
+        )
+
         appendHistoryMessage(queryClient, threadId, threadId, optimisticMessage)
         upsertSessionInCache(threadId, optimisticMessage)
         setPendingGeneration(true)
         setSending(true)
-        setWaitingForResponse(true)
-
-        if (!isPortableMode) {
-          void createSessionForMessage(threadId).catch((err: unknown) => {
-            if (import.meta.env.DEV) {
-              console.warn('[chat] failed to register new thread', err)
-            }
-            void queryClient.invalidateQueries({
-              queryKey: chatQueryKeys.sessions,
-            })
-          })
+        useChatStore.getState().setSessionWaiting(threadId)
+        embeddedResolvedSessionRef.current = threadId
+        if (
+          sessionKeyForWaiting.current &&
+          sessionKeyForWaiting.current !== threadId
+        ) {
+          useChatStore
+            .getState()
+            .clearSessionWaiting(sessionKeyForWaiting.current)
         }
+
+        // Session registration is handled by send-stream.ts directly on the
+        // Gateway API, so we no longer pre-create here (which went through
+        // the Dashboard API and caused duplicate sessions).
 
         sendMessage(
           threadId,
@@ -2513,8 +2609,12 @@ export function ChatScreen({
             ? optimisticMessage.clientId
             : '',
         )
-        // In portable mode, navigate to /chat/main instead of UUID
-        if (!embedded) {
+
+        // Notify parents that the new session is ready to be transitioned to.
+        // This is crucial for EditorChatScreen which relies on this callback.
+        if (onSessionResolved) {
+          onSessionResolved({ sessionKey: threadId, friendlyId: threadId })
+        } else if (!embedded) {
           navigate({
             to: '/chat/$sessionKey',
             params: { sessionKey: threadId },
@@ -2526,10 +2626,25 @@ export function ChatScreen({
 
       const sessionKeyForSend = isPortableMode
         ? 'main'
-        : forcedSessionKey || resolvedSessionKey || activeSessionKey || activeFriendlyId || 'main'
+        : forcedSessionKey ||
+          existingResolvedSessionKey ||
+          resolvedSessionKey ||
+          activeSessionKey ||
+          activeFriendlyId ||
+          'main'
+      const friendlyIdForSend = isPortableMode
+        ? 'main'
+        : activeFriendlyId === 'new'
+          ? sessionKeyForSend
+          : activeFriendlyId
+
+      // Session registration is handled by send-stream.ts directly on the
+      // Gateway API — no need to pre-create from the frontend.
+
+
       sendMessage(
         sessionKeyForSend,
-        isPortableMode ? 'main' : activeFriendlyId,
+        friendlyIdForSend,
         trimmedBody,
         attachmentPayload,
         fastMode,
@@ -2538,7 +2653,8 @@ export function ChatScreen({
     [
       activeFriendlyId,
       activeSessionKey,
-      createSessionForMessage,
+      activeExists,
+      embedded,
       forcedSessionKey,
       isNewChat,
       navigate,

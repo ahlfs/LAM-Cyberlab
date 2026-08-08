@@ -1102,7 +1102,7 @@ function ChatSidebarComponent({
       )}
 
       {/* ── Scrollable body: nav + sessions ─────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin flex flex-col">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-swipe scrollbar-thin flex flex-col">
         {/* Navigation sections */}
         <div className={cn('shrink-0 space-y-0.5 px-2', isMobile && 'order-2')}>
           <SectionLabel

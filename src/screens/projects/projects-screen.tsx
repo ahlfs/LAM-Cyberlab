@@ -9,6 +9,7 @@ import {
   StopIcon,
   ArrowDown01Icon,
   ArrowUp01Icon,
+  ArrowUpRight01Icon,
   CommandLineIcon,
   Globe02Icon,
   LockIcon,
@@ -364,40 +365,53 @@ function ProjectCard({
 
       <div className="mt-auto flex flex-col gap-3">
         {/* Actions */}
-        <div className="flex items-center gap-2 pt-2">
+        <div className="flex flex-col gap-2 pt-2">
           {project.running ? (
             <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onStop(project.path)}
-                disabled={isStopping}
-                className="flex-1 gap-1.5 hover:border-[var(--theme-danger)] hover:bg-transparent hover:text-[var(--theme-danger)]"
-              >
-                {isStopping ? (
-                  <>
-                    <HugeiconsIcon icon={ArrowReloadHorizontalIcon} size={14} className="animate-spin" />
-                    Stopping...
-                  </>
-                ) : (
-                  <>
-                    <HugeiconsIcon icon={StopIcon} size={14} />
-                    Stop
-                  </>
-                )}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowLogs(!showLogs)}
-                className={`gap-1.5 ${showLogs ? 'bg-[var(--theme-card2)]' : ''}`}
-              >
-                <HugeiconsIcon
-                  icon={showLogs ? ArrowUp01Icon : ArrowDown01Icon}
-                  size={14}
-                />
-                Logs
-              </Button>
+              {project.url && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open(project.url, '_blank')}
+                  className="w-full gap-1.5 hover:border-[var(--theme-accent)] hover:bg-transparent hover:text-[var(--theme-accent)]"
+                >
+                  <HugeiconsIcon icon={ArrowUpRight01Icon} size={14} />
+                  Open App
+                </Button>
+              )}
+              <div className="flex w-full items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onStop(project.path)}
+                  disabled={isStopping}
+                  className="flex-1 gap-1.5 hover:border-[var(--theme-danger)] hover:bg-transparent hover:text-[var(--theme-danger)]"
+                >
+                  {isStopping ? (
+                    <>
+                      <HugeiconsIcon icon={ArrowReloadHorizontalIcon} size={14} className="animate-spin" />
+                      Stopping...
+                    </>
+                  ) : (
+                    <>
+                      <HugeiconsIcon icon={StopIcon} size={14} />
+                      Stop
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowLogs(!showLogs)}
+                  className={`flex-1 gap-1.5 ${showLogs ? 'bg-[var(--theme-card2)]' : ''}`}
+                >
+                  <HugeiconsIcon
+                    icon={showLogs ? ArrowUp01Icon : ArrowDown01Icon}
+                    size={14}
+                  />
+                  Logs
+                </Button>
+              </div>
             </>
           ) : (
             <div className="grid w-full grid-cols-2 gap-2 mt-1">

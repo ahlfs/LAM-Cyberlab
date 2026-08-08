@@ -194,10 +194,12 @@ export function FileTree({
   selectedPath,
   onSelect,
   rootPath,
+  refreshVersion,
 }: {
   selectedPath: string | null
   onSelect: (entry: FileEntry) => void
   rootPath?: string
+  refreshVersion?: number
 }) {
   const [entries, setEntries] = useState<FileEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -222,7 +224,7 @@ export function FileTree({
 
   useEffect(() => {
     void fetchTree()
-  }, [fetchTree])
+  }, [fetchTree, refreshVersion])
 
   if (loading) {
     return (

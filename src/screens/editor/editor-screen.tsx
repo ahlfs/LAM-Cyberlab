@@ -24,9 +24,18 @@ import {
   Menu01Icon,
   SidebarLeft01Icon,
   Message02Icon,
+  PlusSignIcon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/toast'
+import {
+  DialogRoot,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { FileTree, type FileEntry } from './components/file-tree'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { useChatSessions } from '@/screens/chat/hooks/use-chat-sessions'
@@ -104,6 +113,11 @@ interface ProjectInfo {
   frameworkLabel: string
 }
 
+type PromptState = {
+  mode: 'new-file' | 'new-folder'
+  targetPath: string
+}
+
 const TERMINAL_HEIGHT = 240
 
 /* ── EditorScreen ───────────────────────────────────────────────────── */
@@ -116,21 +130,31 @@ export function EditorScreen() {
   const [loadingFile, setLoadingFile] = useState(false)
   const [terminalOpen, setTerminalOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(true)
-  const [chatSessionId, setChatSessionId] = useState('editor-chat')
+  const chatSessionId = useWorkspaceStore((s) => s.chatPanelSessionKey)
+  const setChatSessionId = useWorkspaceStore((s) => s.setChatPanelSessionKey)
   const [terminalKey, setTerminalKey] = useState(0)
 
   const { sessions } = useChatSessions({ activeFriendlyId: chatSessionId, isNewChat: false })
   const editorRef = useRef<any>(null)
 
-  // Folder selector
   const [projects, setProjects] = useState<ProjectInfo[]>([])
-  const [selectedFolder, setSelectedFolder] = useState<string>('')
-  const [folderDropdownOpen, setFolderDropdownOpen] = useState(false)
+  const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath)
+  const setActiveWorkspacePath = useWorkspaceStore((s) => s.setActiveWorkspacePath)
+  const selectedFolder = activeWorkspacePath || ''
+  const setSelectedFolder = (path: string) => setActiveWorkspacePath(path || null)
+  
+  const [folderModalOpen, setFolderModalOpen] = useState(false)
+  const [fileTreeVersion, setFileTreeVersion] = useState(0)
+
+  // New File/Folder
+  const [promptState, setPromptState] = useState<PromptState | null>(null)
+  const [promptValue, setPromptValue] = useState('')
 
   const activeFile = tabs.find((t) => t.path === activeTab) ?? null
 
   /* ── Sync active file path to global store (breadcrumb injection) ── */
   const setActiveEditorFile = useWorkspaceStore((s) => s.setActiveEditorFile)
+  
   useEffect(() => {
     setActiveEditorFile(activeFile?.path ?? null)
     return () => setActiveEditorFile(null) // clear on unmount
@@ -240,6 +264,54 @@ export function EditorScreen() {
     }
   }, [activeFile])
 
+  /* ── Create File/Folder ───────────────────────────────────────────── */
+
+  const handlePromptSubmit = useCallback(async () => {
+    if (!promptState) return
+    const value = promptValue.trim()
+    if (!value) return
+
+    const nextPath = promptState.targetPath
+      ? `${promptState.targetPath}/${value}`
+      : value
+
+    try {
+      if (promptState.mode === 'new-folder') {
+        const res = await fetch('/api/files', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'mkdir', path: nextPath }),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      } else {
+        const res = await fetch('/api/files', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'write', path: nextPath, content: '' }),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        // Open the newly created file
+        setTabs((prev) => [
+          ...prev,
+          {
+            path: nextPath,
+            name: value,
+            content: '',
+            originalContent: '',
+            language: extToLanguage(value),
+            dirty: false,
+          },
+        ])
+        setActiveTab(nextPath)
+      }
+      setPromptState(null)
+      setPromptValue('')
+      setFileTreeVersion((v) => v + 1)
+    } catch (err: any) {
+      toast(`Failed to create: ${err?.message ?? 'Unknown error'}`, { type: 'error' })
+    }
+  }, [promptState, promptValue])
+
   /* ── Close tab ────────────────────────────────────────────────────── */
 
   const closeTab = useCallback(
@@ -304,7 +376,7 @@ export function EditorScreen() {
 
   const handleSelectFolder = (path: string) => {
     setSelectedFolder(path)
-    setFolderDropdownOpen(false)
+    setFolderModalOpen(false)
     // Reset terminal to new cwd
     if (terminalOpen) {
       setTerminalKey((k) => k + 1)
@@ -352,25 +424,50 @@ export function EditorScreen() {
           >
             Explorer
           </span>
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(false)}
-            className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)]"
-          >
-            <HugeiconsIcon
-              icon={SidebarLeft01Icon}
-              size={14}
-              style={{ color: 'var(--theme-muted)' }}
-            />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setPromptState({ mode: 'new-file', targetPath: selectedFolder })
+                setPromptValue('')
+              }}
+              className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)]"
+              title="New File"
+            >
+              <HugeiconsIcon icon={PlusSignIcon} size={14} style={{ color: 'var(--theme-muted)' }} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPromptState({ mode: 'new-folder', targetPath: selectedFolder })
+                setPromptValue('')
+              }}
+              className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)]"
+              title="New Folder"
+            >
+              <HugeiconsIcon icon={Folder01Icon} size={14} style={{ color: 'var(--theme-muted)' }} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)] ml-1"
+              title="Close Sidebar"
+            >
+              <HugeiconsIcon
+                icon={SidebarLeft01Icon}
+                size={14}
+                style={{ color: 'var(--theme-muted)' }}
+              />
+            </button>
+          </div>
         </div>
 
-        {/* ── Folder selector dropdown ───────────────────────────── */}
-        <div className="relative border-b px-2 py-2" style={{ borderColor: 'var(--theme-border)' }}>
+        {/* ── Open Folder Button ───────────────────────────── */}
+        <div className="border-b px-2 py-2" style={{ borderColor: 'var(--theme-border)' }}>
           <button
             type="button"
-            onClick={() => setFolderDropdownOpen(!folderDropdownOpen)}
-            className="flex w-full items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-[12px] font-medium transition-colors hover:bg-[var(--theme-card2)]"
+            onClick={() => setFolderModalOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors hover:bg-[var(--theme-card2)]"
             style={{
               borderColor: 'var(--theme-border)',
               color: 'var(--theme-text)',
@@ -381,106 +478,90 @@ export function EditorScreen() {
               size={14}
               style={{ color: 'var(--theme-warning, #f59e0b)' }}
             />
-            <span className="min-w-0 flex-1 truncate">{folderLabel}</span>
-            <HugeiconsIcon
-              icon={ArrowDown01Icon}
-              size={12}
-              className={cn(
-                'shrink-0 transition-transform',
-                folderDropdownOpen && 'rotate-180',
-              )}
-              style={{ color: 'var(--theme-muted)' }}
-            />
+            <span>Open Folder</span>
           </button>
+        </div>
 
-          {/* Dropdown menu */}
-          {folderDropdownOpen && (
-            <div
-              className="absolute left-2 right-2 z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border shadow-xl"
-              style={{
-                borderColor: 'var(--theme-border)',
-                background: 'var(--theme-card)',
-              }}
-            >
-              {/* Root workspace option */}
-              <button
-                type="button"
-                onClick={() => handleSelectFolder('')}
-                className={cn(
-                  'flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] transition-colors hover:bg-[var(--theme-card2)]',
-                  selectedFolder === '' && 'bg-[var(--theme-accent)]/10 text-[var(--theme-accent)]',
-                )}
-                style={{
-                  color: selectedFolder === '' ? 'var(--theme-accent)' : 'var(--theme-text)',
-                }}
-              >
-                <HugeiconsIcon
-                  icon={Folder01Icon}
-                  size={14}
-                  style={{ color: 'var(--theme-warning, #f59e0b)' }}
-                />
-                Root Workspace
-              </button>
-
-              {/* Divider */}
-              {projects.length > 0 && (
-                <div
-                  className="mx-2 border-t"
-                  style={{ borderColor: 'var(--theme-border)' }}
-                />
-              )}
-
-              {/* Projects */}
-              {projects.map((project) => (
+        {/* Folder Selection Modal */}
+        <DialogRoot
+          open={folderModalOpen}
+          onOpenChange={setFolderModalOpen}
+        >
+          <DialogContent>
+            <div className="p-5 flex flex-col max-h-[80vh]">
+              <DialogTitle className="mb-1">Open Folder</DialogTitle>
+              <DialogDescription className="mb-4">
+                Select a workspace or project folder to open in the editor.
+              </DialogDescription>
+              
+              <div className="flex-1 overflow-y-auto rounded-lg border bg-primary-50/50 p-1" style={{ borderColor: 'var(--theme-border)' }}>
+                {/* Root workspace option */}
                 <button
-                  key={project.path}
                   type="button"
-                  onClick={() => handleSelectFolder(project.path)}
+                  onClick={() => handleSelectFolder('')}
                   className={cn(
-                    'flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] transition-colors hover:bg-[var(--theme-card2)]',
-                    selectedFolder === project.path && 'bg-[var(--theme-accent)]/10',
+                    'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary-100',
+                    selectedFolder === '' && 'bg-primary-100/80 font-medium',
                   )}
                   style={{
-                    color: selectedFolder === project.path ? 'var(--theme-accent)' : 'var(--theme-text)',
+                    color: selectedFolder === '' ? 'var(--theme-accent)' : 'var(--theme-text)',
                   }}
                 >
                   <HugeiconsIcon
                     icon={Folder01Icon}
-                    size={14}
+                    size={16}
                     style={{ color: 'var(--theme-warning, #f59e0b)' }}
                   />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{project.name}</div>
-                    <div
-                      className="truncate font-mono text-[10px]"
-                      style={{ color: 'var(--theme-muted)' }}
-                    >
-                      {project.path}
-                    </div>
-                  </div>
-                  <span
-                    className="shrink-0 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase"
+                  Root Workspace
+                </button>
+
+                {/* Divider */}
+                {projects.length > 0 && (
+                  <div className="mx-2 my-1 border-t border-primary-200" />
+                )}
+
+                {/* Projects */}
+                {projects.map((project) => (
+                  <button
+                    key={project.path}
+                    type="button"
+                    onClick={() => handleSelectFolder(project.path)}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary-100',
+                      selectedFolder === project.path && 'bg-primary-100/80 font-medium',
+                    )}
                     style={{
-                      borderColor: 'var(--theme-border)',
-                      color: 'var(--theme-muted)',
+                      color: selectedFolder === project.path ? 'var(--theme-accent)' : 'var(--theme-text)',
                     }}
                   >
-                    {project.frameworkLabel}
-                  </span>
-                </button>
-              ))}
+                    <HugeiconsIcon
+                      icon={Folder01Icon}
+                      size={16}
+                      style={{ color: 'var(--theme-warning, #f59e0b)' }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate">{project.name}</div>
+                      <div className="truncate font-mono text-[10px] text-primary-500">
+                        {project.path}
+                      </div>
+                    </div>
+                    <span
+                      className="shrink-0 rounded-md border border-primary-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-primary-600"
+                    >
+                      {project.frameworkLabel}
+                    </span>
+                  </button>
+                ))}
 
-              {projects.length === 0 && (
-                <div
-                  className="px-3 py-3 text-center text-[11px]"
-                  style={{ color: 'var(--theme-muted)' }}
-                >
-                  No projects detected. Files will load from root workspace.
-                </div>
-              )}
+                {projects.length === 0 && (
+                  <div className="px-3 py-4 text-center text-sm text-primary-500">
+                    No projects detected.
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          </DialogContent>
+        </DialogRoot>
 
         {/* File tree */}
         <div className="flex-1 overflow-y-auto">
@@ -488,6 +569,7 @@ export function EditorScreen() {
             selectedPath={activeTab}
             onSelect={openFile}
             rootPath={selectedFolder || undefined}
+            refreshVersion={fileTreeVersion}
           />
         </div>
       </div>
@@ -753,10 +835,45 @@ export function EditorScreen() {
         </div>
       </div>
 
+      {/* New File/Folder Dialog */}
+      <DialogRoot
+        open={Boolean(promptState)}
+        onOpenChange={(open) => {
+          if (!open) setPromptState(null)
+        }}
+      >
+        <DialogContent>
+          <div className="p-5 space-y-3">
+            <DialogTitle>
+              {promptState?.mode === 'new-folder' ? 'New Folder' : 'New File'}
+            </DialogTitle>
+            <DialogDescription>
+              Enter a name to create in{' '}
+              <span className="font-mono bg-primary-100 px-1 py-0.5 rounded text-xs text-primary-800">
+                {promptState?.targetPath || 'workspace root'}
+              </span>
+            </DialogDescription>
+            <input
+              value={promptValue}
+              onChange={(event) => setPromptValue(event.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handlePromptSubmit()
+              }}
+              className="w-full rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-300"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <DialogClose render={<Button variant="outline">Cancel</Button>} />
+              <Button onClick={handlePromptSubmit}>Create</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </DialogRoot>
+
       {/* ── Chat pane ─────────────────────────────────────────────────── */}
       {chatOpen && (
         <div 
-          className="w-[420px] shrink-0 border-l flex flex-col z-10"
+          className="absolute inset-0 md:static md:w-[420px] w-full shrink-0 border-l flex flex-col z-[100]"
           style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-bg)' }}
         >
           {/* Agent Session Header */}
@@ -764,14 +881,23 @@ export function EditorScreen() {
             className="flex h-10 shrink-0 items-center justify-between border-b px-3"
             style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card)' }}
           >
-            <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
-              Agent
-            </span>
+            <div className="flex items-center gap-2">
+              <button 
+                type="button" 
+                onClick={() => setChatOpen(false)} 
+                className="md:hidden flex items-center justify-center p-1 -ml-1 rounded hover:bg-white/10"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} size={14} style={{ color: 'var(--theme-muted)' }} />
+              </button>
+              <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
+                Agent
+              </span>
+            </div>
             <select
               value={chatSessionId}
               onChange={(e) => {
                 if (e.target.value === '_new') {
-                  setChatSessionId('editor-' + Date.now().toString(36))
+                  setChatSessionId('new')
                 } else {
                   setChatSessionId(e.target.value)
                 }
@@ -783,14 +909,18 @@ export function EditorScreen() {
                 color: 'var(--theme-text)',
               }}
             >
-              <option value="_new" style={{ color: 'var(--theme-accent, #60a5fa)', fontWeight: 'bold' }}>
-                + New Session
-              </option>
+              {chatSessionId !== 'new' && (
+                <option value="_new" style={{ color: 'var(--theme-accent, #60a5fa)', fontWeight: 'bold' }}>
+                  + New Session
+                </option>
+              )}
+              {chatSessionId === 'new' && (
+                <option value="new">New Session</option>
+              )}
               <option disabled>──────────</option>
-              <option value="editor-chat">Editor Chat</option>
               <option value="main">Main Session</option>
               <option disabled>──────────</option>
-              {sessions.filter((s) => s.key !== 'editor-chat' && s.key !== 'main').map((s) => (
+              {sessions.filter((s) => s.key !== 'main').map((s) => (
                 <option key={s.key} value={s.key}>
                   {s.title || 'Untitled Session'}
                 </option>
@@ -807,6 +937,10 @@ export function EditorScreen() {
           >
             <EditorChatScreen
               activeFriendlyId={chatSessionId}
+              activeSessionKey={chatSessionId}
+              onSessionResolved={({ sessionKey }) => {
+                setChatSessionId(sessionKey)
+              }}
               compact
               embedded
             />

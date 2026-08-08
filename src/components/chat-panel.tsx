@@ -257,6 +257,7 @@ export function ChatPanel() {
               <ChatScreen
                 key={activeFriendlyId}
                 activeFriendlyId={activeFriendlyId}
+                activeSessionKey={activeFriendlyId}
                 isNewChat={isNewChat}
                 forcedSessionKey={forcedSessionKey}
                 onSessionResolved={

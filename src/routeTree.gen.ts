@@ -138,6 +138,7 @@ import { Route as ApiRunsActiveRouteImport } from './routes/api/runs/active'
 import { Route as ApiRemoteAccessStatusRouteImport } from './routes/api/remote-access.status'
 import { Route as ApiRemoteAccessPublicIpRouteImport } from './routes/api/remote-access.public-ip'
 import { Route as ApiRemoteAccessPasswordRouteImport } from './routes/api/remote-access.password'
+import { Route as ApiRemoteAccessExpose9routerRouteImport } from './routes/api/remote-access.expose-9router'
 import { Route as ApiRemoteAccessExposeRouteImport } from './routes/api/remote-access.expose'
 import { Route as ApiRemoteAccessCheckDomainRouteImport } from './routes/api/remote-access.check-domain'
 import { Route as ApiProfilesUpdateRouteImport } from './routes/api/profiles/update'
@@ -845,6 +846,12 @@ const ApiRemoteAccessPasswordRoute = ApiRemoteAccessPasswordRouteImport.update({
   path: '/api/remote-access/password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRemoteAccessExpose9routerRoute =
+  ApiRemoteAccessExpose9routerRouteImport.update({
+    id: '/api/remote-access/expose-9router',
+    path: '/api/remote-access/expose-9router',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiRemoteAccessExposeRoute = ApiRemoteAccessExposeRouteImport.update({
   id: '/api/remote-access/expose',
   path: '/api/remote-access/expose',
@@ -1317,6 +1324,7 @@ export interface FileRoutesByFullPath {
   '/api/profiles/update': typeof ApiProfilesUpdateRoute
   '/api/remote-access/check-domain': typeof ApiRemoteAccessCheckDomainRoute
   '/api/remote-access/expose': typeof ApiRemoteAccessExposeRoute
+  '/api/remote-access/expose-9router': typeof ApiRemoteAccessExpose9routerRoute
   '/api/remote-access/password': typeof ApiRemoteAccessPasswordRoute
   '/api/remote-access/public-ip': typeof ApiRemoteAccessPublicIpRoute
   '/api/remote-access/status': typeof ApiRemoteAccessStatusRoute
@@ -1507,6 +1515,7 @@ export interface FileRoutesByTo {
   '/api/profiles/update': typeof ApiProfilesUpdateRoute
   '/api/remote-access/check-domain': typeof ApiRemoteAccessCheckDomainRoute
   '/api/remote-access/expose': typeof ApiRemoteAccessExposeRoute
+  '/api/remote-access/expose-9router': typeof ApiRemoteAccessExpose9routerRoute
   '/api/remote-access/password': typeof ApiRemoteAccessPasswordRoute
   '/api/remote-access/public-ip': typeof ApiRemoteAccessPublicIpRoute
   '/api/remote-access/status': typeof ApiRemoteAccessStatusRoute
@@ -1699,6 +1708,7 @@ export interface FileRoutesById {
   '/api/profiles/update': typeof ApiProfilesUpdateRoute
   '/api/remote-access/check-domain': typeof ApiRemoteAccessCheckDomainRoute
   '/api/remote-access/expose': typeof ApiRemoteAccessExposeRoute
+  '/api/remote-access/expose-9router': typeof ApiRemoteAccessExpose9routerRoute
   '/api/remote-access/password': typeof ApiRemoteAccessPasswordRoute
   '/api/remote-access/public-ip': typeof ApiRemoteAccessPublicIpRoute
   '/api/remote-access/status': typeof ApiRemoteAccessStatusRoute
@@ -1892,6 +1902,7 @@ export interface FileRouteTypes {
     | '/api/profiles/update'
     | '/api/remote-access/check-domain'
     | '/api/remote-access/expose'
+    | '/api/remote-access/expose-9router'
     | '/api/remote-access/password'
     | '/api/remote-access/public-ip'
     | '/api/remote-access/status'
@@ -2082,6 +2093,7 @@ export interface FileRouteTypes {
     | '/api/profiles/update'
     | '/api/remote-access/check-domain'
     | '/api/remote-access/expose'
+    | '/api/remote-access/expose-9router'
     | '/api/remote-access/password'
     | '/api/remote-access/public-ip'
     | '/api/remote-access/status'
@@ -2273,6 +2285,7 @@ export interface FileRouteTypes {
     | '/api/profiles/update'
     | '/api/remote-access/check-domain'
     | '/api/remote-access/expose'
+    | '/api/remote-access/expose-9router'
     | '/api/remote-access/password'
     | '/api/remote-access/public-ip'
     | '/api/remote-access/status'
@@ -2442,6 +2455,7 @@ export interface RootRouteChildren {
   ApiProfilesUpdateRoute: typeof ApiProfilesUpdateRoute
   ApiRemoteAccessCheckDomainRoute: typeof ApiRemoteAccessCheckDomainRoute
   ApiRemoteAccessExposeRoute: typeof ApiRemoteAccessExposeRoute
+  ApiRemoteAccessExpose9routerRoute: typeof ApiRemoteAccessExpose9routerRoute
   ApiRemoteAccessPasswordRoute: typeof ApiRemoteAccessPasswordRoute
   ApiRemoteAccessPublicIpRoute: typeof ApiRemoteAccessPublicIpRoute
   ApiRemoteAccessStatusRoute: typeof ApiRemoteAccessStatusRoute
@@ -3357,6 +3371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRemoteAccessPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/remote-access/expose-9router': {
+      id: '/api/remote-access/expose-9router'
+      path: '/api/remote-access/expose-9router'
+      fullPath: '/api/remote-access/expose-9router'
+      preLoaderRoute: typeof ApiRemoteAccessExpose9routerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/remote-access/expose': {
       id: '/api/remote-access/expose'
       path: '/api/remote-access/expose'
@@ -4184,6 +4205,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfilesUpdateRoute: ApiProfilesUpdateRoute,
   ApiRemoteAccessCheckDomainRoute: ApiRemoteAccessCheckDomainRoute,
   ApiRemoteAccessExposeRoute: ApiRemoteAccessExposeRoute,
+  ApiRemoteAccessExpose9routerRoute: ApiRemoteAccessExpose9routerRoute,
   ApiRemoteAccessPasswordRoute: ApiRemoteAccessPasswordRoute,
   ApiRemoteAccessPublicIpRoute: ApiRemoteAccessPublicIpRoute,
   ApiRemoteAccessStatusRoute: ApiRemoteAccessStatusRoute,

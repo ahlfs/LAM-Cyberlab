@@ -27,8 +27,10 @@ set -euo pipefail
 DOMAIN=""
 PORT="${PORT:-3000}"
 REMOVE=0
-MARKER_START="# >>> lam-cyberlab remote-access managed block (auto-generated, do not edit) >>>"
-MARKER_END="# <<< lam-cyberlab remote-access managed block <<<"
+MARKER_START="# >>> lam-cyberlab remote-access managed block for port $PORT (auto-generated) >>>"
+MARKER_END="# <<< lam-cyberlab remote-access managed block for port $PORT <<<"
+LEGACY_MARKER_START="# >>> lam-cyberlab remote-access managed block (auto-generated, do not edit) >>>"
+LEGACY_MARKER_END="# <<< lam-cyberlab remote-access managed block <<<"
 CADDYFILE="/etc/caddy/Caddyfile"
 
 while [[ $# -gt 0 ]]; do
@@ -101,9 +103,10 @@ write_managed_block() {
 
   local tmp
   tmp="$(mktemp)"
-  awk -v start="$MARKER_START" -v end="$MARKER_END" '
-    $0 == start { skipping = 1; next }
-    $0 == end { skipping = 0; next }
+  awk -v start="$MARKER_START" -v end="$MARKER_END" \
+      -v lstart="$LEGACY_MARKER_START" -v lend="$LEGACY_MARKER_END" '
+    $0 == start || $0 == lstart { skipping = 1; next }
+    $0 == end || $0 == lend { skipping = 0; next }
     !skipping { print }
   ' "$CADDYFILE" > "$tmp"
 

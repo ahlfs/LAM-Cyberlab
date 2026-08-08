@@ -317,10 +317,8 @@ export function useChatHistory({
       (!isRedirecting &&
         (hasDirectSessionKey || !sessionsReady || activeExists)))
 
-  const effectiveFriendlyId = portableMode ? 'main' : activeFriendlyId
-  const effectiveSessionKeyForHistory = portableMode
-    ? 'main'
-    : sessionKeyForHistory
+  const effectiveFriendlyId = activeFriendlyId || 'main'
+  const effectiveSessionKeyForHistory = sessionKeyForHistory
   const portableHistory = useMemo(
     () => (portableMode ? readPortableHistory() : undefined),
     [portableMode],
@@ -388,7 +386,7 @@ export function useChatHistory({
       if (portableMode) {
         return (
           portableHistory ?? {
-            sessionKey: 'main',
+            sessionKey: activeFriendlyId || 'main',
             messages: [],
           }
         )

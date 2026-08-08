@@ -107,6 +107,7 @@ export type RemoteAccessStatus = {
   cookieSecureExplicit: boolean
   trustProxyEnabled: boolean
   nodeEnv: string
+  nineRouterExposed: boolean
 }
 
 export function getRemoteAccessStatus(): RemoteAccessStatus {
@@ -128,6 +129,7 @@ export function getRemoteAccessStatus(): RemoteAccessStatus {
     cookieSecureExplicit: cookieSecureOverride === '1' || cookieSecureOverride === '0',
     trustProxyEnabled: trustProxyValue === '1' || trustProxyValue === 'true',
     nodeEnv: process.env.NODE_ENV || 'development',
+    nineRouterExposed: isNonLoopbackHost(readEnvFileValue('NINE_ROUTER_HOST') || '127.0.0.1'),
   }
 }
 
@@ -170,6 +172,17 @@ export function setExposeEnabled(enabled: boolean): SetExposeResult {
     }
   }
   writeEnvFileValue('HOST', enabled ? '0.0.0.0' : '127.0.0.1')
+  return { ok: true, requiresRestart: true }
+}
+
+export function setExpose9RouterEnabled(enabled: boolean): SetExposeResult {
+  if (enabled && !isPasswordProtectionEnabled()) {
+    return {
+      ok: false,
+      error: 'Set a password before enabling remote access.',
+    }
+  }
+  writeEnvFileValue('NINE_ROUTER_HOST', enabled ? '0.0.0.0' : '127.0.0.1')
   return { ok: true, requiresRestart: true }
 }
 

@@ -38,7 +38,6 @@ const ChatPanel = lazy(() =>
 )
 import { ChatPanelToggle } from '@/components/chat-panel-toggle'
 import { LoginScreen } from '@/components/auth/login-screen'
-import { MobileTabBar } from '@/components/mobile-tab-bar'
 import { MobileHamburgerMenu } from '@/components/mobile-hamburger-menu'
 import { MobilePageHeader } from '@/components/mobile-page-header'
 
@@ -391,7 +390,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
               'h-full min-h-0 min-w-0 overflow-x-hidden bg-[var(--theme-bg)] relative',
               isOnChatRoute ? 'overflow-hidden' : 'overflow-y-auto',
               isMobile && !isOnChatRoute
-                ? 'pb-[calc(var(--tabbar-h,80px)+0.5rem)]'
+                ? 'pb-2'
                 : !isMobile &&
                     !isChromeFreeSurface &&
                     !isOnChatRoute &&
@@ -409,10 +408,8 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
                 top: 0,
                 left: 0,
                 right: 0,
-                // inset:0 would extend through main's tab-bar padding (abspos resolves
-                // against the padding box), putting the mobile input bar behind the
-                // fixed tab bar. --tabbar-h is live: 0px whenever the bar hides.
-                bottom: isMobile ? 'var(--tabbar-h, 80px)' : 0,
+                // inset:0 would extend through main's padding.
+                bottom: 0,
                 visibility: isOnTerminalRoute ? 'visible' : 'hidden',
                 pointerEvents: isOnTerminalRoute ? 'auto' : 'none',
                 zIndex: isOnTerminalRoute ? 1 : -1,
@@ -480,7 +477,6 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       </div>
 
       {!isChromeFreeSurface ? <MobileHamburgerMenu /> : null}
-      {!isChromeFreeSurface ? <MobileTabBar /> : null}
       {!isChromeFreeSurface && !isMobile && !isOnChatRoute && settings.showSystemMetricsFooter ? (
         <SystemMetricsFooter leftOffsetPx={sidebarCollapsed ? 48 : 300} />
       ) : null}

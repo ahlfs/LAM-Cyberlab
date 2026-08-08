@@ -11,6 +11,8 @@ type WorkspaceState = {
   chatPanelOpen: boolean
   /** Session key for the chat panel (defaults to 'main') */
   chatPanelSessionKey: string
+  /** The directory/workspace currently selected in the Code Editor */
+  activeWorkspacePath: string | null
   /** File path currently open in the Code Editor — used for breadcrumb context injection */
   activeEditorFile: string | null
   /** Mobile keyboard / composer focus — hides tab bar */
@@ -27,6 +29,7 @@ type WorkspaceState = {
   toggleChatPanel: () => void
   setChatPanelOpen: (open: boolean) => void
   setChatPanelSessionKey: (key: string) => void
+  setActiveWorkspacePath: (path: string | null) => void
   setActiveEditorFile: (path: string | null) => void
   setMobileKeyboardOpen: (open: boolean) => void
   setMobileKeyboardInset: (inset: number) => void
@@ -42,6 +45,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       activeSubPage: null,
       chatPanelOpen: false,
       chatPanelSessionKey: 'main',
+      activeWorkspacePath: null,
       activeEditorFile: null,
       mobileKeyboardOpen: false,
       mobileKeyboardInset: 0,
@@ -59,6 +63,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setActiveSubPage: (page) => set({ activeSubPage: page }),
       toggleChatPanel: () => set((s) => ({ chatPanelOpen: !s.chatPanelOpen })),
       setChatPanelOpen: (open) => set({ chatPanelOpen: open }),
+      setActiveWorkspacePath: (path) => set({ activeWorkspacePath: path }),
       setActiveEditorFile: (path) => set({ activeEditorFile: path }),
       setMobileKeyboardOpen: (open) => set({ mobileKeyboardOpen: open }),
       setMobileKeyboardInset: (inset) => set({ mobileKeyboardInset: inset }),
@@ -73,6 +78,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         fileExplorerCollapsed: state.fileExplorerCollapsed,
         chatPanelOpen: state.chatPanelOpen,
         chatPanelSessionKey: state.chatPanelSessionKey,
+        activeWorkspacePath: state.activeWorkspacePath,
       }),
     },
   ),
