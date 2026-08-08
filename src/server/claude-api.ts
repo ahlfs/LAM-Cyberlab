@@ -171,6 +171,59 @@ export async function createSession(opts?: {
   return resp.session
 }
 
+/**
+ * Ensure a session exists directly on the Gateway API server.
+ * Unlike `createSession`, this ALWAYS goes to the gateway (CLAUDE_API_URL)
+ * rather than the dashboard (CLAUDE_DASHBOARD_URL), ensuring the session
+ * is visible to `streamChat` which also uses the gateway.
+ *
+ * Returns the session ID actually used by the gateway, or null on failure.
+ */
+export async function ensureGatewaySession(opts: {
+  id: string
+  model?: string
+  provider?: string
+}): Promise<string | null> {
+  // First, check if the session already exists on the gateway
+  try {
+    const existing = await claudeGet<{ session: ClaudeSession }>(
+      `/api/sessions/${opts.id}`,
+    )
+    if (existing?.session?.id) return existing.session.id
+  } catch {
+    // Session doesn't exist on gateway — create it
+  }
+  try {
+    const resp = await claudePost<{ session: ClaudeSession }>(
+      '/api/sessions',
+      opts,
+    )
+    return resp.session?.id || opts.id
+  } catch {
+    // 409 conflict = session already exists, which is fine
+    return opts.id
+  }
+}
+
+/**
+ * List sessions directly from the Gateway API (bypasses dashboard).
+ * Used for post-stream session discovery — the gateway's _run_agent
+ * creates internal sessions that the dashboard may not track.
+ */
+export async function listGatewaySessions(
+  limit = 5,
+): Promise<Array<ClaudeSession>> {
+  try {
+    const resp = await claudeGet<{
+      items?: Array<ClaudeSession>
+      data?: Array<ClaudeSession>
+    }>(`/api/sessions?limit=${limit}&offset=0`)
+    return resp.items ?? resp.data ?? []
+  } catch {
+    return []
+  }
+}
+
 export async function updateSession(
   sessionId: string,
   updates: { title?: string },

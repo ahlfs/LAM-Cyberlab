@@ -41,10 +41,23 @@ export const Route = createFileRoute('/api/sessions')({
         }
 
         try {
-          const sessions = await listSessions(50, 0)
-          const gatewaySessions = sessions.map(toSessionSummary)
+          const { getChatMode } = await import('../../server/gateway-capabilities')
+          const chatMode = getChatMode()
 
-          // Merge local portable sessions (Ollama, Atomic Chat, etc.)
+          // In portable / responses mode, conversation history lives in the
+          // local session store — not on the gateway.  The gateway's
+          // _run_agent creates internal child sessions that are invisible
+          // artifacts and should not pollute the sidebar.
+          // Only merge gateway sessions when in enhanced-claude mode.
+          const isPortable = chatMode === 'portable' || chatMode === 'responses'
+
+          let gatewaySessions: Array<any> = []
+          if (!isPortable) {
+            const sessions = await listSessions(50, 0)
+            gatewaySessions = sessions.map(toSessionSummary)
+          }
+
+          // Always merge local portable sessions
           const localSessions = listLocalSessions()
           const gatewayIds = new Set(gatewaySessions.map((s: any) => s.key || s.id))
           for (const ls of localSessions) {

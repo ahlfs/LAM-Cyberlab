@@ -7,16 +7,12 @@ export function shouldReplayPortableHistory(options?: {
   localBaseUrl?: string
   bearerToken?: string
 }): boolean {
-  const localBaseUrl = options?.localBaseUrl?.trim() || ''
-  // Direct local-provider / custom-base-url requests remain stateless from the
-  // workspace perspective, so replay the transcript there.
-  if (localBaseUrl) return true
-
-  // When portable chat targets the Hermes gateway, Workspace now forwards a
-  // stable X-Hermes-Session-Id / X-Claude-Session-Id for server-side session
-  // continuity. Replaying the full transcript on every turn would duplicate
-  // prompt context and can explode token usage.
-  return false
+  // Always replay the local transcript.  The gateway's _run_agent creates
+  // internal child sessions (via conversation compression) that do NOT
+  // reliably preserve history under the session ID we send.  Without
+  // replaying, the model sees no prior context and every message looks
+  // like the first in a new conversation.
+  return true
 }
 
 export function selectPortableConversationHistory(
