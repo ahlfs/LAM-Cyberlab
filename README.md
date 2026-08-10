@@ -5,19 +5,15 @@
 
 # LAM Cyberlab
 
-**Personal AI agent command center — chat, files, memory, skills, terminal, link manager, and system monitoring in one place.**
+**A unified Logic & Autonomous Model command center — seamlessly bridging agentic orchestration, dynamic memory, and comprehensive workspace controls into one interactive surface.**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 
-> **Attribution.** LAM Cyberlab is a personal fork of
-> [**Hermes Workspace**](https://github.com/outsourc-e/hermes-workspace) (MIT) by outsourc-e,
-> which itself runs on vanilla [`NousResearch/hermes-agent`](https://github.com/NousResearch/hermes-agent).
-> Full credit for the original architecture and feature set goes to the upstream project;
-> this fork is detached from upstream history and maintained independently by [ahlfs](https://github.com/ahlfs).
-> Additions in this fork include the Dracula Soft theme pair, the `/system` host-monitor page,
-> the `/links` personal link manager, and personal workflow docs — see
-> [docs/PRD-workspace-additions.md](docs/PRD-workspace-additions.md).
+> **Attribution & Architecture.** The base frontend codebase originated from [**Hermes Workspace**](https://github.com/outsourc-e/hermes-workspace) by outsourc-e. 
+> Currently, 100% of this repository is independently maintained and developed by [ahlfs](https://github.com/ahlfs). 
+> Please note that the "brain" and intelligence of LAM Cyberlab live 100% inside the backend [**Hermes Agent (Second Brain Edition)**](https://github.com/ahlfs/hermes-agent). 
+> This repository (LAM Cyberlab) acts exclusively as the interactive frontend surface for that agent.
 
 > Not a chat wrapper. A complete workspace — orchestrate agents, browse memory, manage skills, and control everything from one interface, running on vanilla `hermes-agent` installed via Nous's own installer.
 
