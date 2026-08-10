@@ -104,13 +104,7 @@ Before starting, ensure you have the following installed on your system:
 
 Please refer to the documentation at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent) for detailed instructions on installing the agent, configuring OS dependencies for the Second Brain pipeline, and setting up environment variables.
 
-**3. Start the Hermes Agent gateway** (leave this running in its own terminal)
-```bash
-hermes gateway run
-```
-Verify it's up: `curl http://127.0.0.1:8642/v1/models` (a 401 response is fine, it means auth is working).
-
-**4. Clone Lam-Cyberlab and install dependencies** (in a new terminal)
+**3. Clone Lam-Cyberlab and install dependencies**
 ```bash
 git clone git@github.com:ahlfs/LAM-Cyberlab.git lam-cyberlab
 cd lam-cyberlab
@@ -118,21 +112,31 @@ pnpm install
 ```
 *(If you don't use SSH keys, use: `https://github.com/ahlfs/LAM-Cyberlab.git`)*
 
-**5. Configure the workspace**
-Copy the example env file and set the token to match `API_SERVER_KEY` from step 2:
+**4. Configure the workspace**
+Copy the example env file and set the token to match `API_SERVER_KEY` from your agent setup:
 ```bash
 cp .env.example .env
 cat >> .env <<'EOF'
 HERMES_API_URL=http://127.0.0.1:8642
-HERMES_API_TOKEN=<same value as API_SERVER_KEY>
+HERMES_DASHBOARD_URL=http://127.0.0.1:9119
+HERMES_API_TOKEN=<must exactly match API_SERVER_KEY>
+PORT=3000
 EOF
 ```
 
-**6. Run Lam-Cyberlab**
+**5. Start everything** (each in its own terminal):
 ```bash
+# Terminal 1 — gateway
+hermes gateway run
+
+# Terminal 2 — dashboard (optional but highly recommended)
+hermes dashboard
+
+# Terminal 3 — the workspace
+cd lam-cyberlab
 pnpm dev
 ```
-Open **http://localhost:3000** in your browser.
+Open **http://127.0.0.1:3000** in your browser.
 
 ---
 
