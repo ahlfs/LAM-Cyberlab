@@ -1007,7 +1007,7 @@ function ChatSidebarComponent({
               >
                 <img
                   src="/claude-avatar.webp"
-                  alt="Hermes Agent"
+                  alt="LAM Cyberlab"
                   className="size-6 rounded-lg"
                 />
                 <span

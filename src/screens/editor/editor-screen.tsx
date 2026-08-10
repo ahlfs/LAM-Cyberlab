@@ -873,7 +873,7 @@ export function EditorScreen() {
       {/* ── Chat pane ─────────────────────────────────────────────────── */}
       {chatOpen && (
         <div 
-          className="absolute inset-0 md:static md:w-[420px] w-full shrink-0 border-l flex flex-col z-[100]"
+          className="absolute inset-0 md:static lg:w-[420px] md:w-[320px] w-full shrink-0 border-l flex flex-col z-[100]"
           style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-bg)' }}
         >
           {/* Agent Session Header */}

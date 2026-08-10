@@ -15,6 +15,22 @@ export type ThemeId =
   | 'dracula-light'
   | 'discord-nitro'
   | 'discord-nitro-light'
+  | 'arctic'
+  | 'arctic-light'
+  | 'synthwave'
+  | 'synthwave-light'
+  | 'biolab'
+  | 'biolab-light'
+  | 'monokai'
+  | 'monokai-light'
+  | 'tokyonight'
+  | 'tokyonight-light'
+  | 'crimson'
+  | 'crimson-light'
+  | 'deusex'
+  | 'deusex-light'
+  | 'highcontrast'
+  | 'highcontrast-light'
 
 export const THEMES: Array<{
   id: ThemeId
@@ -118,6 +134,102 @@ export const THEMES: Array<{
     description: 'Cold steel and teal — cyberpunk interface in daylight',
     icon: '🌌',
   },
+  {
+    id: 'arctic',
+    label: 'Arctic',
+    description: 'Deep Space Lab — cold, professional blue',
+    icon: '❄️',
+  },
+  {
+    id: 'arctic-light',
+    label: 'Arctic Light',
+    description: 'Ice white with crisp cool blue accents',
+    icon: '❄️',
+  },
+  {
+    id: 'synthwave',
+    label: 'Synthwave',
+    description: 'Outrun 80s — retro futuristic pink and neon blue',
+    icon: '🌅',
+  },
+  {
+    id: 'synthwave-light',
+    label: 'Synthwave Light',
+    description: 'Bright 80s arcade daylight vibe',
+    icon: '🌅',
+  },
+  {
+    id: 'biolab',
+    label: 'Biolab',
+    description: 'Toxic Hazard — deep dark with intense neon green',
+    icon: '☣️',
+  },
+  {
+    id: 'biolab-light',
+    label: 'Biolab Light',
+    description: 'Sterile white with warning green accents',
+    icon: '☣️',
+  },
+  {
+    id: 'monokai',
+    label: 'Monokai Pro',
+    description: 'Warm dark charcoal with bright, punchy yellow/green',
+    icon: '💻',
+  },
+  {
+    id: 'monokai-light',
+    label: 'Monokai Light',
+    description: 'Warm cream paper with Monokai syntax accents',
+    icon: '💻',
+  },
+  {
+    id: 'tokyonight',
+    label: 'Tokyo Night',
+    description: 'Cyber City — deep purple/blue with neon magenta',
+    icon: '🏙️',
+  },
+  {
+    id: 'tokyonight-light',
+    label: 'Tokyo Day',
+    description: 'Bright city skyline with colorful neon pops',
+    icon: '🏙️',
+  },
+  {
+    id: 'crimson',
+    label: 'Blood Moon',
+    description: 'Offensive Security — pure black and intense crimson',
+    icon: '🩸',
+  },
+  {
+    id: 'crimson-light',
+    label: 'Crimson Light',
+    description: 'Stark white with deep blood red accents',
+    icon: '🩸',
+  },
+  {
+    id: 'deusex',
+    label: 'Deus Ex',
+    description: 'Amber Terminal — dark retro phosphor display',
+    icon: '🕶️',
+  },
+  {
+    id: 'deusex-light',
+    label: 'Deus Ex Light',
+    description: 'Golden paper with amber terminal highlights',
+    icon: '🕶️',
+  },
+  {
+    id: 'highcontrast',
+    label: 'High Contrast',
+    description: 'Pure black & white for maximum focus',
+    icon: '👁️',
+  },
+  {
+    id: 'highcontrast-light',
+    label: 'High Contrast Light',
+    description: 'Pure white & black for maximum focus',
+    icon: '👁️',
+  },
 ]
 
 const STORAGE_KEY = 'claude-theme'
@@ -135,6 +247,14 @@ const LIGHT_THEME_MAP: Record<
   'scifi': 'scifi-light',
   'dracula': 'dracula-light',
   'discord-nitro': 'discord-nitro-light',
+  'arctic': 'arctic-light',
+  'synthwave': 'synthwave-light',
+  'biolab': 'biolab-light',
+  'monokai': 'monokai-light',
+  'tokyonight': 'tokyonight-light',
+  'crimson': 'crimson-light',
+  'deusex': 'deusex-light',
+  'highcontrast': 'highcontrast-light',
 }
 const DARK_THEME_MAP: Record<
   Extract<ThemeId, `${string}-light`>,
@@ -148,6 +268,14 @@ const DARK_THEME_MAP: Record<
   'scifi-light': 'scifi',
   'dracula-light': 'dracula',
   'discord-nitro-light': 'discord-nitro',
+  'arctic-light': 'arctic',
+  'synthwave-light': 'synthwave',
+  'biolab-light': 'biolab',
+  'monokai-light': 'monokai',
+  'tokyonight-light': 'tokyonight',
+  'crimson-light': 'crimson',
+  'deusex-light': 'deusex',
+  'highcontrast-light': 'highcontrast',
 }
 
 const LIGHT_THEMES = new Set<ThemeId>([
@@ -159,6 +287,14 @@ const LIGHT_THEMES = new Set<ThemeId>([
   'scifi-light',
   'dracula-light',
   'discord-nitro-light',
+  'arctic-light',
+  'synthwave-light',
+  'biolab-light',
+  'monokai-light',
+  'tokyonight-light',
+  'crimson-light',
+  'deusex-light',
+  'highcontrast-light',
 ])
 
 export function isValidTheme(

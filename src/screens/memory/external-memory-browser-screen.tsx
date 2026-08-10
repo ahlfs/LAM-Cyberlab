@@ -269,8 +269,8 @@ export function ExternalMemoryBrowserScreen() {
   }
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 gap-0 lg:grid-cols-[380px_minmax(0,1fr)]">
-      <aside className="flex min-h-0 flex-col border-b border-primary-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:border-r lg:border-b-0">
+    <div className="flex h-full min-h-0 flex-col lg:flex-row">
+      <aside className="flex min-h-0 flex-1 lg:flex-none lg:w-[380px] flex-col border-b border-primary-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 lg:border-r lg:border-b-0">
         <div className="space-y-3 border-b border-primary-200 p-4 dark:border-neutral-800">
           <div>
             <h2 className="text-sm font-semibold text-primary-900 dark:text-neutral-100">

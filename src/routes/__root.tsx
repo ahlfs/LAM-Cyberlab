@@ -53,6 +53,28 @@ const VALID_THEMES = [
   'claude-slate-light',
   'dracula',
   'dracula-light',
+  'matrix',
+  'matrix-light',
+  'scifi',
+  'scifi-light',
+  'discord-nitro',
+  'discord-nitro-light',
+  'arctic',
+  'arctic-light',
+  'synthwave',
+  'synthwave-light',
+  'biolab',
+  'biolab-light',
+  'monokai',
+  'monokai-light',
+  'tokyonight',
+  'tokyonight-light',
+  'crimson',
+  'crimson-light',
+  'deusex',
+  'deusex-light',
+  'highcontrast',
+  'highcontrast-light',
 ]
 
 const themeScript = `
@@ -63,7 +85,7 @@ const themeScript = `
     const root = document.documentElement
     const storedTheme = localStorage.getItem('${THEME_STORAGE_KEY}')
     const theme = ${JSON.stringify(VALID_THEMES)}.includes(storedTheme) ? storedTheme : '${DEFAULT_THEME}'
-    const lightThemes = ['claude-nous-light', 'claude-official-light', 'claude-classic-light', 'claude-slate-light', 'dracula-light']
+    const lightThemes = ['claude-nous-light', 'claude-official-light', 'claude-classic-light', 'claude-slate-light', 'dracula-light', 'matrix-light', 'scifi-light', 'discord-nitro-light', 'arctic-light', 'synthwave-light', 'biolab-light', 'monokai-light', 'tokyonight-light', 'crimson-light', 'deusex-light', 'highcontrast-light']
     const isDark = !lightThemes.includes(theme)
     root.classList.remove('light', 'dark', 'system')
     root.classList.add(isDark ? 'dark' : 'light')
@@ -96,9 +118,32 @@ const themeColorScript = `
       'claude-slate-light': '#F6F8FA',
       'dracula': '#282A36',
       'dracula-light': '#FFFBEB',
+      'matrix': '#050505',
+      'matrix-light': '#F0F5F0',
+      'scifi': '#070C15',
+      'scifi-light': '#F1F5F9',
+      'discord-nitro': '#09090B',
+      'discord-nitro-light': '#FAFAFA',
+      'arctic': '#0B1120',
+      'arctic-light': '#F1F5F9',
+      'synthwave': '#2b213a',
+      'synthwave-light': '#FAFAFA',
+      'biolab': '#121413',
+      'biolab-light': '#F3F4F6',
+      'monokai': '#222222',
+      'monokai-light': '#FAFAFA',
+      'tokyonight': '#1a1b26',
+      'tokyonight-light': '#FAFAFA',
+      'crimson': '#0a0a0a',
+      'crimson-light': '#FAFAFA',
+      'deusex': '#000000',
+      'deusex-light': '#FFFBEB',
+      'highcontrast': '#000000',
+      'highcontrast-light': '#FFFFFF',
     }
     const nextColor = colors[theme] || colors['${DEFAULT_THEME}']
-    const isDark = !['claude-nous-light', 'claude-official-light', 'claude-classic-light', 'claude-slate-light', 'dracula-light'].includes(String(theme))
+    const lightThemes = ['claude-nous-light', 'claude-official-light', 'claude-classic-light', 'claude-slate-light', 'dracula-light', 'matrix-light', 'scifi-light', 'discord-nitro-light', 'arctic-light', 'synthwave-light', 'biolab-light', 'monokai-light', 'tokyonight-light', 'crimson-light', 'deusex-light', 'highcontrast-light']
+    const isDark = !lightThemes.includes(String(theme))
 
     let meta = document.querySelector('meta[name="theme-color"]')
     if (!meta) {
@@ -493,10 +538,29 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 txt = '#1f1f1f';
                 muted = '#6c664b';
                 accent = '#644ac9';
+              } else if (theme === 'matrix') {
+                bg = '#050505'; txt = '#E0F8E0'; muted = '#008F11'; accent = '#00FF41';
+              } else if (theme === 'arctic') {
+                bg = '#0B1120'; txt = '#F3F4F6'; muted = '#111827'; accent = '#38BDF8';
+              } else if (theme === 'synthwave') {
+                bg = '#2b213a'; txt = '#fdf6e3'; muted = '#241b2f'; accent = '#ff71ce';
+              } else if (theme === 'biolab') {
+                bg = '#121413'; txt = '#e5e7eb'; muted = '#3f6212'; accent = '#84cc16';
+              } else if (theme === 'monokai') {
+                bg = '#222222'; txt = '#fcfcfa'; muted = '#2d2a2e'; accent = '#ffd866';
+              } else if (theme === 'tokyonight') {
+                bg = '#1a1b26'; txt = '#c0caf5'; muted = '#414868'; accent = '#7aa2f7';
+              } else if (theme === 'crimson') {
+                bg = '#0a0a0a'; txt = '#a3a3a3'; muted = '#dc2626'; accent = '#dc2626';
+              } else if (theme === 'deusex') {
+                bg = '#000000'; txt = '#ffb000'; muted = '#664400'; accent = '#ffb000';
+              } else if (theme === 'highcontrast') {
+                bg = '#000000'; txt = '#FFFFFF'; muted = '#333333'; accent = '#FFFFFF';
               }
             } catch(e){}
 
-            var isDark = !['claude-nous-light','claude-official-light','claude-classic-light','claude-slate-light','dracula-light'].includes(theme);
+            var lightThemes = ['claude-nous-light','claude-official-light','claude-classic-light','claude-slate-light','dracula-light','matrix-light','scifi-light','discord-nitro-light','arctic-light','synthwave-light','biolab-light','monokai-light','tokyonight-light','crimson-light','deusex-light','highcontrast-light'];
+            var isDark = !lightThemes.includes(theme);
             var quips = ["Consulting the oracle...","Loading ancient knowledge...","Warming up the messenger...","Calibrating tool chain...","Summoning your agent...","Preparing the workspace...","Bridging realms...","Initializing agent runtime..."];
             var quip = quips[Math.floor(Math.random() * quips.length)];
 

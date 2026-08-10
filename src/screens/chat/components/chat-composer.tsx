@@ -2920,7 +2920,7 @@ function ChatComposerComponent({
                         <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none" />
                         <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none" />
                       </svg>
-                      <span className="max-w-[5rem] truncate sm:max-w-[8rem] md:max-w-[10rem]">{formatModelName(modelButtonLabel)}</span>
+                      <span className="max-w-[4rem] truncate sm:max-w-[6rem] md:max-w-[5rem] lg:max-w-[10rem]">{formatModelName(modelButtonLabel)}</span>
                       <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
                     </button>
                     {isControlsMenuOpen ? (
@@ -3062,7 +3062,7 @@ function ChatComposerComponent({
                               className="inline-flex h-8 max-w-[9rem] items-center rounded-full bg-primary-100/70 px-2 md:max-w-none md:px-3 text-xs font-medium text-primary-600 hover:bg-primary-200/80 dark:hover:bg-primary-800/60 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                               title={modelButtonLabel}
                             >
-                              <span className="max-w-[5.5rem] truncate sm:max-w-[8.5rem] md:max-w-[12rem]">{modelButtonLabel}</span>
+                              <span className="max-w-[4rem] truncate sm:max-w-[6rem] md:max-w-[5rem] lg:max-w-[10rem]">{modelButtonLabel}</span>
                             </button>
                             {isModelMenuOpen && (
                               <>

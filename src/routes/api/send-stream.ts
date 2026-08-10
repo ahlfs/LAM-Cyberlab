@@ -382,9 +382,12 @@ export const Route = createFileRoute('/api/send-stream')({
           })
           if (liveMatch) {
              const prov = (liveMatch as any).endpointProvider || liveMatch.provider;
-             if (prov) {
+             if (prov && prov.toLowerCase() !== 'custom' && prov.toLowerCase() !== 'configured') {
                 resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
              }
+             // When prov is 'custom' (generic model.provider from config.yaml),
+             // do NOT set resolvedGatewayProvider — let the gateway use its own
+             // default provider resolution. This avoids 'custom:custom' errors.
              resolvedGatewayModel = liveMatch.id
           }
         }

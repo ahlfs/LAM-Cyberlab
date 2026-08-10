@@ -565,29 +565,31 @@ function CanvasRenderer({
           ctx.closePath()
         }
 
-        if (isFaded) {
-          drawCircle(px, py, actualRadius)
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.05)'
-          ctx.fill()
-        } else {
-          // Stardust / Data Bits design (clean, tiny squares)
-          ctx.fillStyle = baseColor
-          // Faint opacity for background stars, bright for highlighted
-          ctx.globalAlpha = isHighlighted || isSelected ? 1.0 : 0.6
+        if (!node.isBlackHole) {
+          if (isFaded) {
+            drawCircle(px, py, actualRadius)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)'
+            ctx.fill()
+          } else {
+            // Stardust / Data Bits design (clean, tiny squares)
+            ctx.fillStyle = baseColor
+            // Faint opacity for background stars, bright for highlighted
+            ctx.globalAlpha = isHighlighted || isSelected ? 1.0 : 0.6
+            
+            // Draw as a tiny square (data bit)
+            const size = Math.max(1.5, actualRadius * 0.8)
+            ctx.fillRect(px - size / 2, py - size / 2, size, size)
+            
+            ctx.globalAlpha = 1.0 // reset alpha
+          }
           
-          // Draw as a tiny square (data bit)
-          const size = Math.max(1.5, actualRadius * 0.8)
-          ctx.fillRect(px - size / 2, py - size / 2, size, size)
-          
-          ctx.globalAlpha = 1.0 // reset alpha
-        }
-        
-        if (isSelected || isSearchHit) {
-           ctx.shadowBlur = 0 // turn off shadow for ring
-           drawCircle(px, py, actualRadius + (4 * scale))
-           ctx.strokeStyle = '#FFFFFF'
-           ctx.lineWidth = 1.5 * scale
-           ctx.stroke()
+          if (isSelected || isSearchHit) {
+             ctx.shadowBlur = 0 // turn off shadow for ring
+             drawCircle(px, py, actualRadius + (4 * scale))
+             ctx.strokeStyle = '#FFFFFF'
+             ctx.lineWidth = 1.5 * scale
+             ctx.stroke()
+          }
         }
         
         ctx.shadowBlur = 0 // reset shadow for next draw
@@ -999,16 +1001,11 @@ export function GraphScreen() {
   const [searchQuery, setSearchQuery] = useState('')
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['knowledge-graph', 'dummy-data-preview'],
+    queryKey: ['knowledge-graph'],
     queryFn: async () => {
-      // TEMP: Return dummy data for preview
-      return getDummyGraphData()
-      
-      /*
       const res = await fetch('/api/knowledge/graph')
       if (!res.ok) throw new Error('Failed to fetch graph')
       return (await res.json()) as GraphResponse
-      */
     },
     staleTime: 60_000,
   })

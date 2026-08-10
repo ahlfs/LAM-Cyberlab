@@ -402,9 +402,9 @@ export function KnowledgeBrowserScreen() {
   }
 
   return (
-    <div className="min-h-full overflow-y-auto bg-surface text-ink">
+    <div className="flex h-full min-h-0 flex-col bg-surface text-ink">
     <div
-      className="mx-auto flex w-full max-w-[1200px] min-h-0 flex-col px-4 py-6 sm:px-6 lg:px-8"
+      className="mx-auto flex h-full w-full max-w-[1200px] min-h-0 flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8"
     >
       <div
         className="px-3 py-3 md:px-4"
@@ -732,8 +732,8 @@ export function KnowledgeBrowserScreen() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 p-3 md:grid-cols-[320px_minmax(0,1fr)] md:p-4">
-        <aside className="flex min-h-0 flex-col rounded-2xl border border-primary-200 bg-primary-50 dark:border-neutral-800 dark:bg-neutral-950">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 md:flex-row md:p-4">
+        <aside className="flex min-h-0 flex-1 md:flex-none md:w-[320px] flex-col rounded-2xl border border-primary-200 bg-primary-50 dark:border-neutral-800 dark:bg-neutral-950">
           <button
             type="button"
             className="flex items-center justify-between px-3 py-2 text-left md:cursor-default"
@@ -856,7 +856,7 @@ export function KnowledgeBrowserScreen() {
           )}
         </aside>
 
-        <section className="min-h-0 rounded-2xl border border-primary-200 bg-primary-50 dark:border-neutral-800 dark:bg-neutral-950">
+        <section className="flex min-h-0 flex-1 flex-col rounded-2xl border border-primary-200 bg-primary-50 dark:border-neutral-800 dark:bg-neutral-950">
           <div className="flex items-center justify-between border-b border-primary-200 px-3 py-2 dark:border-neutral-800">
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold text-primary-900 dark:text-neutral-100">
@@ -884,7 +884,7 @@ export function KnowledgeBrowserScreen() {
             ) : null}
           </div>
 
-          <div className="h-full overflow-auto p-2 md:p-3">
+          <div className="min-h-0 flex-1 overflow-auto p-2 md:p-3">
             {listQuery.isLoading ? (
               <StateBox label="Loading knowledge base..." />
             ) : listQuery.error instanceof Error ? (
@@ -1141,12 +1141,15 @@ function TreeSection({
           type="button"
           onClick={() => onSelectPath(page.path)}
           className={cn(
-            'block w-full rounded-lg border px-2.5 py-2 text-left transition-colors',
+            'block rounded-lg border px-2.5 py-2 text-left transition-colors',
             selectedPath === page.path
               ? 'border-accent-500/70 bg-accent-500/10'
               : 'border-primary-200 bg-primary-50/80 hover:border-primary-300 hover:bg-primary-100 dark:border-neutral-800 dark:bg-neutral-900/60 dark:hover:border-neutral-700 dark:hover:bg-neutral-900',
           )}
-          style={{ marginLeft: depth > 0 ? depth * 12 : 0 }}
+          style={{ 
+            marginLeft: depth > 0 ? depth * 12 : 0,
+            width: depth > 0 ? `calc(100% - ${depth * 12}px)` : '100%'
+          }}
         >
           <div className="flex items-start gap-2">
             <HugeiconsIcon

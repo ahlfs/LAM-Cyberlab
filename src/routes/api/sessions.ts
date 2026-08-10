@@ -158,7 +158,7 @@ export const Route = createFileRoute('/api/sessions')({
             })
             if (liveMatch) {
                const prov = (liveMatch as any).endpointProvider || liveMatch.provider;
-               if (prov) {
+               if (prov && prov.toLowerCase() !== 'custom' && prov.toLowerCase() !== 'configured') {
                   resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
                }
             }

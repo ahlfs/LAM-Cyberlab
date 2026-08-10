@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LAM Cyberlab - Theme Previews</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: #f4f4f5;
+      color: #18181b;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    p.subtitle {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #52525b;
+    }
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 30px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .theme-card {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+    }
+    .theme-header {
+      padding: 15px 20px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      background: #fff;
+      border-bottom: 1px solid #e4e4e7;
+    }
+    .theme-preview {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex-grow: 1;
+    }
+    .color-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .color-swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .swatch-box {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .swatch-label {
+      font-size: 0.65rem;
+      font-family: monospace;
+      opacity: 0.8;
+    }
+    .mock-ui {
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: auto;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .mock-button {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      margin-right: 8px;
+      font-size: 0.85rem;
+    }
+
+    /* 1. Cyberpunk */
+    .cyberpunk { background-color: #09090B; color: #FAFAFA; }
+    .cyberpunk .mock-ui { background-color: #18181B; }
+    .cyberpunk .mock-button.primary { background-color: #00F0FF; color: #000; box-shadow: 0 0 10px #00F0FF; }
+    .cyberpunk .mock-button.secondary { background-color: transparent; border: 1px solid #FF003C; color: #FF003C; }
+
+    /* 2. Matrix */
+    .matrix { background-color: #050505; color: #E0F8E0; }
+    .matrix .mock-ui { background-color: #0A0F0D; border-color: #008F11; }
+    .matrix .mock-button.primary { background-color: #00FF41; color: #000; }
+    .matrix .mock-button.secondary { background-color: transparent; border: 1px solid #008F11; color: #00FF41; }
+
+    /* 3. Arctic */
+    .arctic { background-color: #0B1120; color: #F3F4F6; }
+    .arctic .mock-ui { background-color: #111827; }
+    .arctic .mock-button.primary { background-color: #38BDF8; color: #000; }
+    .arctic .mock-button.secondary { background-color: transparent; border: 1px solid #818CF8; color: #818CF8; }
+
+    /* 4. Dracula */
+    .dracula { background-color: #282a36; color: #f8f8f2; }
+    .dracula .mock-ui { background-color: #44475a; }
+    .dracula .mock-button.primary { background-color: #bd93f9; color: #282a36; }
+    .dracula .mock-button.secondary { background-color: transparent; border: 1px solid #ff79c6; color: #ff79c6; }
+
+    /* 5. Synthwave */
+    .synthwave { background-color: #2b213a; color: #fdf6e3; }
+    .synthwave .mock-ui { background-color: #241b2f; border-color: #ff007f; }
+    .synthwave .mock-button.primary { background-color: #ff71ce; color: #241b2f; box-shadow: 0 0 8px #ff71ce;}
+    .synthwave .mock-button.secondary { background-color: transparent; border: 1px solid #01cdfe; color: #01cdfe; }
+
+    /* 6. Biolab */
+    .biolab { background-color: #121413; color: #e5e7eb; }
+    .biolab .mock-ui { background-color: #1a1d1b; border-color: #3f6212; }
+    .biolab .mock-button.primary { background-color: #84cc16; color: #121413; box-shadow: 0 0 8px rgba(132,204,22,0.5);}
+    .biolab .mock-button.secondary { background-color: transparent; border: 1px solid #eab308; color: #eab308; }
+
+    /* 7. Monokai */
+    .monokai { background-color: #222222; color: #fcfcfa; }
+    .monokai .mock-ui { background-color: #2d2a2e; }
+    .monokai .mock-button.primary { background-color: #ffd866; color: #2d2a2e; }
+    .monokai .mock-button.secondary { background-color: transparent; border: 1px solid #a9dc76; color: #a9dc76; }
+
+    /* 8. Solarized */
+    .solarized { background-color: #002b36; color: #839496; }
+    .solarized .mock-ui { background-color: #073642; }
+    .solarized .mock-button.primary { background-color: #268bd2; color: #fdf6e3; }
+    .solarized .mock-button.secondary { background-color: transparent; border: 1px solid #b58900; color: #b58900; }
+
+    /* 9. Gruvbox */
+    .gruvbox { background-color: #282828; color: #ebdbb2; }
+    .gruvbox .mock-ui { background-color: #3c3836; border-color: #504945; }
+    .gruvbox .mock-button.primary { background-color: #fe8019; color: #282828; }
+    .gruvbox .mock-button.secondary { background-color: transparent; border: 1px solid #b8bb26; color: #b8bb26; }
+
+    /* 10. Tokyo Night */
+    .tokyonight { background-color: #1a1b26; color: #c0caf5; }
+    .tokyonight .mock-ui { background-color: #24283b; border-color: #414868; }
+    .tokyonight .mock-button.primary { background-color: #7aa2f7; color: #1a1b26; box-shadow: 0 0 8px rgba(122,162,247,0.4); }
+    .tokyonight .mock-button.secondary { background-color: transparent; border: 1px solid #f7768e; color: #f7768e; }
+
+    /* 11. Nord */
+    .nord { background-color: #2e3440; color: #d8dee9; }
+    .nord .mock-ui { background-color: #3b4252; border-color: #4c566a; }
+    .nord .mock-button.primary { background-color: #88c0d0; color: #2e3440; }
+    .nord .mock-button.secondary { background-color: transparent; border: 1px solid #81a1c1; color: #81a1c1; }
+
+    /* 12. Material Oceanic */
+    .oceanic { background-color: #263238; color: #B0BEC5; }
+    .oceanic .mock-ui { background-color: #1E272C; border-color: #37474F; }
+    .oceanic .mock-button.primary { background-color: #80CBC4; color: #1E272C; }
+    .oceanic .mock-button.secondary { background-color: transparent; border: 1px solid #C3E88D; color: #C3E88D; }
+
+    /* 13. Vaporwave */
+    .vaporwave { background-color: #1A1A2E; color: #E94560; }
+    .vaporwave .mock-ui { background-color: #16213E; border-color: #0F3460; }
+    .vaporwave .mock-button.primary { background-color: #E94560; color: #fff; box-shadow: 0 0 10px rgba(233,69,96,0.6); }
+    .vaporwave .mock-button.secondary { background-color: transparent; border: 1px solid #0F3460; color: #0F3460; }
+
+    /* 14. Crimson / Blood Moon */
+    .crimson { background-color: #0a0a0a; color: #a3a3a3; }
+    .crimson .mock-ui { background-color: #171717; border-color: #dc2626; }
+    .crimson .mock-button.primary { background-color: #dc2626; color: #fff; box-shadow: 0 0 12px rgba(220,38,38,0.5); }
+    .crimson .mock-button.secondary { background-color: transparent; border: 1px solid #ef4444; color: #ef4444; }
+
+    /* 15. Deus Ex / Amber */
+    .deusex { background-color: #000000; color: #ffb000; }
+    .deusex .mock-ui { background-color: #111100; border-color: #664400; }
+    .deusex .mock-button.primary { background-color: #ffb000; color: #000; box-shadow: 0 0 10px rgba(255,176,0,0.5); }
+    .deusex .mock-button.secondary { background-color: transparent; border: 1px solid #cc8800; color: #ffb000; }
+
+    /* 16. Deep Abyss */
+    .abyss { background-color: #000B18; color: #4B7A99; }
+    .abyss .mock-ui { background-color: #00122B; border-color: #003366; }
+    .abyss .mock-button.primary { background-color: #0066CC; color: #fff; }
+    .abyss .mock-button.secondary { background-color: transparent; border: 1px solid #0099FF; color: #0099FF; }
+
+    /* 17. Neon Pastel */
+    .neonpastel { background-color: #1C1C28; color: #E0E0FF; }
+    .neonpastel .mock-ui { background-color: #28293D; border-color: #555870; }
+    .neonpastel .mock-button.primary { background-color: #A3A1FF; color: #1C1C28; box-shadow: 0 0 8px #A3A1FF; }
+    .neonpastel .mock-button.secondary { background-color: transparent; border: 1px solid #FF8E9C; color: #FF8E9C; }
+
+    /* 18. High Contrast B&W */
+    .highcontrast { background-color: #000000; color: #FFFFFF; }
+    .highcontrast .mock-ui { background-color: #111111; border: 1px solid #333333; }
+    .highcontrast .mock-button.primary { background-color: #FFFFFF; color: #000000; }
+    .highcontrast .mock-button.secondary { background-color: transparent; border: 1px solid #FFFFFF; color: #FFFFFF; }
+
+  </style>
+</head>
+<body>
+  <h1>Theme Palettes Preview</h1>
+  <p class="subtitle">Choose the visual style for LAM Cyberlab (18 Options)</p>
+  
+  <div class="theme-grid">
+    
+    <!-- 1 to 8 (Existing ones, condensed) -->
+    
+    <div class="theme-card">
+      <div class="theme-header">1. Cyberpunk Neon (Vibrant)</div>
+      <div class="theme-preview cyberpunk">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #09090B"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #18181B"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #00F0FF"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #FF003C"></div></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Cyberlab Dashboard</h3>
+          <p style="opacity:0.8">System initialized. Neural network online.</p>
+          <div><button class="mock-button primary">Engage</button><button class="mock-button secondary">Terminate</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">2. The Matrix (Hacker)</div>
+      <div class="theme-preview matrix" style="font-family: monospace;">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #050505"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #0A0F0D"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #00FF41"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #008F11"></div></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">> LAM_CYBERLAB</h3>
+          <p style="opacity:0.8">> Executing override protocol...</p>
+          <div><button class="mock-button primary">[ EXECUTE ]</button><button class="mock-button secondary">[ CANCEL ]</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">3. Arctic Lab (Deep Space)</div>
+      <div class="theme-preview arctic">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #0B1120"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #111827"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #38BDF8"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #818CF8"></div></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Research Data Hub</h3>
+          <p style="opacity:0.8">Analyzing incoming telemetry.</p>
+          <div><button class="mock-button primary">View Data</button><button class="mock-button secondary">Export</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">4. Dracula (Dev Classic)</div>
+      <div class="theme-preview dracula">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #282a36"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #44475a"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #bd93f9"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #ff79c6"></div></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Dracula Protocol</h3>
+          <p style="opacity:0.8">Dark mode, but with vibrant pinks and purples.</p>
+          <div><button class="mock-button primary">Deploy</button><button class="mock-button secondary">Review</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">5. Synthwave (Outrun 80s)</div>
+      <div class="theme-preview synthwave">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #2b213a"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #241b2f"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #ff71ce"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #01cdfe"></div></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Retro Arcade Lab</h3>
+          <p style="opacity:0.8">Neon sunset aesthetics. Ready player one.</p>
+          <div><button class="mock-button primary">Insert Coin</button><button class="mock-button secondary">High Score</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">6. Biolab (Toxic / Hazard)</div>
+      <div class="theme-preview biolab">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #121413"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #1a1d1b"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #84cc16"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #eab308"></div></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Biohazard Containment</h3>
+          <p style="opacity:0.8">Mutation levels stable. Toxic green accents.</p>
+          <div><button class="mock-button primary">Seal Doors</button><button class="mock-button secondary">Vent Gas</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">7. Monokai Pro (Warm Dark)</div>
+      <div class="theme-preview monokai">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #222222"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #2d2a2e"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #ffd866"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #a9dc76"></div></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Code Editor Vibes</h3>
+          <p style="opacity:0.8">Warm charcoal background with punchy yellow.</p>
+          <div><button class="mock-button primary">Compile</button><button class="mock-button secondary">Debug</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">8. Solarized Dark (Teal)</div>
+      <div class="theme-preview solarized">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #002b36"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #073642"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #268bd2"></div></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #b58900"></div></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Solar Observatory</h3>
+          <p style="opacity:0.8">Low contrast teal, exceptionally easy on the eyes.</p>
+          <div><button class="mock-button primary">Analyze</button><button class="mock-button secondary">Calibrate</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9 to 18 (New ones) -->
+    
+    <div class="theme-card">
+      <div class="theme-header">9. Gruvbox (Retro Earthy)</div>
+      <div class="theme-preview gruvbox">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #282828"></div><span class="swatch-label">#282828</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #3c3836"></div><span class="swatch-label">#3c3836</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #fe8019"></div><span class="swatch-label">#fe8019</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #b8bb26"></div><span class="swatch-label">#b8bb26</span></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Vintage Terminal</h3>
+          <p style="opacity:0.8">Warm earthy tones reminiscent of retro hardware.</p>
+          <div><button class="mock-button primary">Execute</button><button class="mock-button secondary">Halt</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">10. Tokyo Night (Cyber City)</div>
+      <div class="theme-preview tokyonight">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #1a1b26"></div><span class="swatch-label">#1a1b26</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #24283b"></div><span class="swatch-label">#24283b</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #7aa2f7"></div><span class="swatch-label">#7aa2f7</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #f7768e"></div><span class="swatch-label">#f7768e</span></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Shibuya Operations</h3>
+          <p style="opacity:0.8">Deep purple night sky with neon city lights.</p>
+          <div><button class="mock-button primary">Override</button><button class="mock-button secondary">Disconnect</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">11. Nord (Arctic Ice)</div>
+      <div class="theme-preview nord">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #2e3440"></div><span class="swatch-label">#2e3440</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #3b4252"></div><span class="swatch-label">#3b4252</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #88c0d0"></div><span class="swatch-label">#88c0d0</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #81a1c1"></div><span class="swatch-label">#81a1c1</span></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Glacier Lab</h3>
+          <p style="opacity:0.8">Very clean, cold, and professional blues.</p>
+          <div><button class="mock-button primary">Freeze Data</button><button class="mock-button secondary">Extract</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">12. Material Oceanic</div>
+      <div class="theme-preview oceanic">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #263238"></div><span class="swatch-label">#263238</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #1E272C"></div><span class="swatch-label">#1E272C</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #80CBC4"></div><span class="swatch-label">#80CBC4</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #C3E88D"></div><span class="swatch-label">#C3E88D</span></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Submarine Hub</h3>
+          <p style="opacity:0.8">Deep sea blues with bright cyan telemetry.</p>
+          <div><button class="mock-button primary">Dive Deep</button><button class="mock-button secondary">Surface</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">13. Vaporwave (Pastel 90s)</div>
+      <div class="theme-preview vaporwave">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #1A1A2E"></div><span class="swatch-label">#1A1A2E</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #16213E"></div><span class="swatch-label">#16213E</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #E94560"></div><span class="swatch-label">#E94560</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #0F3460"></div><span class="swatch-label">#0F3460</span></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">A E S T H E T I C S</h3>
+          <p style="opacity:0.8">Nostalgic pastel neon on deep violet background.</p>
+          <div><button class="mock-button primary">Play Tape</button><button class="mock-button secondary">Rewind</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">14. Crimson / Blood Moon</div>
+      <div class="theme-preview crimson">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #0a0a0a"></div><span class="swatch-label">#0a0a0a</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #171717"></div><span class="swatch-label">#171717</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #dc2626"></div><span class="swatch-label">#dc2626</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #ef4444"></div><span class="swatch-label">#ef4444</span></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Offensive Security</h3>
+          <p style="opacity:0.8">Aggressive and intense. Pure black and blood red.</p>
+          <div><button class="mock-button primary">Launch Attack</button><button class="mock-button secondary">Retreat</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">15. Deus Ex (Amber Terminal)</div>
+      <div class="theme-preview deusex">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #000000"></div><span class="swatch-label">#000000</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #111100"></div><span class="swatch-label">#111100</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #ffb000"></div><span class="swatch-label">#ffb000</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #cc8800"></div><span class="swatch-label">#cc8800</span></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Augmented Reality</h3>
+          <p style="opacity:0.8">Classic amber monochrome phosphors.</p>
+          <div><button class="mock-button primary">Hack Node</button><button class="mock-button secondary">Bypass</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">16. Deep Abyss (Ocean Dark)</div>
+      <div class="theme-preview abyss">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #000B18"></div><span class="swatch-label">#000B18</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #00122B"></div><span class="swatch-label">#00122B</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #0066CC"></div><span class="swatch-label">#0066CC</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #0099FF"></div><span class="swatch-label">#0099FF</span></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Trench Explorer</h3>
+          <p style="opacity:0.8">Extremely dark pure blues, no grays.</p>
+          <div><button class="mock-button primary">Sonar Ping</button><button class="mock-button secondary">Lights Off</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">17. Neon Pastel (Cyber-Pop)</div>
+      <div class="theme-preview neonpastel">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #1C1C28"></div><span class="swatch-label">#1C1C28</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #28293D"></div><span class="swatch-label">#28293D</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #A3A1FF"></div><span class="swatch-label">#A3A1FF</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #FF8E9C"></div><span class="swatch-label">#FF8E9C</span></div>
+        </div>
+        <div class="mock-ui">
+          <h3 style="margin-top:0">Creative Studio</h3>
+          <p style="opacity:0.8">Soft pastel neons that pop gently on dark grey.</p>
+          <div><button class="mock-button primary">Generate</button><button class="mock-button secondary">Remix</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-header">18. High Contrast (Pure B&W)</div>
+      <div class="theme-preview highcontrast">
+        <div class="color-row">
+          <div class="color-swatch"><div class="swatch-box" style="background: #000000"></div><span class="swatch-label">#000000</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #111111"></div><span class="swatch-label">#111111</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #FFFFFF"></div><span class="swatch-label">#FFFFFF</span></div>
+          <div class="color-swatch"><div class="swatch-box" style="background: #333333"></div><span class="swatch-label">#333333</span></div>
+        </div>
+        <div class="mock-ui" style="font-family: monospace;">
+          <h3 style="margin-top:0">Minimalist Terminal</h3>
+          <p style="opacity:0.8">No distractions. Maximum readability.</p>
+          <div><button class="mock-button primary">Commit</button><button class="mock-button secondary">Revert</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

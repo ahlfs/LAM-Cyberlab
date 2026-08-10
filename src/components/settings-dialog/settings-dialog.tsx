@@ -1515,6 +1515,14 @@ const ENTERPRISE_THEME_FAMILIES: Array<ThemeId> = [
   'claude-classic',
   'claude-slate',
   'discord-nitro',
+  'arctic',
+  'synthwave',
+  'biolab',
+  'monokai',
+  'tokyonight',
+  'crimson',
+  'deusex',
+  'highcontrast',
 ]
 
 const ENTERPRISE_THEMES = THEMES.map((theme) => ({
@@ -1625,6 +1633,22 @@ const ENTERPRISE_THEMES = THEMES.map((theme) => ({
                           accent: '#644AC9',
                           text: '#1F1F1F',
                         }
+                      : theme.id === 'arctic' ? { bg: '#0B1120', panel: '#111827', border: 'rgba(56, 189, 248, 0.2)', accent: '#38BDF8', text: '#F3F4F6' }
+                      : theme.id === 'arctic-light' ? { bg: '#F1F5F9', panel: '#F8FAFC', border: '#CBD5E1', accent: '#0284C7', text: '#0F172A' }
+                      : theme.id === 'synthwave' ? { bg: '#2b213a', panel: '#241b2f', border: '#ff71ce', accent: '#01cdfe', text: '#fdf6e3' }
+                      : theme.id === 'synthwave-light' ? { bg: '#FAFAFA', panel: '#F4F4F5', border: '#ff71ce', accent: '#01cdfe', text: '#18181b' }
+                      : theme.id === 'biolab' ? { bg: '#121413', panel: '#1a1d1b', border: '#3f6212', accent: '#84cc16', text: '#e5e7eb' }
+                      : theme.id === 'biolab-light' ? { bg: '#F3F4F6', panel: '#FFFFFF', border: '#b4ced6', accent: '#65a30d', text: '#111827' }
+                      : theme.id === 'monokai' ? { bg: '#222222', panel: '#2d2a2e', border: '#5b595c', accent: '#ffd866', text: '#fcfcfa' }
+                      : theme.id === 'monokai-light' ? { bg: '#FAFAFA', panel: '#FFFFFF', border: '#e4e4e7', accent: '#d97706', text: '#27272a' }
+                      : theme.id === 'tokyonight' ? { bg: '#1a1b26', panel: '#24283b', border: '#414868', accent: '#7aa2f7', text: '#c0caf5' }
+                      : theme.id === 'tokyonight-light' ? { bg: '#FAFAFA', panel: '#FFFFFF', border: '#e4e4e7', accent: '#2563eb', text: '#1e293b' }
+                      : theme.id === 'crimson' ? { bg: '#0a0a0a', panel: '#171717', border: '#dc2626', accent: '#ef4444', text: '#a3a3a3' }
+                      : theme.id === 'crimson-light' ? { bg: '#FAFAFA', panel: '#FFFFFF', border: '#fca5a5', accent: '#dc2626', text: '#171717' }
+                      : theme.id === 'deusex' ? { bg: '#000000', panel: '#111100', border: '#664400', accent: '#ffb000', text: '#ffb000' }
+                      : theme.id === 'deusex-light' ? { bg: '#FFFBEB', panel: '#FEF3C7', border: '#FDE68A', accent: '#D97706', text: '#78350F' }
+                      : theme.id === 'highcontrast' ? { bg: '#000000', panel: '#111111', border: '#666666', accent: '#FFFFFF', text: '#FFFFFF' }
+                      : theme.id === 'highcontrast-light' ? { bg: '#FFFFFF', panel: '#F4F4F5', border: '#A1A1AA', accent: '#000000', text: '#000000' }
                       : {
                           bg: '#F6F8FA',
                           panel: '#FFFFFF',
