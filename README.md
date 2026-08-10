@@ -15,7 +15,7 @@
 > Please note that the "brain" and intelligence of LAM Cyberlab live 100% inside the backend [**Hermes Agent (Second Brain Edition)**](https://github.com/ahlfs/hermes-agent). 
 > This repository (LAM Cyberlab) acts exclusively as the interactive frontend surface for that agent.
 
-> Not a chat wrapper. A complete workspace — orchestrate agents, browse memory, manage skills, and control everything from one interface, running on vanilla `hermes-agent` installed via Nous's own installer.
+> Not just a chat wrapper. A complete digital laboratory — orchestrate AI agents, interact with your Second Brain, manage skills, and control everything from one interface, running seamlessly on top of your customized Hermes Agent backend.
 
 </div>
 
