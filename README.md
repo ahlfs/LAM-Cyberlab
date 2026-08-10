@@ -171,7 +171,7 @@ PORT=3000
 # Terminal 1 — gateway
 hermes gateway run
 
-# Terminal 2 — dashboard (optional)
+# Terminal 2 — dashboard (optional but highly recommended)
 hermes dashboard
 
 # Terminal 3 — the workspace
@@ -340,9 +340,12 @@ directly. When absent, Workspace falls back to its native Swarm dispatch
 
 ## 🐳 Docker
 
-Runs both the **Hermes Agent gateway** and **LAM Cyberlab** in containers, built
-from this repo's own source (there's no published container image for a personal
-fork, so this always builds locally rather than pulling someone else's image).
+> [!WARNING]
+> **Docker setup is currently NOT recommended for the Second Brain Edition.**
+> The current `docker-compose.yml` pulls the vanilla `nousresearch/hermes-agent:latest` image for the backend. It does not yet use a custom image for the `ahlfs/hermes-agent` fork, meaning it lacks `ffmpeg`, `tesseract`, and the Second Brain ingestion scripts. 
+> If you want to use the Second Brain capabilities (which is the core of this fork), please use the **Local Installation** method above.
+
+Runs the **Hermes Agent gateway** (vanilla upstream image) and **LAM Cyberlab** (built from local source) in containers.
 
 ```bash
 git clone git@github.com:ahlfs/LAM-Cyberlab.git lam-cyberlab
