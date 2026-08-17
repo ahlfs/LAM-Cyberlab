@@ -90,6 +90,7 @@ import { Route as ApiPluginsRouteImport } from './routes/api/plugins'
 import { Route as ApiPlaygroundNpcRouteImport } from './routes/api/playground-npc'
 import { Route as ApiPlaygroundAdminRouteImport } from './routes/api/playground-admin'
 import { Route as ApiPingRouteImport } from './routes/api/ping'
+import { Route as ApiPersonaRouteImport } from './routes/api/persona'
 import { Route as ApiPathsRouteImport } from './routes/api/paths'
 import { Route as ApiModelsRouteImport } from './routes/api/models'
 import { Route as ApiMemoryRouteImport } from './routes/api/memory'
@@ -604,6 +605,11 @@ const ApiPlaygroundAdminRoute = ApiPlaygroundAdminRouteImport.update({
 const ApiPingRoute = ApiPingRouteImport.update({
   id: '/api/ping',
   path: '/api/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPersonaRoute = ApiPersonaRouteImport.update({
+  id: '/api/persona',
+  path: '/api/persona',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPathsRoute = ApiPathsRouteImport.update({
@@ -1222,6 +1228,7 @@ export interface FileRoutesByFullPath {
   '/api/memory': typeof ApiMemoryRouteWithChildren
   '/api/models': typeof ApiModelsRoute
   '/api/paths': typeof ApiPathsRoute
+  '/api/persona': typeof ApiPersonaRoute
   '/api/ping': typeof ApiPingRoute
   '/api/playground-admin': typeof ApiPlaygroundAdminRoute
   '/api/playground-npc': typeof ApiPlaygroundNpcRoute
@@ -1413,6 +1420,7 @@ export interface FileRoutesByTo {
   '/api/memory': typeof ApiMemoryRouteWithChildren
   '/api/models': typeof ApiModelsRoute
   '/api/paths': typeof ApiPathsRoute
+  '/api/persona': typeof ApiPersonaRoute
   '/api/ping': typeof ApiPingRoute
   '/api/playground-admin': typeof ApiPlaygroundAdminRoute
   '/api/playground-npc': typeof ApiPlaygroundNpcRoute
@@ -1606,6 +1614,7 @@ export interface FileRoutesById {
   '/api/memory': typeof ApiMemoryRouteWithChildren
   '/api/models': typeof ApiModelsRoute
   '/api/paths': typeof ApiPathsRoute
+  '/api/persona': typeof ApiPersonaRoute
   '/api/ping': typeof ApiPingRoute
   '/api/playground-admin': typeof ApiPlaygroundAdminRoute
   '/api/playground-npc': typeof ApiPlaygroundNpcRoute
@@ -1800,6 +1809,7 @@ export interface FileRouteTypes {
     | '/api/memory'
     | '/api/models'
     | '/api/paths'
+    | '/api/persona'
     | '/api/ping'
     | '/api/playground-admin'
     | '/api/playground-npc'
@@ -1991,6 +2001,7 @@ export interface FileRouteTypes {
     | '/api/memory'
     | '/api/models'
     | '/api/paths'
+    | '/api/persona'
     | '/api/ping'
     | '/api/playground-admin'
     | '/api/playground-npc'
@@ -2183,6 +2194,7 @@ export interface FileRouteTypes {
     | '/api/memory'
     | '/api/models'
     | '/api/paths'
+    | '/api/persona'
     | '/api/ping'
     | '/api/playground-admin'
     | '/api/playground-npc'
@@ -2376,6 +2388,7 @@ export interface RootRouteChildren {
   ApiMemoryRoute: typeof ApiMemoryRouteWithChildren
   ApiModelsRoute: typeof ApiModelsRoute
   ApiPathsRoute: typeof ApiPathsRoute
+  ApiPersonaRoute: typeof ApiPersonaRoute
   ApiPingRoute: typeof ApiPingRoute
   ApiPlaygroundAdminRoute: typeof ApiPlaygroundAdminRoute
   ApiPlaygroundNpcRoute: typeof ApiPlaygroundNpcRoute
@@ -3033,6 +3046,13 @@ declare module '@tanstack/react-router' {
       path: '/api/ping'
       fullPath: '/api/ping'
       preLoaderRoute: typeof ApiPingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/persona': {
+      id: '/api/persona'
+      path: '/api/persona'
+      fullPath: '/api/persona'
+      preLoaderRoute: typeof ApiPersonaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/paths': {
@@ -4126,6 +4146,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMemoryRoute: ApiMemoryRouteWithChildren,
   ApiModelsRoute: ApiModelsRoute,
   ApiPathsRoute: ApiPathsRoute,
+  ApiPersonaRoute: ApiPersonaRoute,
   ApiPingRoute: ApiPingRoute,
   ApiPlaygroundAdminRoute: ApiPlaygroundAdminRoute,
   ApiPlaygroundNpcRoute: ApiPlaygroundNpcRoute,

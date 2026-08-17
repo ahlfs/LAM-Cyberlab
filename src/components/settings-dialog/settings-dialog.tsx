@@ -56,6 +56,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { personas } from '@/lib/personas'
 
 // ── Language ────────────────────────────────────────────────────────────
 
@@ -66,6 +67,7 @@ import { LOCALE_LABELS,  getLocale, setLocale } from '@/lib/i18n'
 type SectionId =
   | 'claude'
   | 'agent'
+  | 'persona'
   | 'voice'
   | 'display'
   | 'appearance'
@@ -76,6 +78,7 @@ type SectionId =
 const SECTIONS: Array<{ id: SectionId; label: string; icon: any }> = [
   { id: 'claude', label: 'Model & Provider', icon: CloudIcon },
   { id: 'agent', label: 'Agent', icon: Settings02Icon },
+  { id: 'persona', label: 'Persona', icon: Settings02Icon },
   { id: 'voice', label: 'Voice', icon: VolumeHighIcon },
   { id: 'display', label: 'Display', icon: PaintBoardIcon },
   { id: 'appearance', label: 'Theme', icon: PaintBoardIcon },
@@ -2233,6 +2236,101 @@ function AgentBehaviorContent() {
   )
 }
 
+// ── Persona ──────────────────────────────────────────────────────────────
+
+function PersonaContent() {
+  const [personaId, setPersonaId] = useState<string>('default')
+  const [msg, setMsg] = useState<string | null>(null)
+  
+  useEffect(() => {
+    fetch('/api/persona')
+      .then((r) => r.json())
+      .then((d: any) => {
+        if (d.ok && d.activePersonaId) {
+          setPersonaId(d.activePersonaId)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const savePersona = async (id: string) => {
+    setMsg(null)
+    setPersonaId(id)
+    try {
+      await fetch('/api/persona', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ personaId: id }),
+      })
+      setMsg('Persona Saved')
+      setTimeout(() => setMsg(null), 2000)
+    } catch {
+      setMsg('Failed to save persona')
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <SectionHeader
+        title="AI Persona"
+        description="Inject character personality into soul.md."
+      />
+      {msg && (
+        <div
+          className={cn(
+            'rounded-lg px-3 py-1.5 text-xs font-medium',
+            msg.includes('Failed')
+              ? 'bg-red-500/15 text-red-400'
+              : 'bg-green-500/15 text-green-400',
+          )}
+        >
+          {msg}
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {personas.map((p) => {
+          const isActive = personaId === p.id
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => savePersona(p.id)}
+              className={cn(
+                'relative flex flex-col overflow-hidden rounded-xl border transition-all text-left group',
+                isActive
+                  ? 'border-accent-500 ring-1 ring-accent-500 shadow-md'
+                  : 'border-[var(--theme-border)] hover:border-primary-400 hover:shadow-sm'
+              )}
+              style={{ backgroundColor: 'var(--theme-card)' }}
+            >
+              <div className="aspect-[4/3] w-full overflow-hidden bg-primary-100 dark:bg-neutral-800">
+                <img 
+                  src={p.image} 
+                  alt={p.name} 
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+              <div className="p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-[var(--theme-text)] line-clamp-1">
+                    {p.icon} {p.name}
+                  </span>
+                  {isActive && (
+                    <span className="size-2 rounded-full bg-accent-500 shrink-0" />
+                  )}
+                </div>
+                <p className="text-[10px] text-[var(--theme-muted)] line-clamp-2 leading-snug">
+                  {p.description}
+                </p>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── Voice (TTS + STT) ──────────────────────────────────────────────────
 
 function VoiceContent() {
@@ -2535,6 +2633,7 @@ function LanguageContent() {
 const CONTENT_MAP: Record<SectionId, () => React.JSX.Element> = {
   claude: HermesContent,
   agent: AgentBehaviorContent,
+  persona: PersonaContent,
   voice: VoiceContent,
   display: DisplayContent,
   appearance: AppearanceContent,
@@ -2616,9 +2715,9 @@ export function SettingsDialog({
                       type="button"
                       onClick={() => handleSectionSelect(s.id)}
                       className={cn(
-                        'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-primary-600 transition-colors hover:bg-primary-100',
+                        'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-primary-600 dark:text-neutral-400 transition-colors hover:bg-primary-100 dark:hover:bg-neutral-800',
                         active === s.id &&
-                          'bg-accent-50 font-medium text-accent-700',
+                          'bg-primary-100 dark:bg-neutral-800 font-medium text-primary-900 dark:text-neutral-100',
                       )}
                     >
                       <HugeiconsIcon
