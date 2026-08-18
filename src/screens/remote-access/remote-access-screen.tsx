@@ -155,9 +155,9 @@ export function RemoteAccessScreen() {
     onSuccess: (_data, enabled) => {
       toast(
         enabled
-          ? '9router expose enabled — restart 9router to apply'
-          : '9router expose disabled — restart 9router to apply',
-        { type: enabled ? 'warning' : 'success' },
+          ? '9router exposed to 0.0.0.0 — restarting automatically…'
+          : '9router bound to 127.0.0.1 — restarting automatically…',
+        { type: 'success' },
       )
       void queryClient.invalidateQueries({ queryKey: ['remote-access-status'] })
     },
