@@ -41,8 +41,8 @@ export const Route = createFileRoute('/api/remote-access/expose-9router')({
           return json({ error: result.error }, { status: 400 })
         }
 
-        // Secara otomatis merestart 9router jika menggunakan PM2
-        exec('pm2 restart 9router', (err) => {
+        // Secara otomatis me-reload konfigurasi PM2 dari ecosystem file agar argumen --host ikut terupdate
+        exec('pm2 start ecosystem.config.cjs --only 9router && pm2 save', (err) => {
           if (err) console.error('Failed to auto-restart 9router via pm2:', err)
         })
 
