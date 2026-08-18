@@ -1,3 +1,4 @@
+import { exec } from 'node:child_process'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { z } from 'zod'
@@ -39,6 +40,12 @@ export const Route = createFileRoute('/api/remote-access/expose-9router')({
         if (!result.ok) {
           return json({ error: result.error }, { status: 400 })
         }
+
+        // Secara otomatis merestart 9router jika menggunakan PM2
+        exec('pm2 restart 9router', (err) => {
+          if (err) console.error('Failed to auto-restart 9router via pm2:', err)
+        })
+
         return json(result)
       },
     },
