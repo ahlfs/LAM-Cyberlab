@@ -41,10 +41,21 @@ export const Route = createFileRoute('/api/remote-access/expose-9router')({
           return json({ error: result.error }, { status: 400 })
         }
 
-        // Auto-restart 9router via PM2 menggunakan path absolut agar bekerja di semua environment
-        // (termasuk saat Node.js berjalan sebagai PM2 service yang PATH-nya terbatas)
-        const pm2Bin = '/usr/local/bin/pm2'
-        const ecoFile = require('node:path').join(process.cwd(), 'ecosystem.config.cjs')
+        // Auto-restart 9router via PM2.
+        // Mencari path pm2 secara dinamis agar bekerja di mesin manapun (lokal maupun VPS).
+        const { execSync } = require('node:child_process')
+        const { join } = require('node:path')
+        let pm2Bin = 'pm2'
+        try {
+          pm2Bin = execSync('which pm2', { encoding: 'utf8' }).trim()
+        } catch {
+          // fallback: coba lokasi umum
+          const fs = require('node:fs')
+          for (const p of ['/usr/local/bin/pm2', '/usr/bin/pm2']) {
+            if (fs.existsSync(p)) { pm2Bin = p; break }
+          }
+        }
+        const ecoFile = join(process.cwd(), 'ecosystem.config.cjs')
         const cmd = `${pm2Bin} delete 9router; ${pm2Bin} start ${ecoFile} --only 9router && ${pm2Bin} save`
         exec(
           cmd,
