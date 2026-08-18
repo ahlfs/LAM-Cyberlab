@@ -504,6 +504,16 @@ installer.
 
 If you are deploying this on a cloud VPS (e.g., Azure, DigitalOcean) and accessing it via an IP address over HTTP, follow this step-by-step guide to avoid common pitfalls like Gateway connection failures, 9router crash loops, and login loops.
 
+#### 📋 VPS Prerequisites
+
+A fresh VPS usually doesn't have the required developer tools installed. Before running the script, ensure you have:
+1. **Node.js (v22+)**: `curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs`
+2. **PM2**: `sudo npm install -g pm2`
+3. **pnpm**: `sudo npm install -g pnpm`
+4. **Hermes Agent**: Ensure the backend agent is already installed (see [ahlfs/hermes-agent](https://github.com/ahlfs/hermes-agent)).
+
+#### 🛠️ Automated Setup
+
 We have provided an interactive bash script that automatically configures your environment variables, applies the necessary fixes for plain HTTP login loops, and sets up PM2 correctly for the Hermes Agent Gateway and LAM-Cyberlab Workspace.
 
 ```bash
