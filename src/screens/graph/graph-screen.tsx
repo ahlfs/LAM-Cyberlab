@@ -1102,14 +1102,34 @@ export function GraphScreen() {
 
       {/* Empty state */}
       {layoutNodes && layoutNodes.length === 0 && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <p className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
-              No knowledge pages found
-            </p>
-            <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-              Start adding pages to your Second Brain wiki to see them here.
-            </p>
+        <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+          <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+                No knowledge pages found
+              </p>
+              <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
+                Your Knowledge Graph is currently empty.
+              </p>
+            </div>
+            
+            <div 
+              className="rounded-md border p-3 text-left w-full shadow-sm"
+              style={{
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              <p className="text-xs font-medium mb-2" style={{ color: 'var(--theme-text)' }}>
+                How to connect your Second Brain:
+              </p>
+              <ol className="text-xs space-y-2 list-decimal pl-4" style={{ color: 'var(--theme-muted)' }}>
+                <li>Go to the <strong style={{ color: 'var(--theme-text)' }}>Memory</strong> page from the sidebar.</li>
+                <li>Click the <strong style={{ color: 'var(--theme-text)' }}>Knowledge Base</strong> tab.</li>
+                <li>Click the <strong style={{ color: 'var(--theme-text)' }}>Settings</strong> (gear) icon.</li>
+                <li>Set the source to <strong style={{ color: 'var(--theme-text)' }}>Local Path</strong> (e.g. <code>~/obsidian/memo</code>) or <strong style={{ color: 'var(--theme-text)' }}>GitHub Repo</strong>.</li>
+              </ol>
+            </div>
           </div>
         </div>
       )}

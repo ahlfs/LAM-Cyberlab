@@ -1,3 +1,4 @@
+import { exec, execSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { resolve4 } from 'node:dns/promises'
@@ -175,6 +176,46 @@ export function setExposeEnabled(enabled: boolean): SetExposeResult {
   return { ok: true, requiresRestart: true }
 }
 
+/** Cari path absolut pm2 secara dinamis — bekerja di mesin manapun. */
+function findPm2Bin(): string {
+  try {
+    return execSync('which pm2', { encoding: 'utf8' }).trim()
+  } catch {
+    for (const p of ['/usr/local/bin/pm2', '/usr/bin/pm2']) {
+      if (existsSync(p)) return p
+    }
+  }
+  return 'pm2'
+}
+
+/**
+ * Auto-restart 9router via PM2.
+ * pm2 delete menghapus proses lama beserta cache konfigurasinya,
+ * pm2 start ecosystem.config.cjs mengevaluasi ulang file JS → membaca .env terbaru.
+ */
+function restart9Router(): void {
+  const pm2Bin = findPm2Bin()
+  const ecoFile = join(process.cwd(), 'ecosystem.config.cjs')
+  const cmd = `${pm2Bin} delete 9router 2>/dev/null; ${pm2Bin} start ${ecoFile} --only 9router && ${pm2Bin} save`
+  exec(
+    cmd,
+    {
+      cwd: process.cwd(),
+      shell: '/bin/bash',
+      env: { ...process.env, PATH: `/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
+    },
+    (err, stdout, stderr) => {
+      if (err) {
+        console.error('[9router-restart] FAILED cmd:', cmd)
+        console.error('[9router-restart] Error:', err.message)
+        console.error('[9router-restart] Stderr:', stderr)
+      } else {
+        console.log('[9router-restart] OK:', stdout.trim())
+      }
+    }
+  )
+}
+
 export function setExpose9RouterEnabled(enabled: boolean): SetExposeResult {
   if (enabled && !isPasswordProtectionEnabled()) {
     return {
@@ -183,6 +224,7 @@ export function setExpose9RouterEnabled(enabled: boolean): SetExposeResult {
     }
   }
   writeEnvFileValue('NINE_ROUTER_HOST', enabled ? '0.0.0.0' : '127.0.0.1')
+  restart9Router()
   return { ok: true, requiresRestart: true }
 }
 
