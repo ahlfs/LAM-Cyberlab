@@ -41,16 +41,25 @@ export const Route = createFileRoute('/api/remote-access/expose-9router')({
           return json({ error: result.error }, { status: 400 })
         }
 
-        // Menggunakan pm2 secara langsung. Hindari npx karena npx bisa meminta konfirmasi interaktif (y/n) yang menyebabkan proses menggantung.
+        // Auto-restart 9router via PM2 menggunakan path absolut agar bekerja di semua environment
+        // (termasuk saat Node.js berjalan sebagai PM2 service yang PATH-nya terbatas)
+        const pm2Bin = '/usr/local/bin/pm2'
+        const ecoFile = require('node:path').join(process.cwd(), 'ecosystem.config.cjs')
+        const cmd = `${pm2Bin} delete 9router; ${pm2Bin} start ${ecoFile} --only 9router && ${pm2Bin} save`
         exec(
-          'pm2 restart ecosystem.config.cjs --only 9router --update-env && pm2 save',
-          { cwd: process.cwd(), env: process.env },
+          cmd,
+          {
+            cwd: process.cwd(),
+            shell: '/bin/bash',
+            env: { ...process.env, PATH: `/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
+          },
           (err, stdout, stderr) => {
             if (err) {
-              console.error('Failed to auto-restart 9router:', err)
-              console.error('Stderr:', stderr)
+              console.error('[9router-restart] FAILED cmd:', cmd)
+              console.error('[9router-restart] Error:', err.message)
+              console.error('[9router-restart] Stderr:', stderr)
             } else {
-              console.log('Successfully restarted 9router:', stdout)
+              console.log('[9router-restart] OK:', stdout.trim())
             }
           }
         )
