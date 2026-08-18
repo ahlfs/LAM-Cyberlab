@@ -515,33 +515,95 @@ different ways rather than shoving everything into one tool:
 Running the gateway under both systemd *and* pm2 would mean two supervisors
 fighting over the same process, so it stays on its native systemd unit.
 
-### Setup
+### 🚀 Setup (VPS Deployment & PM2 Fixes)
+
+If you are deploying this on a cloud VPS (e.g., Azure, DigitalOcean) and accessing it via an IP address over HTTP, follow this step-by-step guide to avoid common pitfalls like Gateway connection failures, 9router crash loops, and login loops.
+
+**1. Prepare the Environment Files**
+
+For the Hermes Agent Gateway (Backend):
+```bash
+echo 'API_SERVER_ENABLED=true' >> ~/.hermes/.env
+echo 'API_SERVER_KEY=your-secure-token-here' >> ~/.hermes/.env
+```
+> *(Without `API_SERVER_ENABLED=true`, the Gateway will run but port 8642 will remain closed!)*
+
+For the Workspace (Frontend):
+```bash
+cd ~/lam-cyberlab
+cp .env.example .env
+```
+Edit `lam-cyberlab/.env` to include:
+```env
+HERMES_PASSWORD=your-login-password
+HERMES_API_TOKEN=your-secure-token-here  # Must match API_SERVER_KEY above!
+COOKIE_SECURE=0                          # CRITICAL: Set to 0 if accessing via plain HTTP IP, otherwise you will get stuck in a login loop!
+```
+
+**2. Configure PM2 (ecosystem.config.cjs)**
+
+Ensure your `ecosystem.config.cjs` is configured to properly inject `~/.hermes/.env` into the Gateway process, and pass `--tray` to 9router so it doesn't crash on headless servers:
+
+```javascript
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+// Helper to inject agent env vars into PM2
+function readEnvFile(filepath) {
+  if (!fs.existsSync(filepath)) return {};
+  const content = fs.readFileSync(filepath, 'utf8');
+  return content.split('\n').reduce((acc, line) => {
+    const [key, ...vals] = line.split('=');
+    if (key && key.trim() && !key.startsWith('#')) {
+      acc[key.trim()] = vals.join('=').trim().replace(/(^"|"$)/g, '');
+    }
+    return acc;
+  }, {});
+}
+const hermesEnv = readEnvFile(path.join(os.homedir(), '.hermes', '.env'));
+
+module.exports = {
+  apps: [
+    {
+      name: 'hermes-gateway',
+      script: 'hermes',
+      args: 'gateway run',
+      env: hermesEnv // CRITICAL: Inject backend env vars so port 8642 opens
+    },
+    {
+      name: '9router',
+      script: 'hermes',
+      args: '9router --host 127.0.0.1 --tray' // CRITICAL: --tray prevents crash loops on VPS
+    }
+    // ... dashboard and workspace configs ...
+  ]
+};
+```
+
+**3. Build and Start**
 
 ```bash
-# 1. Gateway as a systemd/launchd service (hermes-agent's own command)
-hermes gateway install
-
-# 2. Production build of the workspace (pm2 runs the built output, not `pnpm dev`)
+# 1. Production build of the workspace
 pnpm build
 
-# 3. Install pm2 (global, not a project dependency)
-npm install -g pm2
+# 2. Ensure no orphan gateways are blocking port 8642
+pm2 delete all
+hermes gateway stop
 
-# 4. Start the dashboard + workspace under pm2
-pnpm pm2:start
-# equivalent to: pm2 start ecosystem.config.cjs
-
-# 5. Persist across reboots
+# 3. Start the full stack
+pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup      # prints a one-time sudo command — run exactly what it prints
 ```
 
-`ecosystem.config.cjs` (repo root) defines the two pm2-managed apps —
-`hermes-dashboard` (`hermes dashboard --port 9119 --host 127.0.0.1 --no-open`,
-the same invocation the Electron desktop build already uses to auto-spawn it)
-and `lam-cyberlab-workspace` (`node server-entry.js` in production mode). The
-workspace still reads all its configuration from `.env` as usual — `pm2:start`
-doesn't duplicate or override any of it.
+**4. Verify**
+
+```bash
+curl -s http://127.0.0.1:8642/health
+# Should return: {"status": "ok", "platform": "hermes-agent"}
+```
+If you see the response above, your VPS is fully online! Open your browser to `http://YOUR-VPS-IP:3000` and login with your `HERMES_PASSWORD`.
 
 ### Day-to-day
 
