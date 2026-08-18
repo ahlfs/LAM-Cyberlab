@@ -507,10 +507,13 @@ If you are deploying this on a cloud VPS (e.g., Azure, DigitalOcean) and accessi
 #### 📋 VPS Prerequisites
 
 A fresh VPS usually doesn't have the required developer tools installed. Before running the script, ensure you have:
-1. **Node.js (v22+)**: `curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs`
-2. **PM2**: `sudo npm install -g pm2`
-3. **pnpm**: `sudo npm install -g pnpm`
-4. **Hermes Agent**: Ensure the backend agent is already installed (see [ahlfs/hermes-agent](https://github.com/ahlfs/hermes-agent)).
+
+| Prerequisite | Description | Installation Guide |
+|---|---|---|
+| **Node.js 22+** | Required to run the Lam-Cyberlab web server. | [NodeSource Distributions](https://github.com/nodesource/distributions) |
+| **PM2** | Process manager to keep the app running in the background. | [PM2 Quick Start](https://pm2.keymetrics.io/docs/usage/quick-start/) |
+| **pnpm** | Fast, disk space efficient package manager. | [pnpm Installation](https://pnpm.io/installation) |
+| **Hermes Agent** | The intelligence backend. **MUST** be installed first. | [ahlfs/hermes-agent](https://github.com/ahlfs/hermes-agent) |
 
 #### 🛠️ Automated Setup
 
