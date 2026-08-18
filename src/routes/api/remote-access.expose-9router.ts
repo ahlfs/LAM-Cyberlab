@@ -41,9 +41,9 @@ export const Route = createFileRoute('/api/remote-access/expose-9router')({
           return json({ error: result.error }, { status: 400 })
         }
 
-        // Menggunakan npx pm2 dan memberikan cwd secara eksplisit, serta mencetak pesan error jika gagal
+        // Menggunakan pm2 secara langsung. Hindari npx karena npx bisa meminta konfirmasi interaktif (y/n) yang menyebabkan proses menggantung.
         exec(
-          'npx pm2 start ecosystem.config.cjs --only 9router && npx pm2 save',
+          'pm2 restart ecosystem.config.cjs --only 9router --update-env && pm2 save',
           { cwd: process.cwd(), env: process.env },
           (err, stdout, stderr) => {
             if (err) {
