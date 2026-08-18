@@ -42,21 +42,28 @@ export const Route = createFileRoute('/api/remote-access/expose-9router')({
         }
 
         // Auto-restart 9router via PM2.
-        // Mencari path pm2 secara dinamis agar bekerja di mesin manapun (lokal maupun VPS).
+        // Bypass ecosystem file — langsung passing host baru ke pm2 start agar tidak terkena cache PM2.
         const { execSync } = require('node:child_process')
-        const { join } = require('node:path')
         let pm2Bin = 'pm2'
         try {
           pm2Bin = execSync('which pm2', { encoding: 'utf8' }).trim()
         } catch {
-          // fallback: coba lokasi umum
           const fs = require('node:fs')
           for (const p of ['/usr/local/bin/pm2', '/usr/bin/pm2']) {
             if (fs.existsSync(p)) { pm2Bin = p; break }
           }
         }
-        const ecoFile = join(process.cwd(), 'ecosystem.config.cjs')
-        const cmd = `${pm2Bin} delete 9router; ${pm2Bin} start ${ecoFile} --only 9router && ${pm2Bin} save`
+        const newHost = parsed.data.enabled ? '0.0.0.0' : '127.0.0.1'
+        const cmd = [
+          `${pm2Bin} delete 9router 2>/dev/null;`,
+          `${pm2Bin} start /usr/local/bin/9router`,
+          `--name 9router`,
+          `--interpreter none`,
+          `--max-restarts 10`,
+          `--restart-delay 3000`,
+          `-- --host ${newHost} --port 3035 --tray`,
+          `&& ${pm2Bin} save`,
+        ].join(' ')
         exec(
           cmd,
           {
@@ -70,7 +77,7 @@ export const Route = createFileRoute('/api/remote-access/expose-9router')({
               console.error('[9router-restart] Error:', err.message)
               console.error('[9router-restart] Stderr:', stderr)
             } else {
-              console.log('[9router-restart] OK:', stdout.trim())
+              console.log(`[9router-restart] OK (host=${newHost}):`, stdout.trim())
             }
           }
         )
