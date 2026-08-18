@@ -75,7 +75,7 @@ to add them:
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Deployment Options
 
 Everything below installs and runs **this repository** (the web UI) which pairs with the backend agent.
 
@@ -92,7 +92,15 @@ Before starting, ensure you have the following installed on your system:
 
 ---
 
-### 🐧 Linux (Debian / Ubuntu) & 🍎 macOS
+You can run LAM-Cyberlab in two ways depending on your needs:
+1. **[Option A: Local Deployment](#-option-a-local-deployment-personal-computer)** — Best for local usage, testing, and development. Runs directly in your terminal.
+2. **[Option B: Cloud VPS Deployment](#-option-b-cloud-vps-deployment-always-on)** — Best for a permanent, headless server. Uses PM2 to run quietly in the background.
+
+---
+
+### 💻 Option A: Local Deployment (Personal Computer)
+
+#### 🐧 Linux (Debian / Ubuntu) & 🍎 macOS
 
 **1. Install prerequisites** (Node.js 22+, pnpm, git) if you haven't already.
 
@@ -136,7 +144,7 @@ Open **http://127.0.0.1:3000** in your browser.
 
 ---
 
-### 🪟 Windows
+#### 🪟 Windows
 
 **1. Install prerequisites** (PowerShell):
 ```powershell
@@ -186,7 +194,7 @@ Open **http://127.0.0.1:3000**.
 
 ---
 
-### Run without an open terminal
+#### Run without an open terminal (macOS/Linux)
 
 Once things work with `pnpm dev`, install Workspace as a background service
 (launchd on macOS, systemd on Linux) instead of leaving a terminal open:
@@ -492,118 +500,25 @@ installer.
 
 ---
 
-## 🚀 Running as a Permanent Server
-
-**This is entirely optional.** `pnpm dev` + `hermes gateway run` in two terminals
-(the default flow above) is all you need to try this out or actively develop
-against it — nothing here changes that. This section is for when you want the
-workspace running unattended: a VPS, a home server, or anywhere you want it to
-survive closing the terminal, an SSH disconnect, or a reboot — which matters in
-particular once you turn on **Remote Access** (Settings → Remote Access in the
-sidebar) — a public URL is only useful if something is actually listening on
-the other end of it.
-
-Three processes are involved, and they're deliberately supervised in two
-different ways rather than shoving everything into one tool:
-
-| Process | Supervised by | Why |
-|---|---|---|
-| Hermes Agent gateway | systemd/launchd, via `hermes gateway install` | Native to hermes-agent itself — already the officially-supported way to keep it running. |
-| Hermes Agent dashboard | pm2 | Has no built-in service-install command of its own; this is the gap pm2 fills. |
-| LAM Cyberlab workspace | pm2 | A plain Node process — pm2 is the standard tool for this. |
-
-Running the gateway under both systemd *and* pm2 would mean two supervisors
-fighting over the same process, so it stays on its native systemd unit.
-
-### 🚀 Setup (VPS Deployment & PM2 Fixes)
+### ☁️ Option B: Cloud VPS Deployment (Always-On)
 
 If you are deploying this on a cloud VPS (e.g., Azure, DigitalOcean) and accessing it via an IP address over HTTP, follow this step-by-step guide to avoid common pitfalls like Gateway connection failures, 9router crash loops, and login loops.
 
-**1. Prepare the Environment Files**
+We have provided an interactive bash script that automatically configures your environment variables, applies the necessary fixes for plain HTTP login loops, and sets up PM2 correctly for the Hermes Agent Gateway and LAM-Cyberlab Workspace.
 
-For the Hermes Agent Gateway (Backend):
-```bash
-echo 'API_SERVER_ENABLED=true' >> ~/.hermes/.env
-echo 'API_SERVER_KEY=your-secure-token-here' >> ~/.hermes/.env
-```
-> *(Without `API_SERVER_ENABLED=true`, the Gateway will run but port 8642 will remain closed!)*
-
-For the Workspace (Frontend):
 ```bash
 cd ~/lam-cyberlab
-cp .env.example .env
-```
-Edit `lam-cyberlab/.env` to include:
-```env
-HERMES_PASSWORD=your-login-password
-HERMES_API_TOKEN=your-secure-token-here  # Must match API_SERVER_KEY above!
-COOKIE_SECURE=0                          # CRITICAL: Set to 0 if accessing via plain HTTP IP, otherwise you will get stuck in a login loop!
+./scripts/install-vps.sh
 ```
 
-**2. Configure PM2 (ecosystem.config.cjs)**
+**What the script does:**
+1. Prompts you for a secure API token and UI password.
+2. Configures `~/.hermes/.env` (enabling `API_SERVER_ENABLED=true` so port 8642 opens).
+3. Configures `lam-cyberlab/.env` (setting `COOKIE_SECURE=0` so you don't get stuck in an HTTP login loop).
+4. Cleans up old orphaned gateways and builds the workspace.
+5. Starts the entire stack via PM2 (`ecosystem.config.cjs`) using the correct environment injections.
 
-Ensure your `ecosystem.config.cjs` is configured to properly inject `~/.hermes/.env` into the Gateway process, and pass `--tray` to 9router so it doesn't crash on headless servers:
-
-```javascript
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-
-// Helper to inject agent env vars into PM2
-function readEnvFile(filepath) {
-  if (!fs.existsSync(filepath)) return {};
-  const content = fs.readFileSync(filepath, 'utf8');
-  return content.split('\n').reduce((acc, line) => {
-    const [key, ...vals] = line.split('=');
-    if (key && key.trim() && !key.startsWith('#')) {
-      acc[key.trim()] = vals.join('=').trim().replace(/(^"|"$)/g, '');
-    }
-    return acc;
-  }, {});
-}
-const hermesEnv = readEnvFile(path.join(os.homedir(), '.hermes', '.env'));
-
-module.exports = {
-  apps: [
-    {
-      name: 'hermes-gateway',
-      script: 'hermes',
-      args: 'gateway run',
-      env: hermesEnv // CRITICAL: Inject backend env vars so port 8642 opens
-    },
-    {
-      name: '9router',
-      script: 'hermes',
-      args: '9router --host 127.0.0.1 --tray' // CRITICAL: --tray prevents crash loops on VPS
-    }
-    // ... dashboard and workspace configs ...
-  ]
-};
-```
-
-**3. Build and Start**
-
-```bash
-# 1. Production build of the workspace
-pnpm build
-
-# 2. Ensure no orphan gateways are blocking port 8642
-pm2 delete all
-hermes gateway stop
-
-# 3. Start the full stack
-pm2 start ecosystem.config.cjs
-pm2 save
-pm2 startup      # prints a one-time sudo command — run exactly what it prints
-```
-
-**4. Verify**
-
-```bash
-curl -s http://127.0.0.1:8642/health
-# Should return: {"status": "ok", "platform": "hermes-agent"}
-```
-If you see the response above, your VPS is fully online! Open your browser to `http://YOUR-VPS-IP:3000` and login with your `HERMES_PASSWORD`.
+Once the script completes, you can immediately open your browser to `http://YOUR-VPS-IP:3000` and login.
 
 ### Day-to-day
 
