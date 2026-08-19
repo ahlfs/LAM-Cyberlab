@@ -23,8 +23,17 @@ export type ServiceStatus = {
 
 const CHECK_TIMEOUT_MS = 2000
 
-function nineRouterUrl(): string {
-  return process.env.NINE_ROUTER_URL?.trim() || 'http://127.0.0.1:20128'
+async function check9RouterReachable(): Promise<ServiceStatus> {
+  const explicitUrl = process.env.NINE_ROUTER_URL?.trim()
+  if (explicitUrl) {
+    return checkHttpReachable('9router', explicitUrl)
+  }
+
+  // Default behavior: check port 20128, fallback to 3035
+  const status20128 = await checkHttpReachable('9router', 'http://127.0.0.1:20128')
+  if (status20128.status === 'up') return status20128
+
+  return checkHttpReachable('9router', 'http://127.0.0.1:3035')
 }
 
 /** Any HTTP response — even an error status — means the process is alive and answering. Only a network-level failure (refused, timed out) counts as down. */
@@ -53,7 +62,7 @@ export async function checkAllServices(): Promise<Array<ServiceStatus>> {
   const results = await Promise.all([
     checkHttpReachable('Hermes Gateway', `${CLAUDE_API}/health`),
     checkHttpReachable('Hermes Dashboard', `${CLAUDE_DASHBOARD_URL}/api/status`),
-    checkHttpReachable('9router', nineRouterUrl()),
+    check9RouterReachable(),
     checkProcessRunning('Caddy', 'caddy'),
   ])
   results.push({ name: 'LAM Cyberlab Workspace', status: 'up', latencyMs: 0 })

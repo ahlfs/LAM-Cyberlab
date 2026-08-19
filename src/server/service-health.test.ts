@@ -84,4 +84,27 @@ describe('checkAllServices', () => {
     const calledUrls = fetchMock.mock.calls.map((c) => String(c[0]))
     expect(calledUrls.some((u) => u.startsWith('http://127.0.0.1:9999'))).toBe(true)
   })
+
+  it('falls back to 3035 if 20128 fails', async () => {
+    delete process.env.NINE_ROUTER_URL
+    const fetchMock = vi.fn((url: RequestInfo | URL) => {
+      const urlStr = String(url)
+      if (urlStr.includes('20128')) {
+        return Promise.reject(new Error('ECONNREFUSED'))
+      }
+      return Promise.resolve(new Response('ok', { status: 200 }))
+    })
+    globalThis.fetch = fetchMock as any
+    isProcessRunningMock.mockResolvedValue(true)
+
+    const { checkAllServices } = await import('./service-health')
+    const results = await checkAllServices()
+
+    const routerStatus = results.find((r) => r.name === '9router')
+    expect(routerStatus?.status).toBe('up')
+
+    const calledUrls = fetchMock.mock.calls.map((c) => String(c[0]))
+    expect(calledUrls.some((u) => u.includes('20128'))).toBe(true)
+    expect(calledUrls.some((u) => u.includes('3035'))).toBe(true)
+  })
 })
