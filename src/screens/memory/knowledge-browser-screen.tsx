@@ -1,5 +1,6 @@
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
+  ArrowLeft01Icon,
   ArrowDown01Icon,
   ArrowUp01Icon,
   BrainIcon,
@@ -402,9 +403,9 @@ export function KnowledgeBrowserScreen() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-surface text-ink">
+    <div className="flex h-full min-h-0 flex-col bg-surface text-ink overflow-y-auto md:overflow-hidden">
     <div
-      className="mx-auto flex h-full w-full max-w-[1200px] min-h-0 flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8"
+      className="mx-auto flex h-full w-full max-w-[1200px] md:min-h-0 flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8"
     >
       <div
         className="px-3 py-3 md:px-4"
@@ -732,8 +733,13 @@ export function KnowledgeBrowserScreen() {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 p-3 md:flex-row md:p-4">
-        <aside className="flex min-h-0 flex-1 md:flex-none md:w-[320px] flex-col rounded-2xl border border-primary-200 bg-primary-50 dark:border-neutral-800 dark:bg-neutral-950">
+      <div className="flex md:min-h-0 flex-1 flex-col gap-3 p-3 md:flex-row md:p-4">
+        <aside
+          className={cn(
+            'flex md:min-h-0 flex-1 md:flex-none md:w-[320px] flex-col rounded-2xl border border-primary-200 bg-primary-50 dark:border-neutral-800 dark:bg-neutral-950',
+            !mobileTreeOpen && 'hidden md:flex',
+          )}
+        >
           <button
             type="button"
             className="flex items-center justify-between px-3 py-2 text-left md:cursor-default"
@@ -756,7 +762,7 @@ export function KnowledgeBrowserScreen() {
               <EmptyKnowledgeState knowledgeRoot={knowledgeRoot} />
             </div>
           ) : searchTerm ? (
-            <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+            <div className="md:min-h-0 flex-1 md:overflow-y-auto px-2 pb-2">
               <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-primary-400 dark:text-neutral-500">
                 Search Results
               </div>
@@ -802,11 +808,11 @@ export function KnowledgeBrowserScreen() {
           ) : (
             <div
               className={cn(
-                'min-h-0 flex-1 px-2 pb-2',
-                !mobileTreeOpen && 'hidden md:block',
+                'md:min-h-0 flex-1 flex flex-col px-2 pb-2',
+                !mobileTreeOpen && 'hidden md:flex',
               )}
             >
-              <div className="space-y-3 overflow-y-auto pr-1 md:h-full">
+              <div className="md:min-h-0 flex-1 space-y-3 md:overflow-y-auto pr-1">
                 <section className="rounded-xl border border-primary-200 bg-primary-50/80 p-2 dark:border-neutral-800 dark:bg-neutral-900/60">
                   <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-primary-400 dark:text-neutral-500">
                     Tags
@@ -856,23 +862,37 @@ export function KnowledgeBrowserScreen() {
           )}
         </aside>
 
-        <section className="flex min-h-0 flex-1 flex-col rounded-2xl border border-primary-200 bg-primary-50 dark:border-neutral-800 dark:bg-neutral-950">
-          <div className="flex items-center justify-between border-b border-primary-200 px-3 py-2 dark:border-neutral-800">
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold text-primary-900 dark:text-neutral-100">
-                {page?.title || selectedPath || 'Select a page'}
-              </div>
-              {page ? (
-                <div className="text-xs text-primary-400 dark:text-neutral-500">
-                  {page.path} · {formatBytes(page.size)} ·{' '}
-                  {formatDate(page.updated || page.modified)}
+        <section
+          className={cn(
+            'flex min-h-0 flex-1 flex-col rounded-2xl border border-primary-200 bg-primary-50 dark:border-neutral-800 dark:bg-neutral-950',
+            mobileTreeOpen && 'hidden md:flex',
+          )}
+        >
+          <div className="flex items-center justify-between border-b border-primary-200 px-3 py-2 dark:border-neutral-800 gap-3">
+            <div className="flex items-center min-w-0 flex-1 gap-2">
+              <button
+                type="button"
+                onClick={() => setMobileTreeOpen(true)}
+                className="md:hidden flex shrink-0 items-center justify-center rounded-md p-1.5 transition-colors hover:bg-primary-100 dark:hover:bg-neutral-800"
+              >
+                <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
+              </button>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-primary-900 dark:text-neutral-100">
+                  {page?.title || selectedPath || 'Select a page'}
                 </div>
-              ) : null}
+                {page ? (
+                  <div className="text-xs text-primary-400 dark:text-neutral-500">
+                    {page.path} · {formatBytes(page.size)} ·{' '}
+                    {formatDate(page.updated || page.modified)}
+                  </div>
+                ) : null}
+              </div>
             </div>
             {page ? (
               <a
                 href={askUrl}
-                className="inline-flex items-center gap-1.5 rounded-md border border-primary-200 px-3 py-1.5 text-xs font-semibold transition-colors hover:border-primary-300 hover:bg-primary-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-600 dark:hover:bg-neutral-800"
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-md border border-primary-200 px-3 py-1.5 text-xs font-semibold transition-colors hover:border-primary-300 hover:bg-primary-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-neutral-600 dark:hover:bg-neutral-800"
               >
                 <HugeiconsIcon
                   icon={Message01Icon}

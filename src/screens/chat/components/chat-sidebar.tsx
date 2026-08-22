@@ -19,6 +19,7 @@ import {
   File01Icon,
   McpServerIcon,
   MessageMultiple01Icon,
+  Logout01Icon,
   Moon02Icon,
   PencilEdit02Icon,
   PuzzleIcon,
@@ -44,6 +45,16 @@ import { SidebarSessions } from './sidebar/sidebar-sessions'
 import type { ChatOpenSettingsDetail } from '../chat-events'
 import type { SessionMeta } from '../types'
 import { t } from '@/lib/i18n'
+import { useQuery } from '@tanstack/react-query'
+import {
+  AlertDialogRoot,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 import { SettingsDialog } from '@/components/settings-dialog'
 import {
   TooltipContent,
@@ -524,18 +535,19 @@ function usePersistedBool(key: string, defaultValue: boolean) {
 
 // ── Main component ──────────────────────────────────────────────────────
 
-function ChatSidebarComponent({
-  sessions,
-  activeFriendlyId,
-  isCollapsed,
-  onToggleCollapse,
-  onSelectSession,
-  onActiveSessionDelete,
-  sessionsLoading,
-  sessionsFetching,
-  sessionsError,
-  onRetrySessions,
-}: ChatSidebarProps) {
+export function ChatSidebarComponent(props: ChatSidebarProps & { className?: string }) {
+  const {
+    sessions,
+    activeFriendlyId,
+    isCollapsed,
+    onToggleCollapse,
+    onSelectSession,
+    onActiveSessionDelete,
+    sessionsLoading,
+    sessionsFetching,
+    sessionsError,
+    onRetrySessions,
+  } = props
   const { settingsOpen, settingsSection, setSettingsOpen, handleOpenSettings } =
     useSidebarSettings()
   const profileDisplayName = useChatSettingsStore(selectChatProfileDisplayName)
@@ -586,6 +598,7 @@ function ChatSidebarComponent({
   const isSkillsActive = pathname === '/skills'
   const isMcpActive = pathname === '/mcp'
   const isFilesActive = pathname === '/files'
+  const isFileManagerActive = pathname === '/file-manager'
   const isAgoraActive = pathname === '/agora'
   const isTerminalActive = pathname === '/terminal'
   const isJobsActive = pathname === '/jobs'
@@ -713,6 +726,17 @@ function ChatSidebarComponent({
     sidebarHoverExpand && !isMobile && isCollapsed && isHoverExpanded
   const isVisuallyCollapsed = isCollapsed && !isHoverPreviewExpanded
 
+  const { data: remoteStatus } = useQuery({
+    queryKey: ['remote-access-status'],
+    queryFn: async () => {
+      const res = await fetch('/api/remote-access/status')
+      if (!res.ok) return { passwordConfigured: false }
+      return res.json()
+    },
+    staleTime: 60000,
+  })
+  const showLogout = remoteStatus?.passwordConfigured
+
   function handleSidebarToggle() {
     // In hover-preview mode, a click should dismiss the preview first;
     // otherwise toggle the persistent collapsed state.
@@ -818,6 +842,13 @@ function ChatSidebarComponent({
       icon: File01Icon,
       label: t('nav.files'),
       active: isFilesActive,
+    },
+    {
+      kind: 'link',
+      to: '/file-manager',
+      icon: File01Icon,
+      label: 'File Manager',
+      active: isFileManagerActive,
     },
     {
       kind: 'link',
@@ -1256,6 +1287,38 @@ function ChatSidebarComponent({
                 />
               </button>
               <ThemeToggleMini />
+              {showLogout && (
+                <AlertDialogRoot>
+                  <AlertDialogTrigger
+                    className="shrink-0 rounded-lg p-1.5 text-primary-400 hover:bg-primary-200 dark:hover:bg-neutral-800 hover:text-primary-600 dark:hover:text-neutral-300 transition-colors"
+                    aria-label="Logout"
+                  >
+                    <HugeiconsIcon
+                      icon={Logout01Icon}
+                      size={16}
+                      strokeWidth={1.5}
+                    />
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="p-5">
+                    <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to log out of the workspace? You will need to enter the password to access it again.
+                    </AlertDialogDescription>
+                    <div className="mt-6 flex justify-end gap-3">
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={async () => {
+                          await fetch('/api/auth', { method: 'DELETE' })
+                          window.location.reload()
+                        }}
+                        className="bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
+                      >
+                        Logout
+                      </AlertDialogAction>
+                    </div>
+                  </AlertDialogContent>
+                </AlertDialogRoot>
+              )}
             </div>
           )}
         </div>

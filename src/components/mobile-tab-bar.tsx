@@ -65,8 +65,8 @@ export const MOBILE_NAV_TABS: Array<TabItem> = [
   },
   {
     id: 'files',
-    label: 'Files',
     icon: File01Icon,
+    label: 'Workspace Files',
     to: '/files',
     match: (p) => p.startsWith('/files'),
   },

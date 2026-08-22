@@ -351,7 +351,7 @@ export function FileExplorerSidebar({
               'hover:bg-primary-200',
               activePath === entry.path &&
                 entry.type === 'file' &&
-                'bg-accent-100 font-medium text-accent-800 hover:bg-accent-100',
+                'bg-primary-200 font-medium text-primary-900',
             )}
             style={{ paddingLeft: padding }}
           >

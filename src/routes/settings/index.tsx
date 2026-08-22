@@ -37,6 +37,7 @@ import { Switch } from '@/components/ui/switch'
 import { useSettings } from '@/hooks/use-settings'
 import { LOCALE_LABELS,  getLocale, setLocale } from '@/lib/i18n'
 import { THEMES, getTheme, isDarkTheme, setTheme } from '@/lib/theme'
+import { personas } from '@/lib/personas'
 import { cn } from '@/lib/utils'
 import {
   getChatProfileDisplayName,
@@ -224,6 +225,60 @@ const THEME_PREVIEWS: Record<
     accent: '#644AC9',
     text: '#1F1F1F',
   },
+  'discord-nitro': {
+    bg: '#2b2d31', panel: '#313338', border: '#1e1f22', accent: '#5865f2', text: '#dbdee1'
+  },
+  'discord-nitro-light': {
+    bg: '#f2f3f5', panel: '#ffffff', border: '#e3e5e8', accent: '#5865f2', text: '#313338'
+  },
+  'arctic': {
+    bg: '#0b0f19', panel: '#111827', border: '#1f2937', accent: '#3b82f6', text: '#f3f4f6'
+  },
+  'arctic-light': {
+    bg: '#f8fafc', panel: '#ffffff', border: '#e2e8f0', accent: '#2563eb', text: '#0f172a'
+  },
+  'synthwave': {
+    bg: '#241b2f', panel: '#262335', border: '#495495', accent: '#ff7edb', text: '#f9f9f4'
+  },
+  'synthwave-light': {
+    bg: '#fff0f5', panel: '#ffffff', border: '#ffb6c1', accent: '#ff69b4', text: '#4a0e4e'
+  },
+  'biolab': {
+    bg: '#0d1117', panel: '#161b22', border: '#238636', accent: '#3fb950', text: '#c9d1d9'
+  },
+  'biolab-light': {
+    bg: '#f6f8fa', panel: '#ffffff', border: '#2ea043', accent: '#1f883d', text: '#24292f'
+  },
+  'monokai': {
+    bg: '#272822', panel: '#1e1f1c', border: '#3e3d32', accent: '#a6e22e', text: '#f8f8f2'
+  },
+  'monokai-light': {
+    bg: '#f9f8f5', panel: '#ffffff', border: '#e6e5e3', accent: '#a6e22e', text: '#272822'
+  },
+  'tokyonight': {
+    bg: '#1a1b26', panel: '#16161e', border: '#292e42', accent: '#bb9af7', text: '#a9b1d6'
+  },
+  'tokyonight-light': {
+    bg: '#d5d6db', panel: '#e1e2e7', border: '#a8aecb', accent: '#9d7cd8', text: '#343b58'
+  },
+  'crimson': {
+    bg: '#000000', panel: '#111111', border: '#330000', accent: '#ff0000', text: '#ffffff'
+  },
+  'crimson-light': {
+    bg: '#ffffff', panel: '#fcfcfc', border: '#ffcccc', accent: '#cc0000', text: '#111111'
+  },
+  'deusex': {
+    bg: '#121212', panel: '#1a1a1a', border: '#d4a017', accent: '#f5c518', text: '#f5c518'
+  },
+  'deusex-light': {
+    bg: '#fdf6e3', panel: '#eee8d5', border: '#b58900', accent: '#cb4b16', text: '#073642'
+  },
+  'highcontrast': {
+    bg: '#000000', panel: '#000000', border: '#ffffff', accent: '#ffffff', text: '#ffffff'
+  },
+  'highcontrast-light': {
+    bg: '#ffffff', panel: '#ffffff', border: '#000000', accent: '#000000', text: '#000000'
+  },
 }
 
 function WorkspaceThemePicker() {
@@ -324,6 +379,106 @@ function SettingsRow({ label, description, children }: RowProps) {
 
 type SettingsSectionId = SettingsNavId
 
+function PersonaSection() {
+  const [personaId, setPersonaId] = useState<string>('default')
+  const [msg, setMsg] = useState<string | null>(null)
+  
+  useEffect(() => {
+    fetch('/api/persona')
+      .then((r) => r.json())
+      .then((d: any) => {
+        if (d.ok && d.activePersonaId) {
+          setPersonaId(d.activePersonaId)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const savePersona = async (id: string) => {
+    setMsg(null)
+    setPersonaId(id)
+    try {
+      await fetch('/api/persona', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ personaId: id }),
+      })
+      setMsg('Persona Saved')
+      setTimeout(() => setMsg(null), 2000)
+    } catch {
+      setMsg('Failed to save persona')
+    }
+  }
+
+  return (
+    <SettingsSection
+      title="AI Persona"
+      description="Inject character personality into SOUL.md."
+      icon={Settings02Icon}
+    >
+      {msg && (
+        <div
+          className={cn(
+            'mb-4 rounded-lg px-3 py-1.5 text-xs font-medium',
+            msg.includes('Failed')
+              ? 'bg-red-500/15 text-red-400'
+              : 'bg-green-500/15 text-green-400',
+          )}
+        >
+          {msg}
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {personas.map((p) => {
+          const isActive = personaId === p.id
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => savePersona(p.id)}
+              className={cn(
+                'relative flex flex-col overflow-hidden rounded-xl border transition-all text-left group',
+                isActive
+                  ? 'border-accent-500 ring-1 ring-accent-500 shadow-md'
+                  : 'border-[var(--theme-border)] hover:border-primary-400 hover:shadow-sm'
+              )}
+              style={{ backgroundColor: 'var(--theme-card)' }}
+            >
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-primary-100 dark:bg-neutral-800">
+                <img 
+                  src={p.image} 
+                  alt={p.name} 
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                {isActive && (
+                  <div className="absolute top-2 left-2 z-10">
+                    <span className="text-[9px] font-bold bg-accent-500 text-white px-2 py-0.5 rounded uppercase tracking-wider shadow-sm backdrop-blur-sm bg-accent-500/90">
+                      Active
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-semibold text-[var(--theme-text)] line-clamp-1">
+                    {p.icon} {p.name}
+                  </span>
+                </div>
+                <p
+                  className="text-[10px] leading-tight"
+                  style={{ color: 'var(--theme-muted)' }}
+                >
+                  {p.role}
+                </p>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </SettingsSection>
+  )
+}
+
 function SettingsRoute() {
   usePageTitle('Settings')
   const { settings, updateSettings } = useSettings()
@@ -383,6 +538,7 @@ function SettingsRoute() {
           {activeSection === 'agent' && (
             <ClaudeConfigSection activeView="agent" />
           )}
+          {activeSection === 'persona' && <PersonaSection />}
           {activeSection === 'routing' && (
             <ClaudeConfigSection activeView="routing" />
           )}

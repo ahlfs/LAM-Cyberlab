@@ -2516,6 +2516,50 @@ function ChatComposerComponent({
                           </span>
                         </button>
 
+                        {/* Attach Active File */}
+                        <button
+                          type="button"
+                          disabled={disabled || !activeEditorFile}
+                          onClick={(event) => {
+                            handleAttachActiveFile(event)
+                            setIsMobileActionsMenuOpen(false)
+                          }}
+                          className="rounded-xl border border-neutral-100 bg-neutral-50 dark:bg-neutral-800 dark:border-neutral-700 p-3 flex flex-col items-start gap-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <span className="rounded-lg bg-sky-100 dark:bg-sky-900/30 p-1.5 text-sky-600 dark:text-sky-400">
+                            <HugeiconsIcon
+                              icon={DocumentCodeIcon}
+                              size={24}
+                              strokeWidth={1.5}
+                            />
+                          </span>
+                          <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate max-w-full">
+                            Attach Current File
+                          </span>
+                        </button>
+
+                        {/* Share Workspace */}
+                        <button
+                          type="button"
+                          disabled={disabled || !activeWorkspacePath}
+                          onClick={(event) => {
+                            handleShareWorkspace(event)
+                            setIsMobileActionsMenuOpen(false)
+                          }}
+                          className="rounded-xl border border-neutral-100 bg-neutral-50 dark:bg-neutral-800 dark:border-neutral-700 p-3 flex flex-col items-start gap-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <span className="rounded-lg bg-emerald-100 dark:bg-emerald-900/30 p-1.5 text-emerald-600 dark:text-emerald-400">
+                            <HugeiconsIcon
+                              icon={Folder01Icon}
+                              size={24}
+                              strokeWidth={1.5}
+                            />
+                          </span>
+                          <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate max-w-full">
+                            Share Workspace
+                          </span>
+                        </button>
+
                         {/* Model selector — opens model picker sheet on top */}
                         <button
                           type="button"
@@ -2817,8 +2861,8 @@ function ChatComposerComponent({
               }}
               className="min-h-[44px]"
             />
-            <PromptInputActions className="justify-between px-1.5 md:px-3 gap-0.5 md:gap-2">
-              <div className="flex min-w-0 flex-1 items-center gap-0 md:gap-1">
+            <PromptInputActions className="justify-between px-1.5 md:px-3 gap-1 md:gap-2 flex-wrap pb-1.5">
+              <div className="flex flex-wrap min-w-0 flex-1 items-center gap-1 md:gap-1">
                 <PromptInputAction tooltip="Add attachment">
                   <Button
                     size="icon-sm"
@@ -3167,7 +3211,7 @@ function ChatComposerComponent({
                   </div>
                 ) : null}
               </div>
-              <div className="ml-1 flex shrink-0 items-center gap-0.5 md:gap-1">
+              <div className="ml-auto flex shrink-0 items-center gap-0.5 md:gap-1">
                 <ContextBar compact sessionId={sessionKey} />
                 {voiceInput.isSupported || voiceRecorder.isSupported ? (
                   <PromptInputAction

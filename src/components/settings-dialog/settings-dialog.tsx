@@ -2273,7 +2273,7 @@ function PersonaContent() {
     <div className="space-y-4">
       <SectionHeader
         title="AI Persona"
-        description="Inject character personality into soul.md."
+        description="Inject character personality into SOUL.md."
       />
       {msg && (
         <div
@@ -2303,21 +2303,25 @@ function PersonaContent() {
               )}
               style={{ backgroundColor: 'var(--theme-card)' }}
             >
-              <div className="aspect-[4/3] w-full overflow-hidden bg-primary-100 dark:bg-neutral-800">
+              <div className="relative aspect-[4/3] w-full overflow-hidden bg-primary-100 dark:bg-neutral-800">
                 <img 
                   src={p.image} 
                   alt={p.name} 
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
+                {isActive && (
+                  <div className="absolute top-2 left-2 z-10">
+                    <span className="text-[9px] font-bold bg-accent-500 text-white px-2 py-0.5 rounded uppercase tracking-wider shadow-sm backdrop-blur-sm bg-accent-500/90">
+                      Active
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="p-3">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-semibold text-[var(--theme-text)] line-clamp-1">
                     {p.icon} {p.name}
                   </span>
-                  {isActive && (
-                    <span className="size-2 rounded-full bg-accent-500 shrink-0" />
-                  )}
                 </div>
                 <p className="text-[10px] text-[var(--theme-muted)] line-clamp-2 leading-snug">
                   {p.description}

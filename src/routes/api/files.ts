@@ -1,7 +1,10 @@
+import os from 'node:os'
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { Readable } from 'node:stream'
+import JSZip from 'jszip'
 import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import {
@@ -115,6 +118,35 @@ const IGNORED_DIRS = new Set([
   '.DS_Store',
 ])
 
+/** Directories that are blocked from browsing in browse mode (virtual/system fs) */
+const BROWSE_BLOCKED_DIRS = new Set([
+  '/proc',
+  '/sys',
+  '/dev',
+  '/run',
+  '/snap',
+])
+
+function isBrowseBlocked(targetPath: string): boolean {
+  const resolved = path.resolve(targetPath)
+  for (const blocked of BROWSE_BLOCKED_DIRS) {
+    if (resolved === blocked || resolved.startsWith(blocked + '/')) {
+      return true
+    }
+  }
+  return false
+}
+
+function ensureBrowsePath(input: string): string {
+  const raw = input.trim()
+  if (!raw) return '/'
+  const resolved = path.resolve(raw)
+  if (isBrowseBlocked(resolved)) {
+    throw new Error(`Access denied: ${resolved} is a system directory`)
+  }
+  return resolved
+}
+
 const MAX_DIRECTORY_DEPTH = 3
 const MAX_DIRECTORY_ENTRIES = 20_000
 
@@ -197,6 +229,75 @@ async function readDirectory(
   return sortEntries(mapped)
 }
 
+type ReadBrowseOptions = {
+  maxDepth: number
+  maxEntries: number | null
+  countedEntries: { value: number }
+}
+
+async function readBrowseDirectory(
+  dirPath: string,
+  depth: number,
+  options: ReadBrowseOptions,
+): Promise<Array<FileEntry>> {
+  if (depth > options.maxDepth) return []
+  if (
+    options.maxEntries !== null &&
+    options.countedEntries.value >= options.maxEntries
+  ) {
+    return []
+  }
+
+  let entries
+  try {
+    entries = await fs.readdir(dirPath, { withFileTypes: true })
+  } catch {
+    return [] // permission denied or not a directory
+  }
+  const mapped: Array<FileEntry> = []
+
+  for (const entry of entries) {
+    if (
+      options.maxEntries !== null &&
+      options.countedEntries.value >= options.maxEntries
+    ) {
+      break
+    }
+
+    if (entry.name.startsWith('.')) continue // skip hidden files at browse level
+    if (IGNORED_DIRS.has(entry.name)) continue
+    const fullPath = path.join(dirPath, entry.name)
+    if (isBrowseBlocked(fullPath)) continue
+    try {
+      const stats = await fs.stat(fullPath)
+      if (entry.isDirectory()) {
+        const children = await readBrowseDirectory(fullPath, depth + 1, options)
+        mapped.push({
+          name: entry.name,
+          path: fullPath,
+          type: 'folder',
+          size: stats.size,
+          modifiedAt: stats.mtime.toISOString(),
+          children,
+        })
+      } else {
+        mapped.push({
+          name: entry.name,
+          path: fullPath,
+          type: 'file',
+          size: stats.size,
+          modifiedAt: stats.mtime.toISOString(),
+        })
+      }
+      options.countedEntries.value += 1
+    } catch {
+      continue
+    }
+  }
+
+  return sortEntries(mapped)
+}
+
 async function readGlobDirectory(globPath: string, workspaceRoot: string) {
   const { directoryPath, regex } = parseGlobPattern(globPath)
   const resolvedDirectory = ensureWorkspacePath(directoryPath, workspaceRoot)
@@ -266,6 +367,23 @@ function isImageFile(filePath: string) {
   return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(ext)
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Helpers for zipping directories
+// ──────────────────────────────────────────────────────────────────────────────
+async function addDirectoryToZip(zip: JSZip, dirPath: string, rootDir: string) {
+  const entries = await fs.readdir(dirPath, { withFileTypes: true })
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name)
+    const relativePath = path.relative(rootDir, fullPath)
+    if (entry.isDirectory()) {
+      await addDirectoryToZip(zip, fullPath, rootDir)
+    } else {
+      const buffer = await fs.readFile(fullPath)
+      zip.file(relativePath, buffer)
+    }
+  }
+}
+
 export const Route = createFileRoute('/api/files')({
   server: {
     handlers: {
@@ -277,11 +395,79 @@ export const Route = createFileRoute('/api/files')({
           const url = new URL(request.url)
           const action = url.searchParams.get('action') || 'list'
           const inputPath = url.searchParams.get('path') || ''
+          const mode = url.searchParams.get('mode') || 'workspace'
           const maxDepthParam = parseMaxDepth(url.searchParams.get('maxDepth'))
           const maxEntriesParam = parseMaxEntries(
             url.searchParams.get('maxEntries'),
           )
 
+          // ── Browse mode: access any path on filesystem ──
+          if (mode === 'browse') {
+            const browsePath = ensureBrowsePath(inputPath)
+
+            if (action === 'read') {
+              const buffer = await fs.readFile(browsePath)
+              if (isImageFile(browsePath)) {
+                const mime = getMimeType(browsePath)
+                return json({
+                  type: 'image',
+                  path: browsePath,
+                  content: `data:${mime};base64,${buffer.toString('base64')}`,
+                })
+              }
+              return json({
+                type: 'text',
+                path: browsePath,
+                content: buffer.toString('utf8'),
+              })
+            }
+
+            if (action === 'download' || action === 'view') {
+              const stat = await fs.stat(browsePath)
+              
+              if (stat.isDirectory() && action === 'download') {
+                const zip = new JSZip()
+                await addDirectoryToZip(zip, browsePath, browsePath)
+                const nodeStream = zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true })
+                const webStream = Readable.toWeb(nodeStream)
+                return new Response(webStream as any, {
+                  headers: {
+                    'Content-Type': 'application/zip',
+                    'Content-Disposition': `attachment; filename="${path.basename(browsePath)}.zip"`
+                  }
+                })
+              }
+
+              const buffer = await fs.readFile(browsePath)
+              const mime = getMimeType(browsePath)
+              const headers: Record<string, string> = {
+                'Content-Type':
+                  action === 'view' && mime === 'application/octet-stream'
+                    ? 'text/plain; charset=utf-8'
+                    : mime,
+              }
+              if (action === 'download') {
+                headers['Content-Disposition'] =
+                  `attachment; filename="${path.basename(browsePath)}"`
+              }
+              return new Response(buffer, { headers })
+            }
+
+            // Default: list directory
+            const tree = await readBrowseDirectory(browsePath, 0, {
+              maxDepth: maxDepthParam ?? 1,
+              maxEntries: maxEntriesParam,
+              countedEntries: { value: 0 },
+            })
+            return json({
+              root: browsePath,
+              base: browsePath,
+              homedir: os.homedir(),
+              entries: tree,
+            })
+          }
+
+          // ── Workspace mode (default): restrict to workspace root ──
           const workspaceRoot = await getWorkspaceRoot()
 
           if (action === 'list' && hasGlob(inputPath)) {
@@ -316,6 +502,21 @@ export const Route = createFileRoute('/api/files')({
           }
 
           if (action === 'download' || action === 'view') {
+            const stat = await fs.stat(resolvedPath)
+            
+            if (stat.isDirectory() && action === 'download') {
+              const zip = new JSZip()
+              await addDirectoryToZip(zip, resolvedPath, resolvedPath)
+              const nodeStream = zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true })
+              const webStream = Readable.toWeb(nodeStream)
+              return new Response(webStream as any, {
+                headers: {
+                  'Content-Type': 'application/zip',
+                  'Content-Disposition': `attachment; filename="${path.basename(resolvedPath)}.zip"`
+                }
+              })
+            }
+
             const buffer = await fs.readFile(resolvedPath)
             const mime = getMimeType(resolvedPath)
             const headers: Record<string, string> = {
@@ -396,38 +597,47 @@ export const Route = createFileRoute('/api/files')({
             unknown
           >
           const action = typeof body.action === 'string' ? body.action : 'write'
+          const browseMode = body.mode === 'browse'
 
           if (action === 'mkdir') {
-            const dirPath = ensureWorkspacePath(
-              String(body.path || ''),
-              workspaceRoot,
-            )
+            const dirPath = browseMode
+              ? ensureBrowsePath(String(body.path || ''))
+              : ensureWorkspacePath(String(body.path || ''), workspaceRoot)
             await fs.mkdir(dirPath, { recursive: true })
-            return json({ ok: true, path: toRelative(dirPath, workspaceRoot) })
+            return json({ ok: true, path: browseMode ? dirPath : toRelative(dirPath, workspaceRoot) })
           }
 
           if (action === 'rename') {
-            const fromPath = ensureWorkspacePath(
-              String(body.from || ''),
-              workspaceRoot,
-            )
-            const toPath = ensureWorkspacePath(
-              String(body.to || ''),
-              workspaceRoot,
-            )
+            const fromPath = browseMode
+              ? ensureBrowsePath(String(body.from || ''))
+              : ensureWorkspacePath(String(body.from || ''), workspaceRoot)
+            const toPath = browseMode
+              ? ensureBrowsePath(String(body.to || ''))
+              : ensureWorkspacePath(String(body.to || ''), workspaceRoot)
             await fs.mkdir(path.dirname(toPath), { recursive: true })
             await fs.rename(fromPath, toPath)
-            return json({ ok: true, path: toRelative(toPath, workspaceRoot) })
+            return json({ ok: true, path: browseMode ? toPath : toRelative(toPath, workspaceRoot) })
+          }
+
+          if (action === 'copy') {
+            const fromPath = browseMode
+              ? ensureBrowsePath(String(body.from || ''))
+              : ensureWorkspacePath(String(body.from || ''), workspaceRoot)
+            const toPath = browseMode
+              ? ensureBrowsePath(String(body.to || ''))
+              : ensureWorkspacePath(String(body.to || ''), workspaceRoot)
+            await fs.mkdir(path.dirname(toPath), { recursive: true })
+            await fs.cp(fromPath, toPath, { recursive: true })
+            return json({ ok: true, path: browseMode ? toPath : toRelative(toPath, workspaceRoot) })
           }
 
           if (action === 'delete') {
             if (!requireLocalOrAuth(request)) {
               return json({ ok: false, error: 'Unauthorized' }, { status: 401 })
             }
-            const targetPath = ensureWorkspacePath(
-              String(body.path || ''),
-              workspaceRoot,
-            )
+            const targetPath = browseMode
+              ? ensureBrowsePath(String(body.path || ''))
+              : ensureWorkspacePath(String(body.path || ''), workspaceRoot)
             try {
               // Try macOS trash command first
               await execFileAsync('trash', [targetPath])
@@ -438,14 +648,13 @@ export const Route = createFileRoute('/api/files')({
             return json({ ok: true })
           }
 
-          const filePath = ensureWorkspacePath(
-            String(body.path || ''),
-            workspaceRoot,
-          )
+          const filePath = browseMode
+            ? ensureBrowsePath(String(body.path || ''))
+            : ensureWorkspacePath(String(body.path || ''), workspaceRoot)
           const content = typeof body.content === 'string' ? body.content : ''
           await fs.mkdir(path.dirname(filePath), { recursive: true })
           await fs.writeFile(filePath, content, 'utf8')
-          return json({ ok: true, path: toRelative(filePath, workspaceRoot) })
+          return json({ ok: true, path: browseMode ? filePath : toRelative(filePath, workspaceRoot) })
         } catch (err) {
           return json({ error: safeErrorMessage(err) }, { status: 500 })
         }

@@ -170,9 +170,13 @@ function ProjectCard({
   const fwColor = FRAMEWORK_COLORS[project.framework] ?? FRAMEWORK_COLORS.unknown
   const fwIconClass = FRAMEWORK_ICON_CLASS[project.framework] ?? FRAMEWORK_ICON_CLASS.unknown
 
+  const displayUrl = project.url
+    ? project.url.replace('0.0.0.0', window.location.hostname)
+    : null
+
   const copyUrl = () => {
-    if (project.url) {
-      navigator.clipboard.writeText(project.url)
+    if (displayUrl) {
+      navigator.clipboard.writeText(displayUrl)
       toast('URL copied!', { type: 'success' })
     }
   }
@@ -202,7 +206,12 @@ function ProjectCard({
               className="truncate font-mono text-[10px] mt-0.5"
               style={{ color: 'var(--theme-muted)' }}
             >
-              {project.path}
+              {(() => {
+                const parts = project.path.split('/').filter(Boolean)
+                return parts.length >= 2
+                  ? `${parts[parts.length - 2]}/${parts[parts.length - 1]}`
+                  : project.path
+              })()}
             </p>
           </div>
         </div>
@@ -280,7 +289,7 @@ function ProjectCard({
               className="min-w-0 flex-1 truncate text-xs font-medium"
               style={{ color: 'var(--theme-accent, #60a5fa)' }}
             >
-              {project.url}
+              {displayUrl}
             </code>
             <button
               type="button"
@@ -368,11 +377,11 @@ function ProjectCard({
         <div className="flex flex-col gap-2 pt-2">
           {project.running ? (
             <>
-              {project.url && (
+              {displayUrl && (
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => window.open(project.url, '_blank')}
+                  onClick={() => window.open(displayUrl, '_blank')}
                   className="w-full gap-1.5 hover:border-[var(--theme-accent)] hover:bg-transparent hover:text-[var(--theme-accent)]"
                 >
                   <HugeiconsIcon icon={ArrowUpRight01Icon} size={14} />
@@ -623,7 +632,7 @@ export function ProjectsScreen() {
           >
             Active Servers
           </h2>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             {activeProjects.map(renderCard)}
           </div>
         </div>
@@ -638,7 +647,7 @@ export function ProjectsScreen() {
           >
             Workspace Projects
           </h2>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             {idleProjects.map(renderCard)}
           </div>
         </div>

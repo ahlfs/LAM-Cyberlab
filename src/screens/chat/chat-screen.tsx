@@ -549,7 +549,8 @@ export function ChatScreen({
   const previousActiveFriendlyIdRef = useRef(activeFriendlyId)
   const [fileExplorerCollapsed, setFileExplorerCollapsed] = useState(() => {
     if (typeof window === 'undefined') return true
-    return window.localStorage.getItem('claude-file-explorer-collapsed') === '1'
+    const stored = window.localStorage.getItem('claude-file-explorer-collapsed')
+    return stored ? stored === 'true' : true
   })
   const { isMobile } = useChatMobile(queryClient)
   const mobileKeyboardInset = useWorkspaceStore((s) => s.mobileKeyboardInset)

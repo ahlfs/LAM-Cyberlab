@@ -301,31 +301,6 @@ async function gitChangedCount(cwd: string): Promise<number> {
 }
 
 async function projectName(dir: string): Promise<string> {
-  // Try package.json name first
-  try {
-    const pkgPath = join(dir, 'package.json')
-    if (existsSync(pkgPath)) {
-      const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'))
-      if (typeof pkg.name === 'string' && pkg.name.trim()) return pkg.name.trim()
-    }
-  } catch {}
-  // Try pubspec.yaml name
-  try {
-    const pubPath = join(dir, 'pubspec.yaml')
-    if (existsSync(pubPath)) {
-      const content = await readFile(pubPath, 'utf-8')
-      const match = content.match(/^name:\s*(.+)$/m)
-      if (match && match[1]) return match[1].trim()
-    }
-  } catch {}
-  // Try composer.json name
-  try {
-    const composerPath = join(dir, 'composer.json')
-    if (existsSync(composerPath)) {
-      const pkg = JSON.parse(await readFile(composerPath, 'utf-8'))
-      if (typeof pkg.name === 'string' && pkg.name.trim()) return pkg.name.trim()
-    }
-  } catch {}
   return basename(dir)
 }
 

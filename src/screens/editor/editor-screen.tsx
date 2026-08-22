@@ -10,7 +10,8 @@
  * - Integrated terminal panel (xterm.js)
  * - Devicon file icons
  */
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from 'react-resizable-panels'
 import Editor, { type OnMount } from '@monaco-editor/react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
@@ -22,9 +23,10 @@ import {
   Folder01Icon,
   Loading03Icon,
   Menu01Icon,
+  PlusSignIcon,
+  ReloadIcon,
   SidebarLeft01Icon,
   Message02Icon,
-  PlusSignIcon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/toast'
@@ -113,10 +115,10 @@ interface ProjectInfo {
   frameworkLabel: string
 }
 
-type PromptState = {
-  mode: 'new-file' | 'new-folder'
-  targetPath: string
-}
+type PromptState =
+  | { mode: 'new-file' | 'new-folder'; targetPath: string | null }
+  | { type: 'rename'; targetPath: string; oldName: string }
+  | { type: 'delete'; targetPath: string; entry: FileEntry }
 
 const TERMINAL_HEIGHT = 240
 
@@ -134,6 +136,16 @@ export function EditorScreen() {
   const setChatSessionId = useWorkspaceStore((s) => s.setChatPanelSessionKey)
   const [terminalKey, setTerminalKey] = useState(0)
 
+  const [isMobile, setIsMobile] = useState(false)
+
+  useLayoutEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)')
+    const update = () => setIsMobile(media.matches)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
+
   const { sessions } = useChatSessions({ activeFriendlyId: chatSessionId, isNewChat: false })
   const editorRef = useRef<any>(null)
 
@@ -149,6 +161,7 @@ export function EditorScreen() {
   // New File/Folder
   const [promptState, setPromptState] = useState<PromptState | null>(null)
   const [promptValue, setPromptValue] = useState('')
+  const [clipboard, setClipboard] = useState<{ type: 'copy' | 'cut'; entry: FileEntry } | null>(null)
 
   const activeFile = tabs.find((t) => t.path === activeTab) ?? null
 
@@ -229,6 +242,67 @@ export function EditorScreen() {
     [tabs],
   )
 
+
+  /* ── Context Menu Actions ─────────────────────────────────────────── */
+
+  const handleCopy = useCallback((entry: FileEntry) => {
+    setClipboard({ type: 'copy', entry })
+    toast(`Copied ${entry.name}`, { type: 'success' })
+  }, [])
+
+  const handleCut = useCallback((entry: FileEntry) => {
+    setClipboard({ type: 'cut', entry })
+    toast(`Cut ${entry.name}`, { type: 'success' })
+  }, [])
+
+  const handlePaste = useCallback(async (targetFolder: FileEntry | null) => {
+    if (!clipboard) return
+    const folderPath = targetFolder ? (targetFolder.type === 'folder' ? targetFolder.path : targetFolder.path.split('/').slice(0, -1).join('/')) : (selectedFolder || '')
+    const destPath = `${folderPath ? folderPath + '/' : ''}${clipboard.entry.name}`
+
+    if (destPath === clipboard.entry.path) {
+      toast('Cannot paste into the same location', { type: 'warning' })
+      return
+    }
+
+    try {
+      if (clipboard.type === 'cut') {
+        const res = await fetch('/api/files', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'rename', from: clipboard.entry.path, to: destPath }),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        
+        setTabs(prev => prev.map(t => t.path === clipboard.entry.path ? { ...t, path: destPath, name: clipboard.entry.name } : t))
+        if (activeTab === clipboard.entry.path) setActiveTab(destPath)
+        setClipboard(null) // clear clipboard after cut
+      } else {
+        const res = await fetch('/api/files', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'copy', from: clipboard.entry.path, to: destPath }),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      }
+      toast(`Pasted ${clipboard.entry.name}`, { type: 'success' })
+      setFileTreeVersion((v) => v + 1)
+    } catch (err: any) {
+      toast(`Failed to paste: ${err?.message ?? 'Unknown error'}`, { type: 'error' })
+    }
+  }, [clipboard, selectedFolder, activeTab])
+
+  const handleRename = useCallback((entry: FileEntry) => {
+    setPromptState({ type: 'rename', targetPath: entry.path, oldName: entry.name })
+    setPromptValue(entry.name)
+  }, [])
+
+  /* ── Delete ───────────────────────────────────────────────────────── */
+
+  const handleDeleteFile = useCallback((entry: FileEntry) => {
+    setPromptState({ type: 'delete', targetPath: entry.path, entry })
+  }, [])
+
   /* ── Save ─────────────────────────────────────────────────────────── */
 
   const saveFile = useCallback(async () => {
@@ -268,49 +342,91 @@ export function EditorScreen() {
 
   const handlePromptSubmit = useCallback(async () => {
     if (!promptState) return
-    const value = promptValue.trim()
-    if (!value) return
-
-    const nextPath = promptState.targetPath
-      ? `${promptState.targetPath}/${value}`
-      : value
 
     try {
-      if (promptState.mode === 'new-folder') {
+      if ('type' in promptState && promptState.type === 'delete') {
         const res = await fetch('/api/files', {
           method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ action: 'mkdir', path: nextPath }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', path: promptState.entry.path }),
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      } else {
-        const res = await fetch('/api/files', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ action: 'write', path: nextPath, content: '' }),
+        toast(`Deleted ${promptState.entry.name}`, { type: 'success' })
+        
+        setFileTreeVersion((v) => v + 1)
+        setTabs((prev) => {
+          const newTabs = prev.filter((t) => !t.path.startsWith(promptState.entry.path))
+          return newTabs
         })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        // Open the newly created file
-        setTabs((prev) => [
-          ...prev,
-          {
-            path: nextPath,
-            name: value,
-            content: '',
-            originalContent: '',
-            language: extToLanguage(value),
-            dirty: false,
-          },
-        ])
-        setActiveTab(nextPath)
+        setActiveTab((current) => {
+          if (current?.startsWith(promptState.entry.path)) return null
+          return current
+        })
+        setPromptState(null)
+        setPromptValue('')
+        return
       }
+
+      const value = promptValue.trim()
+      if (!value) return
+
+      if ('type' in promptState && promptState.type === 'rename') {
+        const dir = promptState.targetPath.split('/').slice(0, -1).join('/')
+        const nextPath = dir ? `${dir}/${value}` : value
+
+        const res = await fetch('/api/files', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'rename', from: promptState.targetPath, to: nextPath }),
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+        // Update active tab if we renamed the currently opened file
+        setTabs((prev) => prev.map(t => t.path === promptState.targetPath ? { ...t, path: nextPath, name: value } : t))
+        if (activeTab === promptState.targetPath) setActiveTab(nextPath)
+
+      } else {
+        const nextPath = promptState.targetPath
+          ? `${promptState.targetPath}/${value}`
+          : value
+
+        if ('mode' in promptState && promptState.mode === 'new-folder') {
+          const res = await fetch('/api/files', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ action: 'mkdir', path: nextPath }),
+          })
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        } else {
+          const res = await fetch('/api/files', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ action: 'write', path: nextPath, content: '' }),
+          })
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          
+          setTabs((prev) => [
+            ...prev,
+            {
+              path: nextPath,
+              name: value,
+              content: '',
+              originalContent: '',
+              language: extToLanguage(value),
+              dirty: false,
+            },
+          ])
+          setActiveTab(nextPath)
+        }
+      }
+
       setPromptState(null)
       setPromptValue('')
       setFileTreeVersion((v) => v + 1)
     } catch (err: any) {
-      toast(`Failed to create: ${err?.message ?? 'Unknown error'}`, { type: 'error' })
+      toast(`Failed: ${err?.message ?? 'Unknown error'}`, { type: 'error' })
     }
-  }, [promptState, promptValue])
+  }, [promptState, promptValue, activeTab])
 
   /* ── Close tab ────────────────────────────────────────────────────── */
 
@@ -369,7 +485,7 @@ export function EditorScreen() {
 
   const handleEditorMount: OnMount = (editor, _monaco) => {
     editorRef.current = editor
-    editor.focus()
+    // Removed editor.focus() so it doesn't steal focus from file tree
   }
 
   /* ── Select folder ────────────────────────────────────────────────── */
@@ -403,16 +519,11 @@ export function EditorScreen() {
 
   /* ── Render ───────────────────────────────────────────────────────── */
 
-  return (
-    <div className="flex h-full w-full overflow-hidden" style={{ background: 'var(--theme-bg)' }}>
-      {/* ── Sidebar ──────────────────────────────────────────────── */}
-      <div
-        className={cn(
-          'flex flex-col border-r transition-all duration-200',
-          sidebarOpen ? 'w-64' : 'w-0 overflow-hidden',
-        )}
-        style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card)' }}
-      >
+  const sidebarElement = (
+    <div
+      className={cn("flex h-full w-full flex-col border-r", isMobile ? "absolute inset-0 z-[100]" : "")}
+      style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card)' }}
+    >
         {/* Sidebar header */}
         <div
           className="flex h-10 shrink-0 items-center justify-between border-b px-3"
@@ -425,6 +536,14 @@ export function EditorScreen() {
             Explorer
           </span>
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setFileTreeVersion((v) => v + 1)}
+              className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)]"
+              title="Refresh"
+            >
+              <HugeiconsIcon icon={ReloadIcon} size={14} style={{ color: 'var(--theme-muted)' }} />
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -570,12 +689,20 @@ export function EditorScreen() {
             onSelect={openFile}
             rootPath={selectedFolder || undefined}
             refreshVersion={fileTreeVersion}
+            onDelete={handleDeleteFile}
+            clipboard={clipboard}
+            onCopy={handleCopy}
+            onCut={handleCut}
+            onPaste={handlePaste}
+            onRename={handleRename}
           />
         </div>
-      </div>
+    </div>
+  )
 
-      {/* ── Main area ────────────────────────────────────────────── */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+  const editorElement = (
+    <>
+      <div className="flex h-full w-full flex-col overflow-hidden">
         {/* Tab bar */}
         <div
           className="flex h-10 shrink-0 items-center gap-0 border-b overflow-x-auto"
@@ -845,37 +972,69 @@ export function EditorScreen() {
         <DialogContent>
           <div className="p-5 space-y-3">
             <DialogTitle>
-              {promptState?.mode === 'new-folder' ? 'New Folder' : 'New File'}
+              {promptState && 'type' in promptState && promptState.type === 'delete'
+                ? 'Confirm Delete'
+                : promptState && 'type' in promptState && promptState.type === 'rename'
+                ? 'Rename'
+                : promptState && 'mode' in promptState && promptState.mode === 'new-folder'
+                ? 'New Folder'
+                : 'New File'}
             </DialogTitle>
             <DialogDescription>
-              Enter a name to create in{' '}
-              <span className="font-mono bg-primary-100 px-1 py-0.5 rounded text-xs text-primary-800">
-                {promptState?.targetPath || 'workspace root'}
-              </span>
+              {promptState && 'type' in promptState && promptState.type === 'delete' ? (
+                <>
+                  Are you sure you want to delete <span className="font-mono bg-primary-100 px-1 py-0.5 rounded text-xs text-primary-800">{promptState.entry.name}</span>?
+                  This action cannot be undone.
+                </>
+              ) : promptState && 'type' in promptState && promptState.type === 'rename' ? (
+                <>
+                  Enter a new name for{' '}
+                  <span className="font-mono bg-primary-100 px-1 py-0.5 rounded text-xs text-primary-800">
+                    {promptState.oldName}
+                  </span>
+                </>
+              ) : (
+                <>
+                  Enter a name to create in{' '}
+                  <span className="font-mono bg-primary-100 px-1 py-0.5 rounded text-xs text-primary-800">
+                    {promptState?.targetPath || 'workspace root'}
+                  </span>
+                </>
+              )}
             </DialogDescription>
-            <input
-              value={promptValue}
-              onChange={(event) => setPromptValue(event.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void handlePromptSubmit()
-              }}
-              className="w-full rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-300"
-              autoFocus
-            />
+            {(!promptState || !('type' in promptState) || promptState.type !== 'delete') && (
+              <input
+                value={promptValue}
+                onChange={(event) => setPromptValue(event.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void handlePromptSubmit()
+                }}
+                className="w-full rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-900 focus:outline-none focus:ring-2 focus:ring-primary-300"
+                autoFocus
+              />
+            )}
             <div className="flex justify-end gap-2 pt-2">
               <DialogClose render={<Button variant="outline">Cancel</Button>} />
-              <Button onClick={handlePromptSubmit}>Create</Button>
+              <Button 
+                onClick={handlePromptSubmit}
+                variant={promptState && 'type' in promptState && promptState.type === 'delete' ? 'destructive' : 'default'}
+              >
+                {promptState && 'type' in promptState && promptState.type === 'delete' ? 'Delete'
+                 : promptState && 'type' in promptState && promptState.type === 'rename' ? 'Rename' 
+                 : 'Create'}
+              </Button>
             </div>
           </div>
         </DialogContent>
       </DialogRoot>
+    </>
+  )
 
-      {/* ── Chat pane ─────────────────────────────────────────────────── */}
-      {chatOpen && (
-        <div 
-          className="absolute inset-0 md:static lg:w-[420px] md:w-[320px] w-full shrink-0 border-l flex flex-col z-[100]"
-          style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-bg)' }}
-        >
+  const chatElement = (
+    <div 
+      className={cn("flex h-full w-full flex-col border-l", isMobile ? "absolute inset-0 z-[100]" : "")}
+      style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-bg)' }}
+    >
           {/* Agent Session Header */}
           <div 
             className="flex h-10 shrink-0 items-center justify-between border-b px-3"
@@ -945,7 +1104,45 @@ export function EditorScreen() {
               embedded
             />
           </Suspense>
-        </div>
+    </div>
+  )
+
+  return (
+    <div className="flex h-full w-full overflow-hidden relative" style={{ background: 'var(--theme-bg)' }}>
+      {isMobile ? (
+        <>
+          {sidebarOpen && sidebarElement}
+          {editorElement}
+          {chatOpen && chatElement}
+        </>
+      ) : (
+        <PanelGroup direction="horizontal" autoSaveId="editor-panels-layout-v4" className="flex h-full w-full">
+          {sidebarOpen && (
+            <>
+              <Panel id="sidebar" order={1} defaultSize={25} minSize={15}>
+                {sidebarElement}
+              </Panel>
+              <PanelResizeHandle className="w-2 relative bg-transparent hover:bg-primary-300 active:bg-primary-400 transition-colors cursor-col-resize z-50 group">
+                <div className="absolute inset-y-0 left-[3px] w-[1px] bg-border group-hover:bg-transparent" />
+              </PanelResizeHandle>
+            </>
+          )}
+
+          <Panel id="editor" order={2} defaultSize={sidebarOpen && chatOpen ? 40 : undefined}>
+            {editorElement}
+          </Panel>
+
+          {chatOpen && (
+            <>
+              <PanelResizeHandle className="w-2 relative bg-transparent hover:bg-primary-300 active:bg-primary-400 transition-colors cursor-col-resize z-50 group">
+                <div className="absolute inset-y-0 left-[3px] w-[1px] bg-border group-hover:bg-transparent" />
+              </PanelResizeHandle>
+              <Panel id="chat" order={3} defaultSize={35} minSize={15}>
+                {chatElement}
+              </Panel>
+            </>
+          )}
+        </PanelGroup>
       )}
     </div>
   )

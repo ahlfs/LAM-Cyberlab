@@ -28,6 +28,7 @@ import { Route as LinksRouteImport } from './routes/links'
 import { Route as JobsRouteImport } from './routes/jobs'
 import { Route as GraphRouteImport } from './routes/graph'
 import { Route as FilesRouteImport } from './routes/files'
+import { Route as FileManagerRouteImport } from './routes/file-manager'
 import { Route as EditorRouteImport } from './routes/editor'
 import { Route as EchoStudioRouteImport } from './routes/echo-studio'
 import { Route as EarlyAccessRouteImport } from './routes/early-access'
@@ -294,6 +295,11 @@ const GraphRoute = GraphRouteImport.update({
 const FilesRoute = FilesRouteImport.update({
   id: '/files',
   path: '/files',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FileManagerRoute = FileManagerRouteImport.update({
+  id: '/file-manager',
+  path: '/file-manager',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EditorRoute = EditorRouteImport.update({
@@ -1176,6 +1182,7 @@ export interface FileRoutesByFullPath {
   '/early-access': typeof EarlyAccessRoute
   '/echo-studio': typeof EchoStudioRoute
   '/editor': typeof EditorRoute
+  '/file-manager': typeof FileManagerRoute
   '/files': typeof FilesRoute
   '/graph': typeof GraphRoute
   '/jobs': typeof JobsRoute
@@ -1369,6 +1376,7 @@ export interface FileRoutesByTo {
   '/early-access': typeof EarlyAccessRoute
   '/echo-studio': typeof EchoStudioRoute
   '/editor': typeof EditorRoute
+  '/file-manager': typeof FileManagerRoute
   '/files': typeof FilesRoute
   '/graph': typeof GraphRoute
   '/jobs': typeof JobsRoute
@@ -1562,6 +1570,7 @@ export interface FileRoutesById {
   '/early-access': typeof EarlyAccessRoute
   '/echo-studio': typeof EchoStudioRoute
   '/editor': typeof EditorRoute
+  '/file-manager': typeof FileManagerRoute
   '/files': typeof FilesRoute
   '/graph': typeof GraphRoute
   '/jobs': typeof JobsRoute
@@ -1757,6 +1766,7 @@ export interface FileRouteTypes {
     | '/early-access'
     | '/echo-studio'
     | '/editor'
+    | '/file-manager'
     | '/files'
     | '/graph'
     | '/jobs'
@@ -1950,6 +1960,7 @@ export interface FileRouteTypes {
     | '/early-access'
     | '/echo-studio'
     | '/editor'
+    | '/file-manager'
     | '/files'
     | '/graph'
     | '/jobs'
@@ -2142,6 +2153,7 @@ export interface FileRouteTypes {
     | '/early-access'
     | '/echo-studio'
     | '/editor'
+    | '/file-manager'
     | '/files'
     | '/graph'
     | '/jobs'
@@ -2336,6 +2348,7 @@ export interface RootRouteChildren {
   EarlyAccessRoute: typeof EarlyAccessRoute
   EchoStudioRoute: typeof EchoStudioRoute
   EditorRoute: typeof EditorRoute
+  FileManagerRoute: typeof FileManagerRoute
   FilesRoute: typeof FilesRoute
   GraphRoute: typeof GraphRoute
   JobsRoute: typeof JobsRoute
@@ -2612,6 +2625,13 @@ declare module '@tanstack/react-router' {
       path: '/files'
       fullPath: '/files'
       preLoaderRoute: typeof FilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/file-manager': {
+      id: '/file-manager'
+      path: '/file-manager'
+      fullPath: '/file-manager'
+      preLoaderRoute: typeof FileManagerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/editor': {
@@ -4094,6 +4114,7 @@ const rootRouteChildren: RootRouteChildren = {
   EarlyAccessRoute: EarlyAccessRoute,
   EchoStudioRoute: EchoStudioRoute,
   EditorRoute: EditorRoute,
+  FileManagerRoute: FileManagerRoute,
   FilesRoute: FilesRoute,
   GraphRoute: GraphRoute,
   JobsRoute: JobsRoute,

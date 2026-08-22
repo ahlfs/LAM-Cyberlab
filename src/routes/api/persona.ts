@@ -14,7 +14,7 @@ const getHermesHome = () =>
   process.env.CLAUDE_HOME ??
   path.join(os.homedir(), '.hermes')
 
-const getSoulPath = () => path.join(getHermesHome(), 'soul.md')
+const getSoulPath = () => path.join(getHermesHome(), 'SOUL.md')
 
 export const Route = createFileRoute('/api/persona')({
   server: {

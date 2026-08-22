@@ -21,7 +21,8 @@ export function MobilePageHeader({
     <div
       className={cn(
         'md:hidden flex items-center h-12 px-2 shrink-0',
-        'border-b bg-surface',
+        'sticky top-0 z-50',
+        'border-b bg-[var(--theme-bg)]/80 backdrop-blur-md',
         className,
       )}
       style={{

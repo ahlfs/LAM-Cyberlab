@@ -100,7 +100,7 @@ export function MobileSessionsPanel({
             <button
               type="button"
               onClick={onNewChat}
-              className="inline-flex items-center gap-1 rounded-lg border border-primary-200 bg-primary-50 px-2.5 py-1.5 text-xs font-medium text-primary-700 transition-colors hover:border-accent-200 hover:text-accent-600"
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-card)] px-2.5 py-1.5 text-xs font-medium text-[var(--theme-text)] transition-colors hover:bg-[var(--theme-card2)] hover:text-[var(--theme-text)]"
             >
               <HugeiconsIcon icon={Add01Icon} size={14} strokeWidth={1.8} />
               New Chat
@@ -129,14 +129,14 @@ export function MobileSessionsPanel({
                       className={cn(
                         'w-full rounded-lg border px-3 py-2 text-left transition-colors',
                         active
-                          ? 'border-accent-300 bg-accent-50'
-                          : 'border-transparent bg-primary-50 hover:border-primary-200',
+                          ? 'border-[var(--theme-border)] bg-[var(--theme-card2)]'
+                          : 'border-transparent bg-[var(--theme-card)] hover:bg-[var(--theme-card2)]',
                       )}
                     >
-                      <div className="truncate text-sm font-medium text-ink">
+                      <div className="truncate text-sm font-medium text-[var(--theme-text)]">
                         {getSessionTitle(session)}
                       </div>
-                      <div className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-primary-500">
+                      <div className="mt-0.5 flex items-center justify-between gap-2 text-[11px] text-[var(--theme-text)] opacity-60">
                         <span className="truncate">{session.friendlyId}</span>
                         {timestamp ? <span>{timestamp}</span> : null}
                       </div>

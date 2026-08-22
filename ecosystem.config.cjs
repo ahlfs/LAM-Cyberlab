@@ -82,7 +82,7 @@ module.exports = {
     {
       name: '9router',
       script: '/usr/local/bin/9router',
-      args: `--host ${nineRouterHost} --tray`,
+      args: `--host ${nineRouterHost} --port 3035 --tray`,
       interpreter: 'none',
       max_restarts: 10,
       restart_delay: 3000,

@@ -205,6 +205,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const isOnChatRoute = Boolean(chatMatch) || pathname === '/new'
   const isOnTerminalRoute = pathname.startsWith('/terminal')
   const isOnEditorRoute = pathname.startsWith('/editor')
+  const isOnFileManagerRoute = pathname.startsWith('/file-manager')
   const isEmbeddedSurface =
     (search as any)?.embed === '1' || (search as any)?.embed === 'true' || (search as any)?.mode === 'embed'
   const isChromeFreeSurface = isEmbeddedSurface
@@ -451,16 +452,16 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             </div>
           </main>
 
-          {/* Chat panel — visible on non-chat and non-editor routes */}
-          {!isOnChatRoute && !isOnEditorRoute && !isChromeFreeSurface && !isMobile && (
+          {/* Chat panel — visible on non-chat, non-editor, and non-file-manager routes */}
+          {!isOnChatRoute && !isOnEditorRoute && !isOnFileManagerRoute && !isChromeFreeSurface && !isMobile && (
             <Suspense fallback={null}>
               <ChatPanel />
             </Suspense>
           )}
         </div>
 
-        {/* Floating chat toggle — visible on non-chat and non-editor routes */}
-        {!isChromeFreeSurface && !isOnChatRoute && !isOnEditorRoute && !isMobile && <ChatPanelToggle />}
+        {/* Floating chat toggle — visible on non-chat, non-editor, and non-file-manager routes */}
+        {!isChromeFreeSurface && !isOnChatRoute && !isOnEditorRoute && !isOnFileManagerRoute && !isMobile && <ChatPanelToggle />}
 
         {showDesktopSidebarBackdrop ? (
           <button

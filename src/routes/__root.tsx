@@ -309,6 +309,7 @@ function RootLayout() {
     pathname === '/world' ||
     pathname.startsWith('/world/')
   const isGameSurfaceRoute = isHermesWorldLandingRoute || pathname === '/playground' || pathname.startsWith('/playground/')
+  const isFileManagerRoute = pathname === '/file-manager' || pathname.startsWith('/file-manager/')
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(
     null,
   )
@@ -430,7 +431,7 @@ function RootLayout() {
           {!isHermesWorldLandingRoute ? <UpdateCenterNotifier /> : null}
           {rootSurfaceState.showPostOnboardingOverlays && !isGameSurfaceRoute ? (
             <>
-              <MobilePromptTrigger />
+              {!isFileManagerRoute && <MobilePromptTrigger />}
               <OnboardingTour />
             </>
           ) : null}

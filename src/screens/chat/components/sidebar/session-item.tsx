@@ -141,15 +141,15 @@ function SessionItemComponent({
         'w-full text-left pl-1.5 pr-0.5 h-14 rounded-lg transition-colors duration-0',
         'select-none',
         active
-          ? 'bg-primary-200 text-primary-950'
-          : 'bg-transparent text-primary-950 [&:hover:not(:has(button:hover))]:bg-primary-200',
+          ? 'bg-[var(--theme-card2)] text-[var(--theme-text)]'
+          : 'bg-transparent text-[var(--theme-text)] [&:hover:not(:has(button:hover))]:bg-[var(--theme-card2)]',
       )}
     >
       <div className="flex-1 min-w-0 py-1.5">
         <div
           className={cn(
             'truncate text-sm font-[500]',
-            isGenerating ? 'text-primary-700' : '',
+            isGenerating ? 'text-[var(--theme-text)] opacity-70' : '',
           )}
         >
           <span className={cn(isGenerating ? 'animate-pulse' : undefined)}>
@@ -158,8 +158,8 @@ function SessionItemComponent({
         </div>
         <div
           className={cn(
-            'mt-0.5 text-[11px] text-primary-600 truncate',
-            isError ? 'text-red-600' : undefined,
+            'mt-0.5 text-[11px] truncate',
+            isError ? 'text-red-600 dark:text-red-400' : 'text-[var(--theme-text)] opacity-60',
           )}
         >
           {subtitle}

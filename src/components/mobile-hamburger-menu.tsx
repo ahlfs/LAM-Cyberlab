@@ -23,7 +23,18 @@ import {
   SourceCodeSquareIcon,
   UserGroupIcon,
   UserMultipleIcon,
+  CheckListIcon,
+  Logout01Icon,
 } from '@hugeicons/core-free-icons'
+import {
+  AlertDialogRoot,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { hapticTap } from '@/lib/haptics'
@@ -33,8 +44,16 @@ import {
   useChatSettingsStore,
 } from '@/hooks/use-chat-settings'
 import { useSettingsStore } from '@/hooks/use-settings'
+import { useQuery } from '@tanstack/react-query'
 
 export const MOBILE_HAMBURGER_NAV_ITEMS = [
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: DashboardSquare01Icon,
+    to: '/dashboard',
+    match: (p: string) => p.startsWith('/dashboard'),
+  },
   {
     id: 'chat',
     label: 'Chat',
@@ -43,11 +62,18 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
     match: (p: string) => p.startsWith('/chat') || p === '/new' || p === '/',
   },
   {
-    id: 'dashboard',
-    label: 'Dashboard',
-    icon: DashboardSquare01Icon,
-    to: '/dashboard',
-    match: (p: string) => p.startsWith('/dashboard'),
+    id: 'files',
+    label: 'Workspace Files',
+    icon: File01Icon,
+    to: '/files',
+    match: (p: string) => p.startsWith('/files'),
+  },
+  {
+    id: 'file-manager',
+    label: 'File Manager',
+    icon: File01Icon,
+    to: '/file-manager',
+    match: (p: string) => p.startsWith('/file-manager'),
   },
   {
     id: 'terminal',
@@ -62,6 +88,13 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
     icon: Clock01Icon,
     to: '/jobs',
     match: (p: string) => p.startsWith('/jobs'),
+  },
+  {
+    id: 'tasks',
+    label: 'Tasks',
+    icon: CheckListIcon,
+    to: '/tasks',
+    match: (p: string) => p.startsWith('/tasks'),
   },
   {
     id: 'conductor',
@@ -119,7 +152,6 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
     to: '/echo-studio',
     match: (p: string) => p.startsWith('/echo-studio'),
   },
-
   {
     id: 'memory',
     label: 'Memory',
@@ -207,6 +239,18 @@ export function MobileHamburgerMenu() {
 
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  
+  const { data: remoteStatus } = useQuery({
+    queryKey: ['remote-access-status'],
+    queryFn: async () => {
+      const res = await fetch('/api/remote-access/status')
+      if (!res.ok) return { passwordConfigured: false }
+      return res.json()
+    },
+    staleTime: 60000,
+  })
+  const showLogout = remoteStatus?.passwordConfigured
+
   const profileDisplayName = useChatSettingsStore(selectChatProfileDisplayName)
   const echoStudioEnabled = useSettingsStore(
     (state) => state.settings.experimentalEchoStudio,
@@ -419,6 +463,37 @@ export function MobileHamburgerMenu() {
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             </button>
+
+            {/* Logout button */}
+            {showLogout && (
+              <AlertDialogRoot>
+                <AlertDialogTrigger
+                  className="flex items-center justify-center size-9 rounded-xl active:bg-white/10 transition-colors"
+                  aria-label="Logout"
+                  style={{ color: 'var(--color-ink-muted, #888)' }}
+                >
+                  <HugeiconsIcon icon={Logout01Icon} size={20} strokeWidth={1.5} />
+                </AlertDialogTrigger>
+                <AlertDialogContent className="p-5">
+                  <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to log out of the workspace? You will need to enter the password to access it again.
+                  </AlertDialogDescription>
+                  <div className="mt-6 flex justify-end gap-3">
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={async () => {
+                        await fetch('/api/auth', { method: 'DELETE' })
+                        window.location.reload()
+                      }}
+                      className="bg-red-500 text-white hover:bg-red-600 focus:ring-red-500"
+                    >
+                      Logout
+                    </AlertDialogAction>
+                  </div>
+                </AlertDialogContent>
+              </AlertDialogRoot>
+            )}
           </div>
         </div>
       </div>

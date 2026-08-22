@@ -20,7 +20,7 @@ const EN = {
   // Nav
   'nav.dashboard': 'Dashboard',
   'nav.chat': 'Chat',
-  'nav.files': 'Files',
+  'nav.files': 'Workspace Files',
   'nav.terminal': 'Terminal',
   'nav.jobs': 'Jobs',
   'nav.tasks': 'Tasks',

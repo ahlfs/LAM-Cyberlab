@@ -24,7 +24,7 @@ type OverflowItem = {
 }
 
 const SYSTEM_ITEMS: Array<OverflowItem> = [
-  { icon: File01Icon, label: 'Files', to: '/files' },
+  { icon: File01Icon, label: 'Workspace Files', to: '/files' },
   { icon: ComputerTerminal01Icon, label: 'Terminal', to: '/terminal' },
   { icon: BrainIcon, label: 'Memory', to: '/memory' },
 ]

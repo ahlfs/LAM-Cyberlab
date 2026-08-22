@@ -7,6 +7,8 @@ import {
   isPasswordProtectionEnabled,
   storeSessionToken,
   verifyPassword,
+  getSessionTokenFromCookie,
+  revokeSessionToken,
 } from '../../server/auth-middleware'
 import {
   getClientIp,
@@ -86,6 +88,23 @@ export const Route = createFileRoute('/api/auth')({
             { status: 500 },
           )
         }
+      },
+      DELETE: async ({ request }) => {
+        const cookieHeader = request.headers.get('cookie')
+        const token = getSessionTokenFromCookie(cookieHeader)
+        if (token) {
+          revokeSessionToken(token)
+        }
+
+        return json(
+          { ok: true },
+          {
+            status: 200,
+            headers: {
+              'Set-Cookie': 'claude-auth=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0',
+            },
+          },
+        )
       },
     },
   },
