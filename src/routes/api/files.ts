@@ -367,6 +367,26 @@ function isImageFile(filePath: string) {
   return ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'].includes(ext)
 }
 
+function isBinaryFileContent(buffer: Buffer) {
+  const checkLength = Math.min(buffer.length, 8000)
+  for (let i = 0; i < checkLength; i++) {
+    if (buffer[i] === 0x00) return true
+  }
+  return false
+}
+
+function getTextPreview(buffer: Buffer): string {
+  if (isBinaryFileContent(buffer)) {
+    return '[Binary File] Cannot preview binary file contents.'
+  }
+  // Truncate at 1MB to prevent browser freeze
+  const MAX_SIZE = 1000000
+  if (buffer.length > MAX_SIZE) {
+    return buffer.subarray(0, MAX_SIZE).toString('utf8') + '\n\n[... File truncated due to size ...]'
+  }
+  return buffer.toString('utf8')
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Helpers for zipping directories
 // ──────────────────────────────────────────────────────────────────────────────
@@ -415,10 +435,70 @@ export const Route = createFileRoute('/api/files')({
                   content: `data:${mime};base64,${buffer.toString('base64')}`,
                 })
               }
+              if (browsePath.toLowerCase().endsWith('.zip')) {
+                try {
+                  const zip = await JSZip.loadAsync(buffer)
+                  const files: string[] = []
+                  zip.forEach((relPath) => files.push(relPath))
+                  return json({
+                    type: 'text',
+                    path: browsePath,
+                    content: `[ZIP Archive Contents - ${files.length} items]\n\n${files.join('\n')}`,
+                  })
+                } catch (e) {
+                  return json({
+                    type: 'text',
+                    path: browsePath,
+                    content: `[Error reading ZIP Archive]`,
+                  })
+                }
+              }
+              if (
+                browsePath.toLowerCase().endsWith('.tar.gz') ||
+                browsePath.toLowerCase().endsWith('.tgz') ||
+                browsePath.toLowerCase().endsWith('.tar')
+              ) {
+                try {
+                  const { stdout } = await execFileAsync('tar', ['-tf', browsePath])
+                  const files = stdout.split('\n').filter(Boolean)
+                  return json({
+                    type: 'text',
+                    path: browsePath,
+                    content: `[TAR Archive Contents - ${files.length} items]\n\n${files.join('\n')}`,
+                  })
+                } catch (e) {
+                  return json({
+                    type: 'text',
+                    path: browsePath,
+                    content: `[Error reading TAR Archive]`,
+                  })
+                }
+              }
+              if (browsePath.toLowerCase().endsWith('.7z')) {
+                try {
+                  const { stdout } = await execFileAsync('7z', ['l', '-ba', browsePath])
+                  // Basic parsing of 7z list output
+                  const files = stdout.split('\n').map(l => {
+                    const match = l.match(/\s+([^\s]+)$/)
+                    return match ? match[1] : ''
+                  }).filter(Boolean)
+                  return json({
+                    type: 'text',
+                    path: browsePath,
+                    content: `[7Z Archive Contents - ${files.length} items]\n\n${files.join('\n')}`,
+                  })
+                } catch (e) {
+                  return json({
+                    type: 'text',
+                    path: browsePath,
+                    content: `[Error reading 7Z Archive: Ensure 7z is installed]`,
+                  })
+                }
+              }
               return json({
                 type: 'text',
                 path: browsePath,
-                content: buffer.toString('utf8'),
+                content: getTextPreview(buffer),
               })
             }
 
@@ -494,10 +574,69 @@ export const Route = createFileRoute('/api/files')({
                 content: `data:${mime};base64,${buffer.toString('base64')}`,
               })
             }
+            if (resolvedPath.toLowerCase().endsWith('.zip')) {
+              try {
+                const zip = await JSZip.loadAsync(buffer)
+                const files: string[] = []
+                zip.forEach((relPath) => files.push(relPath))
+                return json({
+                  type: 'text',
+                  path: toRelative(resolvedPath, workspaceRoot),
+                  content: `[ZIP Archive Contents - ${files.length} items]\n\n${files.join('\n')}`,
+                })
+              } catch (e) {
+                return json({
+                  type: 'text',
+                  path: toRelative(resolvedPath, workspaceRoot),
+                  content: `[Error reading ZIP Archive]`,
+                })
+              }
+            }
+            if (
+              resolvedPath.toLowerCase().endsWith('.tar.gz') ||
+              resolvedPath.toLowerCase().endsWith('.tgz') ||
+              resolvedPath.toLowerCase().endsWith('.tar')
+            ) {
+              try {
+                const { stdout } = await execFileAsync('tar', ['-tf', resolvedPath])
+                const files = stdout.split('\n').filter(Boolean)
+                return json({
+                  type: 'text',
+                  path: toRelative(resolvedPath, workspaceRoot),
+                  content: `[TAR Archive Contents - ${files.length} items]\n\n${files.join('\n')}`,
+                })
+              } catch (e) {
+                return json({
+                  type: 'text',
+                  path: toRelative(resolvedPath, workspaceRoot),
+                  content: `[Error reading TAR Archive]`,
+                })
+              }
+            }
+            if (resolvedPath.toLowerCase().endsWith('.7z')) {
+              try {
+                const { stdout } = await execFileAsync('7z', ['l', '-ba', resolvedPath])
+                const files = stdout.split('\n').map(l => {
+                  const match = l.match(/\s+([^\s]+)$/)
+                  return match ? match[1] : ''
+                }).filter(Boolean)
+                return json({
+                  type: 'text',
+                  path: toRelative(resolvedPath, workspaceRoot),
+                  content: `[7Z Archive Contents - ${files.length} items]\n\n${files.join('\n')}`,
+                })
+              } catch (e) {
+                return json({
+                  type: 'text',
+                  path: toRelative(resolvedPath, workspaceRoot),
+                  content: `[Error reading 7Z Archive: Ensure 7z is installed]`,
+                })
+              }
+            }
             return json({
               type: 'text',
               path: toRelative(resolvedPath, workspaceRoot),
-              content: buffer.toString('utf8'),
+              content: getTextPreview(buffer),
             })
           }
 

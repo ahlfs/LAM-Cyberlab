@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from 'react'
+import { Suspense, lazy, useState, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import BackendUnavailableState from '@/components/backend-unavailable-state'
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs'
@@ -24,8 +24,10 @@ const ExternalMemoryBrowserScreen = lazy(async () => {
 export const Route = createFileRoute('/memory')({
   ssr: false,
   component: function MemoryRoute() {
+    const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+    const initialTab = searchParams.get('tab') as 'memory' | 'knowledge' | 'external' | null
     const [tab, setTab] = useState<'memory' | 'knowledge' | 'external'>(
-      'memory',
+      ['memory', 'knowledge', 'external'].includes(initialTab!) ? initialTab! : 'memory',
     )
     const memoryAvailable = useFeatureAvailable('memory')
 

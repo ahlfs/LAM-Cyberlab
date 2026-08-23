@@ -380,7 +380,8 @@ function SettingsRow({ label, description, children }: RowProps) {
 type SettingsSectionId = SettingsNavId
 
 function PersonaSection() {
-  const [personaId, setPersonaId] = useState<string>('default')
+  const [activePersonaId, setActivePersonaId] = useState<string>('default')
+  const [confirmPersona, setConfirmPersona] = useState<any | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   
   useEffect(() => {
@@ -388,7 +389,7 @@ function PersonaSection() {
       .then((r) => r.json())
       .then((d: any) => {
         if (d.ok && d.activePersonaId) {
-          setPersonaId(d.activePersonaId)
+          setActivePersonaId(d.activePersonaId)
         }
       })
       .catch(() => {})
@@ -396,7 +397,8 @@ function PersonaSection() {
 
   const savePersona = async (id: string) => {
     setMsg(null)
-    setPersonaId(id)
+    setActivePersonaId(id)
+    setConfirmPersona(null)
     try {
       await fetch('/api/persona', {
         method: 'POST',
@@ -428,14 +430,14 @@ function PersonaSection() {
           {msg}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 mb-4">
         {personas.map((p) => {
-          const isActive = personaId === p.id
+          const isActive = activePersonaId === p.id
           return (
             <button
               key={p.id}
               type="button"
-              onClick={() => savePersona(p.id)}
+              onClick={() => setConfirmPersona(p)}
               className={cn(
                 'relative flex flex-col overflow-hidden rounded-xl border transition-all text-left group',
                 isActive
@@ -475,7 +477,49 @@ function PersonaSection() {
           )
         })}
       </div>
+      <AlertDialogRoot open={!!confirmPersona} onOpenChange={(open) => !open && setConfirmPersona(null)}>
+        <AlertDialogContent className="p-6">
+          <AlertDialogTitle className="mb-2 text-xl font-semibold">Switch Persona</AlertDialogTitle>
+          <AlertDialogDescription className="text-[var(--theme-muted)] leading-relaxed">
+            Are you sure you want to switch your active AI persona to{' '}
+            <span className="font-bold text-[var(--theme-text)]">{confirmPersona?.name}</span>?
+          </AlertDialogDescription>
+          <div className="mt-8 flex justify-end gap-3">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button onClick={() => { if (confirmPersona) savePersona(confirmPersona.id) }} variant="default">
+              Confirm Switch
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialogRoot>
     </SettingsSection>
+  )
+}
+
+function PersonalitySwitcher({ currentValue, onSave, className }: { currentValue: string, onSave: (val: string) => void, className?: string }) {
+  const [selected, setSelected] = useState(currentValue)
+  
+  useEffect(() => {
+    setSelected(currentValue)
+  }, [currentValue])
+
+  return (
+    <div className="flex items-center gap-2">
+      <select 
+        value={selected} 
+        onChange={(e) => setSelected(e.target.value)} 
+        className={className}
+      >
+        {['default', 'concise', 'verbose', 'creative'].map((val) => (
+          <option key={val} value={val}>{val}</option>
+        ))}
+      </select>
+      {selected !== currentValue && (
+        <Button onClick={() => onSave(selected)} size="sm" variant="default">
+          Switch to {selected}
+        </Button>
+      )}
+    </div>
   )
 }
 
@@ -3072,21 +3116,15 @@ function ClaudeConfigSection({
       icon={PaintBoardIcon}
     >
       <SettingsRow label="Personality" description="Agent response style.">
-        <select
-          value={(displayConfig.personality as string) || 'default'}
-          onChange={(e) =>
+        <PersonalitySwitcher
+          currentValue={(displayConfig.personality as string) || 'default'}
+          onSave={(val) =>
             void saveConfig({
-              config: { display: { personality: e.target.value } },
+              config: { display: { personality: val } },
             })
           }
           className={selectClassName}
-        >
-          {['default', 'concise', 'verbose', 'creative'].map((value) => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
+        />
       </SettingsRow>
       <SettingsRow
         label="Streaming"

@@ -26,6 +26,7 @@ import type {LocaleId} from '@/lib/i18n';
 import { GROQ_STT_MODELS, STT_PROVIDER_OPTIONS } from '@/lib/stt-config'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import { AlertDialogRoot, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 import { applyTheme, useSettings } from '@/hooks/use-settings'
 import {
   THEMES,
@@ -2239,7 +2240,8 @@ function AgentBehaviorContent() {
 // ── Persona ──────────────────────────────────────────────────────────────
 
 function PersonaContent() {
-  const [personaId, setPersonaId] = useState<string>('default')
+  const [activePersonaId, setActivePersonaId] = useState<string>('default')
+  const [confirmPersona, setConfirmPersona] = useState<any | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   
   useEffect(() => {
@@ -2247,7 +2249,7 @@ function PersonaContent() {
       .then((r) => r.json())
       .then((d: any) => {
         if (d.ok && d.activePersonaId) {
-          setPersonaId(d.activePersonaId)
+          setActivePersonaId(d.activePersonaId)
         }
       })
       .catch(() => {})
@@ -2255,7 +2257,8 @@ function PersonaContent() {
 
   const savePersona = async (id: string) => {
     setMsg(null)
-    setPersonaId(id)
+    setActivePersonaId(id)
+    setConfirmPersona(null)
     try {
       await fetch('/api/persona', {
         method: 'POST',
@@ -2287,14 +2290,14 @@ function PersonaContent() {
           {msg}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 mb-4">
         {personas.map((p) => {
-          const isActive = personaId === p.id
+          const isActive = activePersonaId === p.id
           return (
             <button
               key={p.id}
               type="button"
-              onClick={() => savePersona(p.id)}
+              onClick={() => setConfirmPersona(p)}
               className={cn(
                 'relative flex flex-col overflow-hidden rounded-xl border transition-all text-left group',
                 isActive
@@ -2331,6 +2334,21 @@ function PersonaContent() {
           )
         })}
       </div>
+      <AlertDialogRoot open={!!confirmPersona} onOpenChange={(open) => !open && setConfirmPersona(null)}>
+        <AlertDialogContent className="p-6">
+          <AlertDialogTitle className="mb-2 text-xl font-semibold">Switch Persona</AlertDialogTitle>
+          <AlertDialogDescription className="text-[var(--theme-muted)] leading-relaxed">
+            Are you sure you want to switch your active AI persona to{' '}
+            <span className="font-bold text-[var(--theme-text)]">{confirmPersona?.name}</span>?
+          </AlertDialogDescription>
+          <div className="mt-8 flex justify-end gap-3">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button onClick={() => { if (confirmPersona) savePersona(confirmPersona.id) }} variant="default">
+              Confirm Switch
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialogRoot>
     </div>
   )
 }

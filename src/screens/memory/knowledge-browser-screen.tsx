@@ -274,7 +274,13 @@ function GraphCanvas({
 }
 
 export function KnowledgeBrowserScreen() {
-  const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const [selectedPath, setSelectedPath] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search)
+      return searchParams.get('page')
+    }
+    return null
+  })
   const [searchInput, setSearchInput] = useState('')
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [focusLine, setFocusLine] = useState<number | null>(null)
@@ -349,6 +355,15 @@ export function KnowledgeBrowserScreen() {
     if (selectedPath && pages.some((page) => page.path === selectedPath)) return
     setSelectedPath(pages[0]?.path ?? null)
   }, [pages, selectedPath])
+
+  useEffect(() => {
+    if (selectedPath) {
+      const el = document.getElementById(`kb-sidebar-item-${encodeURIComponent(selectedPath)}`)
+      if (el) {
+        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
+    }
+  }, [selectedPath, pages])
 
   const readQuery = useQuery({
     queryKey: ['knowledge', 'read', selectedPath],
@@ -882,8 +897,8 @@ export function KnowledgeBrowserScreen() {
                   {page?.title || selectedPath || 'Select a page'}
                 </div>
                 {page ? (
-                  <div className="text-xs text-primary-400 dark:text-neutral-500">
-                    {page.path} · {formatBytes(page.size)} ·{' '}
+                  <div className="truncate text-xs text-primary-400 dark:text-neutral-500">
+                    {page.path} &middot; {formatBytes(page.size)} &middot;{' '}
                     {formatDate(page.updated || page.modified)}
                   </div>
                 ) : null}
@@ -1158,6 +1173,7 @@ function TreeSection({
       {node.pages.map((page) => (
         <button
           key={page.path}
+          id={`kb-sidebar-item-${encodeURIComponent(page.path)}`}
           type="button"
           onClick={() => onSelectPath(page.path)}
           className={cn(

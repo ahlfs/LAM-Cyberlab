@@ -821,7 +821,7 @@ function NodeDetailPanel({
 
   return (
     <div
-      className="absolute right-4 top-16 z-10 w-80 overflow-hidden rounded-2xl border"
+      className="absolute right-4 top-16 z-10 w-60 sm:w-80 overflow-hidden rounded-2xl border"
       style={{
         background: 'linear-gradient(135deg, rgba(15, 20, 35, 0.8), rgba(5, 10, 20, 0.95))',
         borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -829,9 +829,9 @@ function NodeDetailPanel({
         boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
       }}
     >
-      <div className="flex items-start justify-between gap-2 border-b border-white/5 p-5">
+      <div className="flex items-start justify-between gap-2 border-b border-white/5 p-3 sm:p-5">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-semibold tracking-wide text-white">
+          <h3 className="truncate text-sm sm:text-base font-semibold tracking-wide text-white">
             {node.title}
           </h3>
           <div className="mt-2 flex items-center gap-2">
@@ -856,7 +856,7 @@ function NodeDetailPanel({
         </button>
       </div>
 
-      <div className="max-h-64 overflow-y-auto p-3">
+      <div className="max-h-40 sm:max-h-64 overflow-y-auto p-2 sm:p-3">
         <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
           Connected Nodes
         </p>

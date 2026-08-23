@@ -198,9 +198,9 @@ function FileRow({
       onContextMenu={onContextMenu}
     >
       <td className="py-2 pl-4 pr-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="shrink-0 text-base leading-none">{icon}</span>
-          <span className="truncate">{entry.name}</span>
+        <div className="flex items-start gap-2 min-w-0">
+          <span className="shrink-0 text-base leading-none mt-0.5">{icon}</span>
+          <span className="break-all">{entry.name}</span>
         </div>
       </td>
       <td className="py-2 px-3 text-right text-xs text-primary-500 dark:text-neutral-500 whitespace-nowrap">
@@ -335,7 +335,6 @@ export function FileManagerScreen() {
   })
   const [pathHistory, setPathHistory] = useState<string[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
-  const [showPreview, setShowPreview] = useState(true)
   const [homedirResolved, setHomedirResolved] = useState(false)
   const homedirRef = useRef<string>('/')
 
@@ -346,6 +345,7 @@ export function FileManagerScreen() {
   const [promptState, setPromptState] = useState<PromptState | null>(null)
   const [promptValue, setPromptValue] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<FileEntry | null>(null)
+  const [modalPreviewEntry, setModalPreviewEntry] = useState<FileEntry | null>(null)
 
   // ── Load directory ──────────────────────────────────────────────────────────
 
@@ -450,6 +450,9 @@ export function FileManagerScreen() {
   const handleDoubleClick = useCallback((entry: FileEntry) => {
     if (entry.type === 'folder') {
       navigateTo(entry.path)
+    } else {
+      // Show modal preview
+      setModalPreviewEntry(entry)
     }
   }, [navigateTo])
 
@@ -645,24 +648,24 @@ export function FileManagerScreen() {
       {/* ── Main content ────────────────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* File table */}
-        <div className="flex-1 min-h-0 min-w-0 bg-white dark:bg-neutral-900 overflow-hidden relative">
-          <ScrollAreaRoot className="h-full w-full" type="scroll" onContextMenu={(e) => handleContextMenu(e, null)}>
-            <ScrollAreaViewport className="h-full w-full [&>div]:!block">
-              {loading ? (
-                <div className="flex items-center justify-center py-12 text-primary-400 dark:text-neutral-600">
-                  <HugeiconsIcon icon={Loading03Icon} size={24} className="animate-spin" />
-                </div>
-              ) : error ? (
-                <div className="px-4 py-12 text-center text-sm text-red-500">
-                  <p>{error}</p>
-                  <p className="mt-1 text-xs text-primary-400">Cannot access this directory.</p>
-                </div>
-              ) : entries.length === 0 ? (
-                <div className="px-4 py-12 text-center text-sm text-primary-400 dark:text-neutral-600">
-                  This directory is empty.
-                </div>
-              ) : (
-                <table className="w-full text-left">
+        <div className="flex flex-col flex-1 min-h-0 min-w-0 bg-white dark:bg-neutral-900 overflow-hidden relative">
+          {loading ? (
+            <div className="flex flex-1 items-center justify-center text-primary-400 dark:text-neutral-600">
+              <HugeiconsIcon icon={Loading03Icon} size={24} className="animate-spin" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-1 flex-col items-center justify-center px-4 text-center text-sm text-red-500">
+              <p>{error}</p>
+              <p className="mt-1 text-xs text-primary-400">Cannot access this directory.</p>
+            </div>
+          ) : entries.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center px-4 text-center text-sm text-primary-400 dark:text-neutral-600">
+              This directory is empty.
+            </div>
+          ) : (
+            <ScrollAreaRoot className="flex-1 min-h-0 w-full" onContextMenu={(e) => handleContextMenu(e, null)}>
+              <ScrollAreaViewport className="h-full w-full [&>div]:!block">
+                <table className="w-full text-left table-fixed">
                   <thead className="sticky top-0 z-10 bg-primary-100/80 dark:bg-neutral-900/80 backdrop-blur-sm text-xs text-primary-500 dark:text-neutral-500 uppercase tracking-wider">
                     <tr>
                       <th className="py-2 pl-4 pr-2 font-medium">Name</th>
@@ -684,13 +687,13 @@ export function FileManagerScreen() {
                     ))}
                   </tbody>
                 </table>
-              )}
-            </ScrollAreaViewport>
-            <ScrollAreaScrollbar orientation="vertical">
-              <ScrollAreaThumb />
-            </ScrollAreaScrollbar>
-            <ScrollAreaCorner />
-          </ScrollAreaRoot>
+              </ScrollAreaViewport>
+              <ScrollAreaScrollbar orientation="vertical">
+                <ScrollAreaThumb />
+              </ScrollAreaScrollbar>
+              <ScrollAreaCorner />
+            </ScrollAreaRoot>
+          )}
 
           {/* Status bar */}
           <div className="flex shrink-0 items-center justify-between border-t border-primary-200 dark:border-neutral-800 px-4 py-1.5 text-xs text-primary-500 dark:text-neutral-500">
@@ -698,29 +701,6 @@ export function FileManagerScreen() {
             <span>{currentPath}</span>
           </div>
         </div>
-
-        {/* Preview panel */}
-        {showPreview && (
-          <div className="hidden md:flex w-[320px] shrink-0 flex-col border-l border-primary-200 dark:border-neutral-800 overflow-hidden">
-            <div className="flex shrink-0 items-center justify-between border-b border-primary-200 dark:border-neutral-800 px-3 py-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary-500 dark:text-neutral-500">Preview</span>
-              <button type="button" onClick={() => setShowPreview(false)} className="text-xs text-primary-400 hover:text-primary-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors">
-                ✕
-              </button>
-            </div>
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <FilePreview entry={selectedEntry?.type === 'file' ? selectedEntry : null} />
-            </div>
-            {selectedEntry && (
-              <div className="shrink-0 border-t border-primary-200 dark:border-neutral-800 px-3 py-2 space-y-1 text-xs text-primary-500 dark:text-neutral-500">
-                <div className="font-medium text-primary-700 dark:text-neutral-300 truncate">{selectedEntry.name}</div>
-                {selectedEntry.size != null && <div>Size: {formatBytes(selectedEntry.size)}</div>}
-                {selectedEntry.modifiedAt && <div>Modified: {formatDate(selectedEntry.modifiedAt)}</div>}
-                <div className="truncate text-[10px] text-primary-400 dark:text-neutral-600">{selectedEntry.path}</div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* ── Context menu ──────────────────────────────────────────────────── */}
@@ -813,6 +793,30 @@ export function FileManagerScreen() {
               <Button variant="destructive" onClick={() => void handleDeleteConfirmed()}>Delete</Button>
             </div>
           </div>
+        </DialogContent>
+      </DialogRoot>
+
+      {/* ── Mobile file preview dialog ─────────────────────────────────────── */}
+      <DialogRoot open={Boolean(modalPreviewEntry)} onOpenChange={(open) => { if (!open) setModalPreviewEntry(null) }}>
+        <DialogContent className="max-w-[95vw] w-[500px] h-[80vh] p-0 flex flex-col overflow-hidden bg-primary-50 dark:bg-neutral-950">
+          <div className="flex shrink-0 items-center justify-between border-b border-primary-200 dark:border-neutral-800 px-4 py-3 bg-white dark:bg-neutral-900">
+            <DialogTitle className="text-sm font-semibold truncate pr-4">{modalPreviewEntry?.name}</DialogTitle>
+            <DialogClose render={
+              <button type="button" className="text-xs text-primary-400 hover:text-primary-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors">
+                ✕
+              </button>
+            } />
+          </div>
+          <div className="flex-1 min-h-0 overflow-hidden bg-white dark:bg-neutral-900">
+            <FilePreview entry={modalPreviewEntry} />
+          </div>
+          {modalPreviewEntry && (
+            <div className="shrink-0 border-t border-primary-200 dark:border-neutral-800 px-4 py-3 space-y-1 text-xs text-primary-500 dark:text-neutral-500 bg-white dark:bg-neutral-900">
+              {modalPreviewEntry.size != null && <div>Size: {formatBytes(modalPreviewEntry.size)}</div>}
+              {modalPreviewEntry.modifiedAt && <div>Modified: {formatDate(modalPreviewEntry.modifiedAt)}</div>}
+              <div className="truncate text-[10px] text-primary-400 dark:text-neutral-600">{modalPreviewEntry.path}</div>
+            </div>
+          )}
         </DialogContent>
       </DialogRoot>
     </div>
