@@ -147,10 +147,16 @@ export const Route = createFileRoute('/api/sessions')({
 
           
           let resolvedGatewayProvider: string | undefined
+          let resolvedGatewayModel = model
+
           if (model) {
+            const { fetchConfiguredLiveModels, readClaudeConfigCatalog } = await import('./models')
             const configuredLiveModels = await fetchConfiguredLiveModels().catch(() => [])
+            const catalogModels = readClaudeConfigCatalog()
+            const allModels = [...configuredLiveModels, ...catalogModels]
+            
             const bareModel = model.includes('/') ? model.split('/').slice(1).join('/') : model
-            const liveMatch = configuredLiveModels.find((m) => {
+            const liveMatch = allModels.find((m) => {
               if (m.id === model || m.id === bareModel) return true
               if (m.provider && model === `${m.provider}/${m.id}`) return true
               if (m.provider && model.startsWith(`${m.provider}/`) && model.slice(m.provider.length + 1) === m.id) return true
@@ -161,13 +167,14 @@ export const Route = createFileRoute('/api/sessions')({
                if (prov && prov.toLowerCase() !== 'custom' && prov.toLowerCase() !== 'configured') {
                   resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
                }
+               resolvedGatewayModel = liveMatch.id
             }
           }
 
           const session = await createSession({
             id: friendlyId || randomUUID(),
             title: label,
-            model,
+            model: resolvedGatewayModel,
             provider: resolvedGatewayProvider || undefined,
           })
 

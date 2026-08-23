@@ -433,6 +433,7 @@ export async function streamChat(
     provider?: string
     system_message?: string
     attachments?: Array<Record<string, unknown>>
+    require_model_lock?: boolean
   },
   opts: StreamChatOptions,
 ): Promise<void> {

@@ -373,20 +373,25 @@ export const Route = createFileRoute('/api/send-stream')({
         let resolvedGatewayProvider: string | undefined
         let resolvedGatewayModel: string | undefined
         if (requestModel) {
+          const { fetchConfiguredLiveModels, readClaudeConfigCatalog } = await import('./models')
           const configuredLiveModels = await fetchConfiguredLiveModels().catch(() => [])
-          const liveMatch = configuredLiveModels.find((m) => {
-            if (m.id === requestModel || m.id === bareModel) return true
+          const catalogModels = readClaudeConfigCatalog()
+          const allModels = [...configuredLiveModels, ...catalogModels]
+          
+          let liveMatch = allModels.find((m) => {
+            if (m.id === requestModel) return true
             if (m.provider && requestModel === `${m.provider}/${m.id}`) return true
             if (m.provider && requestModel.startsWith(`${m.provider}/`) && requestModel.slice(m.provider.length + 1) === m.id) return true
             return false
           })
+          if (!liveMatch) {
+            liveMatch = allModels.find((m) => m.id === bareModel)
+          }
           if (liveMatch) {
              const prov = (liveMatch as any).endpointProvider || liveMatch.provider;
              if (prov && prov.toLowerCase() !== 'custom' && prov.toLowerCase() !== 'configured') {
                 resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
              }
-             // When prov is 'custom' (generic model.provider from config.yaml),
-             // do NOT set resolvedGatewayProvider — let the gateway use its own
              // default provider resolution. This avoids 'custom:custom' errors.
              resolvedGatewayModel = liveMatch.id
           }
@@ -410,12 +415,15 @@ export const Route = createFileRoute('/api/send-stream')({
 
           if (!localBaseUrl) {
             const configuredLiveModels = await fetchConfiguredLiveModels().catch(() => [])
-            const liveMatch = configuredLiveModels.find((m) => {
-              if (m.id === requestModel || m.id === bareModel) return true
+            let liveMatch = configuredLiveModels.find((m) => {
+              if (m.id === requestModel) return true
               if (m.provider && requestModel === `${m.provider}/${m.id}`) return true
               if (m.provider && requestModel.startsWith(`${m.provider}/`) && requestModel.slice(m.provider.length + 1) === m.id) return true
               return false
             })
+            if (!liveMatch) {
+              liveMatch = configuredLiveModels.find((m) => m.id === bareModel)
+            }
             if (liveMatch && typeof (liveMatch as any).baseUrl === 'string') {
               chatMode = 'portable'
               localBaseUrl = (liveMatch as any).baseUrl
@@ -1119,6 +1127,7 @@ export const Route = createFileRoute('/api/send-stream')({
                   provider: resolvedGatewayProvider || undefined,
                   system_message: thinking,
                   attachments: attachments || undefined,
+                  require_model_lock: true,
                 },
                 {
                   signal: abortController.signal,

@@ -322,7 +322,7 @@ export async function fetchConfiguredLiveModels(): Promise<Array<ModelEntry>> {
   return all
 }
 
-function readClaudeConfigCatalog(): Array<ModelEntry> {
+export function readClaudeConfigCatalog(): Array<ModelEntry> {
   try {
     if (!fs.existsSync(CONFIG_PATH)) return []
     const raw = fs.readFileSync(CONFIG_PATH, 'utf-8')
