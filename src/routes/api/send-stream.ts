@@ -923,6 +923,10 @@ export const Route = createFileRoute('/api/send-stream')({
                       closeStream()
                       return
                     } catch (err) {
+                      if (abortController.signal.aborted || (err as Error)?.name === 'AbortError') {
+                        closeStream()
+                        return
+                      }
                       // Log and fall through to the openaiChat path so a
                       // misconfigured /v1/responses surface (older agent,
                       // CORS issue, network blip) doesn't break the chat.

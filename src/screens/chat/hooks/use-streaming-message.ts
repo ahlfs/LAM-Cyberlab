@@ -1041,13 +1041,18 @@ export function useStreamingMessage(options: UseStreamingMessageOptions = {}) {
     ],
   )
 
-  const cancelStreaming = useCallback(() => {
-    if (
+  const cancelStreaming = useCallback((isExplicitUserAbort = false) => {
+    if (!isExplicitUserAbort && (
       lifecyclePhaseRef.current === 'accepted' ||
       lifecyclePhaseRef.current === 'active' ||
       lifecyclePhaseRef.current === 'handoff'
-    ) {
+    )) {
       transitionToHandoff()
+    } else if (isExplicitUserAbort) {
+      lifecyclePhaseRef.current = 'idle'
+      clearSendStreamRun()
+      clearHandoffTimer()
+      stopFrame()
     }
     if (eventSourceRef.current) {
       eventSourceRef.current.abort()
@@ -1057,7 +1062,15 @@ export function useStreamingMessage(options: UseStreamingMessageOptions = {}) {
     if (lifecyclePhaseRef.current !== 'handoff') {
       resetActiveStreamState()
     }
-  }, [resetActiveStreamState, transitionToHandoff])
+    if (isExplicitUserAbort) {
+      setState({
+        isStreaming: false,
+        streamingMessageId: null,
+        streamingText: '',
+        error: null,
+      })
+    }
+  }, [clearHandoffTimer, clearSendStreamRun, resetActiveStreamState, stopFrame, transitionToHandoff])
 
   const resetStreaming = useCallback(() => {
     cancelStreaming()

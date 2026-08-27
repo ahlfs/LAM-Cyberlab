@@ -2671,6 +2671,8 @@ export function ChatScreen({
 
   const handleAbortStreaming = useCallback(() => {
     const activeSend = activeSendRef.current
+    const sessionKeyToStop =
+      resolvedSessionKey || activeCanonicalKey || activeSessionKey || activeFriendlyId
     if (activeSend?.clientId) {
       updateHistoryMessageByClientIdEverywhere(
         queryClient,
@@ -2678,30 +2680,25 @@ export function ChatScreen({
         (message) => ({
           ...message,
           status: 'sent',
+          __optimisticId: undefined,
         }),
       )
     }
+    if (sessionKeyToStop) {
+      clearPendingSendForSession(sessionKeyToStop, activeFriendlyId)
+    }
+    resetPendingSend()
     activeSendRef.current = null
-    cancelStreaming()
+    cancelStreaming(true)
     setSending(false)
     setPendingGeneration(false)
     setWaitingForResponse(false)
-
-    // Tell the Hermes backend to stop the running agent process.
-    // cancelStreaming() only closes the browser-side SSE reader; without this
-    // the upstream Hermes process keeps running until it naturally completes.
-    const sessionKeyToStop =
-      resolvedSessionKey || activeCanonicalKey || activeSessionKey || activeFriendlyId
-    if (sessionKeyToStop && sessionKeyToStop !== 'new') {
-      fetch('/api/conductor-stop', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionKeys: [sessionKeyToStop] }),
-      }).catch(() => {
-        // Fire-and-forget — UI already reflects stopped state.
-      })
+    const store = useChatStore.getState()
+    if (sessionKeyToStop) {
+      store.clearSessionWaiting(sessionKeyToStop)
     }
-  }, [cancelStreaming, queryClient, resolvedSessionKey, activeCanonicalKey, activeSessionKey, activeFriendlyId])
+    toast('Chat interrupted', { type: 'info' })
+  }, [cancelStreaming, queryClient, resolvedSessionKey, activeCanonicalKey, activeSessionKey, activeFriendlyId, setWaitingForResponse])
 
   const runPaletteSlashCommand = useCallback(
     (command: string) => {
