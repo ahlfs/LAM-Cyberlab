@@ -58,6 +58,7 @@ import { useChatMobile } from './hooks/use-chat-mobile'
 import { useChatSessions } from './hooks/use-chat-sessions'
 import { useAutoSessionTitle } from './hooks/use-auto-session-title'
 import { useRenameSession } from './hooks/use-rename-session'
+import { useDeleteSession } from './hooks/use-delete-session'
 import { useContextAlert } from './hooks/use-context-alert'
 import { ContextBar } from './components/context-bar'
 import {
@@ -566,6 +567,7 @@ export function ChatScreen({
     (state) => state.panelHeight,
   )
   const { renameSession, renaming: renamingSessionTitle } = useRenameSession()
+  const { deleteSession } = useDeleteSession()
   const sseConnectionState = useChatStore((s) => s.connectionState)
 
   useEffect(() => {
@@ -1127,8 +1129,13 @@ export function ChatScreen({
   })
 
   const gatewayModel = currentModelQuery.data || ''
+  const [localSessionModel, setLocalSessionModel] = useState<string | null>(null)
   const currentModel =
-    persistedSessionModel || _localModelOverride || gatewayModel
+    localSessionModel || persistedSessionModel || _localModelOverride || gatewayModel
+
+  useEffect(() => {
+    setLocalSessionModel(null)
+  }, [activeSessionKeyForModel])
 
   // Ref so sendMessage can always read latest thinkingLevel without being in deps
   const thinkingLevelRef = useRef<ThinkingLevel>(thinkingLevel)
@@ -3072,6 +3079,7 @@ export function ChatScreen({
               thinkingLevel={thinkingLevel}
               onThinkingLevelChange={handleThinkingLevelChange}
               currentModel={currentModel}
+              onModelChange={setLocalSessionModel}
             />
           ) : null}
         </main>
@@ -3109,6 +3117,18 @@ export function ChatScreen({
               to: '/chat/$sessionKey',
               params: { sessionKey: 'new' },
             })
+          }}
+          onRenameSession={(key, friendlyId, newTitle) => {
+            void renameSession(key, friendlyId ?? null, newTitle)
+          }}
+          onDeleteSession={(key, friendlyId, isActive) => {
+            if (isActive) {
+              void navigate({
+                to: '/chat/$sessionKey',
+                params: { sessionKey: 'new' },
+              })
+            }
+            void deleteSession(key, friendlyId, isActive)
           }}
         />
       )}

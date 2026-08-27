@@ -103,6 +103,7 @@ type ChatComposerProps = {
   embedded?: boolean
   hideModelSelector?: boolean
   currentModel?: string
+  onModelChange?: (model: string) => void
 }
 
 type ChatComposerHelpers = {
@@ -890,6 +891,7 @@ function ChatComposerComponent({
   embedded = false,
   hideModelSelector = false,
   currentModel: externalCurrentModel,
+  onModelChange,
 }: ChatComposerProps) {
   const queryClient = useQueryClient()
   const mobileKeyboardInset = useWorkspaceStore((s) => s.mobileKeyboardInset)
@@ -958,6 +960,8 @@ function ChatComposerComponent({
   const submittingRef = useRef(false)
   const pendingSubmitAfterAttachmentsRef = useRef(false)
   const modelSelectorRef = useRef<HTMLDivElement | null>(null)
+  const mobileModelPickerRef = useRef<HTMLDivElement | null>(null)
+  const mobileActionsMenuRef = useRef<HTMLDivElement | null>(null)
   const workspaceMenuRef = useRef<HTMLDivElement | null>(null)
   const thinkingMenuRef = useRef<HTMLDivElement | null>(null)
   const controlsMenuRef = useRef<HTMLDivElement | null>(null)
@@ -1129,10 +1133,16 @@ function ChatComposerComponent({
   // Drives both the composer label and the model passed to startStreaming.
   // Replaces an earlier flow that PATCHed ~/.hermes/config.yaml — that path
   // 404s and would clobber the global default for every channel anyway.
+  const [localSelectedModel, setLocalSelectedModel] = useState<string | null>(null)
+
   const effectiveSessionKey =
     typeof sessionKey === 'string' && sessionKey.trim().length > 0
       ? sessionKey.trim()
       : 'new'
+
+  useEffect(() => {
+    setLocalSelectedModel(null)
+  }, [effectiveSessionKey])
 
   const persistedSessionModel = useSessionModelStore((s) =>
     s.getModel(effectiveSessionKey),
@@ -1169,10 +1179,14 @@ function ChatComposerComponent({
       // picking a model here only affects this chat. The actual model is
       // passed on each request via the chat-completion `model` field.
       setPersistedSessionModel(targetSessionKey, resolved)
+      setLocalSelectedModel(resolved)
+      onModelChange?.(resolved)
       setIsModelMenuOpen(false)
+      setIsMobileActionsMenuOpen(false)
     },
     [
       gatewayModeQuery.data,
+      onModelChange,
       sessionKey,
       setPersistedSessionModel,
       zeroForkModelInfoFlags,
@@ -1248,8 +1262,11 @@ function ChatComposerComponent({
   }, [modelsQuery.data])
   // Derive the label directly from the store so navigation between sessions
   // updates without a render-window flash from a stale React-state mirror.
+  const activeModel =
+    localSelectedModel || persistedSessionModel || externalCurrentModel || currentModel || configuredModel || ''
+
   const modelButtonLabel =
-    externalCurrentModel || persistedSessionModel || currentModel || configuredModel || '⚕ Hermes Agent'
+    activeModel || '⚕ Hermes Agent'
 
   // Measure composer height and set CSS variable for scroll padding
   useLayoutEffect(() => {
@@ -1371,6 +1388,8 @@ function ChatComposerComponent({
       const target = event.target as Node
       if (controlsMenuRef.current?.contains(target)) return
       if (modelSelectorRef.current?.contains(target)) return
+      if (mobileModelPickerRef.current?.contains(target)) return
+      if (mobileActionsMenuRef.current?.contains(target)) return
       if (profileMenuRef.current?.contains(target)) return
       if (thinkingMenuRef.current?.contains(target)) return
       setIsControlsMenuOpen(false)
@@ -2488,6 +2507,7 @@ function ChatComposerComponent({
                       }}
                     />
                     <div
+                      ref={mobileActionsMenuRef}
                       className="fixed bottom-0 left-0 right-0 z-[200] rounded-t-2xl bg-white shadow-2xl pb-safe dark:bg-neutral-900 animate-in slide-in-from-bottom-10 duration-200"
                       role="dialog"
                       aria-label="Actions"
@@ -2575,7 +2595,7 @@ function ChatComposerComponent({
                               setIsModelMenuOpen(true)
                             }
                           }}
-                          className="rounded-xl border border-neutral-100 bg-neutral-50 dark:bg-neutral-800 dark:border-neutral-700 p-3 flex flex-col items-start gap-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-xl border border-neutral-100 bg-neutral-50 dark:bg-neutral-800 dark:border-neutral-700 p-3 flex flex-col items-start gap-2 text-left transition-all active:scale-[0.98] active:bg-neutral-100 dark:active:bg-neutral-700/80 hover:border-neutral-300 dark:hover:border-neutral-600 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                         >
                           <span className="rounded-lg bg-indigo-100 dark:bg-indigo-900/30 p-1.5 text-indigo-600 dark:text-indigo-400">
                             <HugeiconsIcon
@@ -2585,7 +2605,7 @@ function ChatComposerComponent({
                             />
                           </span>
                           <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate max-w-full">
-                            {modelButtonLabel}
+                            {formatModelName(modelButtonLabel)}
                           </span>
                         </button>
 
@@ -2650,6 +2670,7 @@ function ChatComposerComponent({
                       onClick={() => setIsModelMenuOpen(false)}
                     />
                     <div
+                      ref={mobileModelPickerRef}
                       className="fixed bottom-0 left-0 right-0 z-[210] rounded-t-2xl bg-white shadow-2xl pb-safe dark:bg-neutral-900 animate-in slide-in-from-bottom-10 duration-200"
                       role="dialog"
                       aria-label="Select model"
@@ -2728,7 +2749,7 @@ function ChatComposerComponent({
                           }
                           const renderEntry = (entry: (typeof parsed)[0]) => {
                             const isActive = isCurrentModel(
-                              persistedSessionModel || currentModel,
+                              activeModel,
                               entry.id,
                               entry.provider,
                             )
@@ -2739,29 +2760,33 @@ function ChatComposerComponent({
                               >
                                 <button
                                   type="button"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
                                     handleModelSelect(
                                       entry.id,
                                       entry.provider || undefined,
                                     )
                                     setIsModelMenuOpen(false)
                                   }}
-                                  className={`flex flex-1 items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${
+                                  className={`flex flex-1 items-center gap-3 px-4 py-3 text-left text-sm transition-all duration-150 active:scale-[0.99] active:bg-neutral-100 dark:active:bg-neutral-800/80 cursor-pointer ${
                                     isActive
-                                      ? 'bg-accent-50 text-accent-700 font-medium dark:bg-accent-900/30 dark:text-accent-300 border-l-2 border-accent-500'
-                                      : 'text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800'
+                                      ? 'bg-accent-50 text-accent-700 font-semibold dark:bg-accent-900/30 dark:text-accent-300 border-l-4 border-accent-500 shadow-sm'
+                                      : 'text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-neutral-100'
                                   }`}
                                 >
                                   <span className="flex-1 truncate">
                                     {entry.name}
                                   </span>
                                   {entry.isLocal && (
-                                    <span className="text-[10px] text-neutral-400 px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800">
+                                    <span className="text-[10px] text-neutral-400 px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 font-normal">
                                       local
                                     </span>
                                   )}
-                                  {isActive && (
-                                    <span className="size-1.5 rounded-full bg-accent-500 shrink-0" />
+                                  {isActive ? (
+                                    <span className="size-2 rounded-full bg-accent-500 shrink-0 ring-4 ring-accent-500/20" />
+                                  ) : (
+                                    <span className="size-1.5 rounded-full bg-transparent group-hover:bg-neutral-300 dark:group-hover:bg-neutral-600 transition-colors shrink-0" />
                                   )}
                                 </button>
                                 <button
@@ -2770,10 +2795,10 @@ function ChatComposerComponent({
                                     e.stopPropagation()
                                     togglePin(entry.id)
                                   }}
-                                  className={`absolute right-3 rounded p-1 transition-opacity ${
+                                  className={`absolute right-3 rounded-lg p-1.5 transition-all active:scale-95 ${
                                     isPinned(entry.id)
-                                      ? 'text-accent-500 opacity-80 hover:opacity-100'
-                                      : 'text-neutral-400 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:text-accent-500'
+                                      ? 'text-accent-500 opacity-90 hover:opacity-100'
+                                      : 'text-neutral-400 opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:text-accent-500'
                                   }`}
                                   aria-label={
                                     isPinned(entry.id)
@@ -2782,8 +2807,8 @@ function ChatComposerComponent({
                                   }
                                 >
                                   <svg
-                                    width="13"
-                                    height="13"
+                                    width="14"
+                                    height="14"
                                     viewBox="0 0 24 24"
                                     fill={
                                       isPinned(entry.id)
@@ -3140,7 +3165,7 @@ function ChatComposerComponent({
                                       }
                                       const renderEntry = (entry: (typeof parsed)[0]) => {
                                         const isActive = isCurrentModel(
-                                          persistedSessionModel || currentModel,
+                                          activeModel,
                                           entry.id,
                                           entry.provider,
                                         )
