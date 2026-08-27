@@ -10,8 +10,10 @@ import {
   Pen01Icon,
   PlusSignIcon,
   RefreshIcon,
+  Search01Icon,
   Upload01Icon,
 } from '@hugeicons/core-free-icons'
+import { FileIcon } from '@/components/ui/file-icon'
 import FilePreviewDialog from './file-preview-dialog'
 import { cn } from '@/lib/utils'
 import {
@@ -64,17 +66,6 @@ type PromptState = {
 }
 
 const ROOT_LABEL = 'Workspace'
-
-function isImageFile(fileName: string) {
-  const ext = fileName.split('.').pop()?.toLowerCase() || ''
-  return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)
-}
-
-function getFileIcon(entry: FileEntry) {
-  if (entry.type === 'folder') return Folder01Icon
-  if (isImageFile(entry.name)) return Image01Icon
-  return File01Icon
-}
 
 function normalizePath(pathValue: string) {
   return pathValue.replace(/\\/g, '/')
@@ -329,7 +320,6 @@ export function FileExplorerSidebar({
 
   const renderEntry = useCallback(
     (entry: FileEntry, depth: number) => {
-      const Icon = getFileIcon(entry)
       const isExpanded = isSearchActive ? true : expanded.has(entry.path)
       const padding = 12 + depth * 14
 
@@ -367,7 +357,7 @@ export function FileExplorerSidebar({
             ) : (
               <span className="w-4" />
             )}
-            <HugeiconsIcon icon={Icon} size={18} strokeWidth={1.6} />
+            <FileIcon name={entry.name} type={entry.type} size={18} />
             <span className="truncate">{entry.name}</span>
           </button>
           {entry.type === 'folder' && isExpanded && entry.children?.length ? (

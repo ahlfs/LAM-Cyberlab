@@ -22,11 +22,14 @@ import {
   DialogRoot,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { toast } from '@/components/ui/toast'
+import { FileIcon } from '@/components/ui/file-icon'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   ClipboardIcon,
+  CloudUploadIcon,
   Copy01Icon,
   Delete01Icon,
   Download01Icon,
@@ -38,6 +41,7 @@ import {
   Loading03Icon,
   RefreshIcon,
   Scissor01Icon,
+  CheckListIcon,
 } from '@hugeicons/core-free-icons'
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -164,26 +168,20 @@ function PathBreadcrumb({ currentPath, onNavigate }: { currentPath: string; onNa
 function FileRow({
   entry,
   isSelected,
+  isMultiSelectMode,
   onDoubleClick,
   onClick,
   onContextMenu,
 }: {
   entry: FileEntry
   isSelected: boolean
+  isMultiSelectMode: boolean
   onDoubleClick: () => void
-  onClick: () => void
+  onClick: (e: React.MouseEvent) => void
   onContextMenu: (e: React.MouseEvent) => void
 }) {
   const isFolder = entry.type === 'folder'
-  const devIcon = !isFolder ? getFileIconClass(entry.name) : null
 
-  const icon = isFolder ? (
-    <HugeiconsIcon icon={Folder01Icon} size={16} className="text-amber-500" />
-  ) : devIcon ? (
-    <i className={cn(devIcon, 'text-[16px]')} />
-  ) : (
-    <HugeiconsIcon icon={File01Icon} size={16} className="opacity-50" />
-  )
   return (
     <tr
       tabIndex={0}
@@ -197,9 +195,23 @@ function FileRow({
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
     >
-      <td className="py-2 pl-4 pr-2">
+      {isMultiSelectMode && (
+        <td className="py-2 pl-4 pr-1 w-10">
+          <div className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              readOnly
+              className="w-4 h-4 text-primary-600 rounded border-primary-300 dark:border-neutral-600 bg-transparent focus:ring-primary-500"
+            />
+          </div>
+        </td>
+      )}
+      <td className={cn("py-2 pr-2", isMultiSelectMode ? "pl-1" : "pl-4")}>
         <div className="flex items-start gap-2 min-w-0">
-          <span className="shrink-0 text-base leading-none mt-0.5">{icon}</span>
+          <span className="shrink-0 text-base leading-none mt-0.5">
+            <FileIcon name={entry.name} type={entry.type} size={16} className={isFolder ? "text-amber-500" : ""} />
+          </span>
           <span className="break-all">{entry.name}</span>
         </div>
       </td>
@@ -322,29 +334,39 @@ function FilePreview({ entry }: { entry: FileEntry | null }) {
 
 export function FileManagerScreen() {
   usePageTitle('File Manager')
-
   const [entries, setEntries] = useState<Array<FileEntry>>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedEntry, setSelectedEntry] = useState<FileEntry | null>(null)
-  const [currentPath, setCurrentPath] = useState<string>(() => {
+  const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set())
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null)
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false)
+
+  const [history, setHistory] = useState<{ stack: string[], index: number }>(() => {
+    let initial = ''
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('file-manager-path') || ''
+      initial = localStorage.getItem('file-manager-path') || ''
     }
-    return ''
+    return { stack: [initial || '/'], index: 0 }
   })
-  const [pathHistory, setPathHistory] = useState<string[]>([])
-  const [historyIndex, setHistoryIndex] = useState(-1)
+  const currentPath = history.stack[history.index] || '/'
+
+  // Update local storage when path changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('file-manager-path', currentPath)
+    }
+  }, [currentPath])
+
   const [homedirResolved, setHomedirResolved] = useState(false)
   const homedirRef = useRef<string>('/')
 
-  const [clipboard, setClipboard] = useState<{ action: 'copy' | 'cut'; entry: FileEntry } | null>(null)
+  const [clipboard, setClipboard] = useState<{ action: 'copy' | 'cut'; entries: FileEntry[] } | null>(null)
 
   // CRUD state
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [promptState, setPromptState] = useState<PromptState | null>(null)
   const [promptValue, setPromptValue] = useState('')
-  const [deleteConfirm, setDeleteConfirm] = useState<FileEntry | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<boolean>(false)
   const [modalPreviewEntry, setModalPreviewEntry] = useState<FileEntry | null>(null)
 
   // ── Load directory ──────────────────────────────────────────────────────────
@@ -370,7 +392,12 @@ export function FileManagerScreen() {
       // On first load without a saved path, redirect to home directory
       if (!homedirResolved && data.homedir && !localStorage.getItem('file-manager-path')) {
         setHomedirResolved(true)
-        setCurrentPath(data.homedir)
+        setHistory(prev => {
+          if (prev.stack[0] === '' || prev.stack[0] === '/') {
+            return { stack: [data.homedir!], index: 0 }
+          }
+          return prev
+        })
         return // will re-trigger via useEffect
       }
       setHomedirResolved(true)
@@ -418,11 +445,14 @@ export function FileManagerScreen() {
   // ── Navigation ──────────────────────────────────────────────────────────────
 
   const navigateTo = useCallback((path: string) => {
-    setCurrentPath(path)
-    setSelectedEntry(null)
-    setPathHistory(prev => [...prev.slice(0, historyIndex + 1), path])
-    setHistoryIndex(prev => prev + 1)
-  }, [historyIndex])
+    setSelectedPaths(new Set())
+    setLastSelectedIndex(null)
+    setHistory(prev => {
+      if (prev.stack[prev.index] === path) return prev
+      const newStack = [...prev.stack.slice(0, prev.index + 1), path]
+      return { stack: newStack, index: newStack.length - 1 }
+    })
+  }, [])
 
   const goUp = useCallback(() => {
     if (currentPath === '/') return
@@ -430,20 +460,22 @@ export function FileManagerScreen() {
   }, [currentPath, navigateTo])
 
   const goBack = useCallback(() => {
-    if (historyIndex <= 0) return
-    const prevPath = pathHistory[historyIndex - 1]
-    setHistoryIndex(prev => prev - 1)
-    setCurrentPath(prevPath)
-    setSelectedEntry(null)
-  }, [historyIndex, pathHistory])
+    setSelectedPaths(new Set())
+    setLastSelectedIndex(null)
+    setHistory(prev => ({
+      ...prev,
+      index: Math.max(0, prev.index - 1)
+    }))
+  }, [])
 
   const goForward = useCallback(() => {
-    if (historyIndex >= pathHistory.length - 1) return
-    const nextPath = pathHistory[historyIndex + 1]
-    setHistoryIndex(prev => prev + 1)
-    setCurrentPath(nextPath)
-    setSelectedEntry(null)
-  }, [historyIndex, pathHistory])
+    setSelectedPaths(new Set())
+    setLastSelectedIndex(null)
+    setHistory(prev => ({
+      ...prev,
+      index: Math.min(prev.stack.length - 1, prev.index + 1)
+    }))
+  }, [])
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -456,41 +488,85 @@ export function FileManagerScreen() {
     }
   }, [navigateTo])
 
-  const handleSelect = useCallback((entry: FileEntry) => {
-    setSelectedEntry(entry)
-  }, [])
+  const handleSelect = useCallback((e: React.MouseEvent, entry: FileEntry, index: number) => {
+    e.stopPropagation()
+    setSelectedPaths(prev => {
+      const newSet = new Set(prev)
+      if (e.shiftKey && lastSelectedIndex !== null) {
+        const start = Math.min(lastSelectedIndex, index)
+        const end = Math.max(lastSelectedIndex, index)
+        newSet.clear() // Optional: clear or add to existing selection? Standard shift-click clears other selection usually, but we'll just add for now, wait, let's clear and add range.
+        for (let i = start; i <= end; i++) {
+          newSet.add(entries[i].path)
+        }
+      } else if (e.ctrlKey || e.metaKey || isMultiSelectMode) {
+        if (newSet.has(entry.path)) {
+          newSet.delete(entry.path)
+        } else {
+          newSet.add(entry.path)
+        }
+        setLastSelectedIndex(index)
+      } else {
+        newSet.clear()
+        newSet.add(entry.path)
+        setLastSelectedIndex(index)
+      }
+      return newSet
+    })
+  }, [entries, lastSelectedIndex, isMultiSelectMode])
 
   const handleContextMenu = useCallback((e: React.MouseEvent, entry: FileEntry | null) => {
     e.preventDefault()
     e.stopPropagation()
+    if (entry && !selectedPaths.has(entry.path)) {
+      setSelectedPaths(new Set([entry.path]))
+      const idx = entries.findIndex(x => x.path === entry.path)
+      setLastSelectedIndex(idx >= 0 ? idx : null)
+    }
     setContextMenu({ x: e.clientX, y: e.clientY, entry })
-  }, [])
+  }, [selectedPaths, entries])
 
   // ── CRUD actions ────────────────────────────────────────────────────────────
 
   const handleDeleteConfirmed = useCallback(async () => {
-    if (!deleteConfirm) return
-    await fetch('/api/files', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'delete', mode: 'browse', path: deleteConfirm.path }),
-    })
-    if (selectedEntry?.path === deleteConfirm.path) setSelectedEntry(null)
-    setDeleteConfirm(null)
-    await loadDirectory(currentPath)
-  }, [deleteConfirm, selectedEntry, loadDirectory, currentPath])
+    if (!deleteConfirm || selectedPaths.size === 0) return
+    setLoading(true)
+    try {
+      await Promise.all(
+        Array.from(selectedPaths).map(path =>
+          fetch('/api/files', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', mode: 'browse', path }),
+          })
+        )
+      )
+      toast(`Deleted ${selectedPaths.size} item(s)`, { type: 'success' })
+      setSelectedPaths(new Set())
+      setLastSelectedIndex(null)
+      setDeleteConfirm(false)
+      await loadDirectory(currentPath)
+    } catch (err: any) {
+      toast(err.message, { type: 'error' })
+      setLoading(false)
+    }
+  }, [deleteConfirm, selectedPaths, loadDirectory, currentPath])
 
-  const handleDownload = useCallback(async (entry: FileEntry) => {
-    const res = await fetch(`/api/files?action=download&mode=browse&path=${encodeURIComponent(entry.path)}`)
-    if (!res.ok) return
-    const blob = await res.blob()
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = entry.type === 'folder' ? `${entry.name}.zip` : entry.name
-    anchor.click()
-    URL.revokeObjectURL(url)
-  }, [])
+  const handleDownload = useCallback((paths: Set<string>) => {
+    if (paths.size === 0) return
+    toast(`Starting download for ${paths.size} item(s)...`, { type: 'info' })
+    Array.from(paths).forEach(path => {
+      const entry = entries.find(e => e.path === path)
+      if (!entry) return
+      const url = `/api/files?action=download&mode=browse&path=${encodeURIComponent(path)}`
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = entry.type === 'folder' ? `${entry.name}.zip` : entry.name
+      document.body.appendChild(anchor)
+      anchor.click()
+      document.body.removeChild(anchor)
+    })
+  }, [entries])
 
   const openRenamePrompt = useCallback((entry: FileEntry) => {
     setPromptState({ mode: 'rename', targetPath: entry.path, defaultValue: entry.name })
@@ -502,23 +578,70 @@ export function FileManagerScreen() {
     setPromptValue('')
   }, [currentPath])
 
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (!file) return
+
+      setLoading(true)
+      try {
+        const formData = new FormData()
+        formData.append('action', 'upload')
+        formData.append('path', currentPath)
+        formData.append('mode', 'browse')
+        formData.append('file', file)
+
+        const res = await fetch('/api/files', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => null)
+          throw new Error(errorData?.error || `Upload failed: ${res.statusText}`)
+        }
+
+        toast(`Uploaded ${file.name}`, { type: 'success' })
+        void loadDirectory(currentPath)
+      } catch (err: any) {
+        toast(err.message, { type: 'error' })
+        setLoading(false)
+      } finally {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+      }
+    },
+    [currentPath, loadDirectory]
+  )
+
   const handlePaste = useCallback(async () => {
-    if (!clipboard) return
+    if (!clipboard || clipboard.entries.length === 0) return
     const targetFolder = contextMenu?.entry?.type === 'folder' ? contextMenu.entry.path : currentPath
-    const targetPath = targetFolder + '/' + clipboard.entry.name
-
-    const action = clipboard.action === 'copy' ? 'copy' : 'rename'
-    const res = await fetch('/api/files', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action, mode: 'browse', from: clipboard.entry.path, to: targetPath }),
-    })
-
-    if (res.ok) {
+    
+    setLoading(true)
+    try {
+      await Promise.all(
+        clipboard.entries.map(entry => {
+          const targetPath = targetFolder + '/' + entry.name
+          const action = clipboard.action === 'copy' ? 'copy' : 'rename'
+          return fetch('/api/files', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ action, mode: 'browse', from: entry.path, to: targetPath }),
+          })
+        })
+      )
+      toast(`Pasted ${clipboard.entries.length} item(s)`, { type: 'success' })
       if (clipboard.action === 'cut') {
         setClipboard(null)
       }
       await loadDirectory(currentPath)
+    } catch (err: any) {
+      toast(err.message, { type: 'error' })
+      setLoading(false)
     }
   }, [clipboard, contextMenu, currentPath, loadDirectory])
 
@@ -570,34 +693,38 @@ export function FileManagerScreen() {
       }
 
       if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
-        if (selectedEntry) {
+        if (selectedPaths.size > 0) {
           e.preventDefault()
-          setClipboard({ action: 'copy', entry: selectedEntry })
+          const entriesToCopy = entries.filter(entry => selectedPaths.has(entry.path))
+          setClipboard({ action: 'copy', entries: entriesToCopy })
         }
       } else if (e.key === 'x' && (e.ctrlKey || e.metaKey)) {
-        if (selectedEntry) {
+        if (selectedPaths.size > 0) {
           e.preventDefault()
-          setClipboard({ action: 'cut', entry: selectedEntry })
+          const entriesToCut = entries.filter(entry => selectedPaths.has(entry.path))
+          setClipboard({ action: 'cut', entries: entriesToCut })
         }
       } else if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
         void handlePaste()
       } else if (e.key === 'Delete') {
-        if (selectedEntry) {
+        if (selectedPaths.size > 0) {
           e.preventDefault()
-          setDeleteConfirm(selectedEntry)
+          setDeleteConfirm(true)
         }
       } else if (e.key === 'F2') {
-        if (selectedEntry) {
+        if (selectedPaths.size === 1) {
           e.preventDefault()
-          openRenamePrompt(selectedEntry)
+          const selectedPath = Array.from(selectedPaths)[0]
+          const entry = entries.find(e => e.path === selectedPath)
+          if (entry) openRenamePrompt(entry)
         }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedEntry, handlePaste, openRenamePrompt])
+  }, [selectedPaths, entries, handlePaste, openRenamePrompt])
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -609,10 +736,10 @@ export function FileManagerScreen() {
           <HamburgerTrigger />
         </div>
         {/* Navigation buttons */}
-        <button type="button" onClick={goBack} disabled={historyIndex <= 0} title="Back" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
+        <button type="button" onClick={goBack} disabled={history.index <= 0} title="Back" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />
         </button>
-        <button type="button" onClick={goForward} disabled={historyIndex >= pathHistory.length - 1} title="Forward" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
+        <button type="button" onClick={goForward} disabled={history.index >= history.stack.length - 1} title="Forward" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
           <HugeiconsIcon icon={ArrowRight01Icon} size={18} />
         </button>
         <button type="button" onClick={goUp} disabled={currentPath === '/'} title="Go up" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
@@ -636,6 +763,18 @@ export function FileManagerScreen() {
 
         {/* Action buttons */}
         <div className="flex items-center gap-1 ml-auto md:ml-0 order-2 md:order-none">
+          <button type="button" onClick={() => {
+            setIsMultiSelectMode(!isMultiSelectMode)
+            setSelectedPaths(new Set())
+            setLastSelectedIndex(null)
+          }} title="Toggle Multi-Select" className={cn("rounded p-1.5 transition-colors", isMultiSelectMode ? "bg-primary-200 text-primary-800 dark:bg-neutral-800 dark:text-neutral-100" : "text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800")}>
+            <HugeiconsIcon icon={CheckListIcon} size={16} />
+          </button>
+          <div className="h-4 w-px bg-primary-200 dark:bg-neutral-700 mx-1" />
+          <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+          <button type="button" onClick={() => fileInputRef.current?.click()} title="Upload file" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors">
+            <HugeiconsIcon icon={CloudUploadIcon} size={16} />
+          </button>
           <button type="button" onClick={openNewFilePrompt} title="New file" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors">
             <HugeiconsIcon icon={File01Icon} size={16} />
           </button>
@@ -668,19 +807,39 @@ export function FileManagerScreen() {
                 <table className="w-full text-left table-fixed">
                   <thead className="sticky top-0 z-10 bg-primary-100/80 dark:bg-neutral-900/80 backdrop-blur-sm text-xs text-primary-500 dark:text-neutral-500 uppercase tracking-wider">
                     <tr>
-                      <th className="py-2 pl-4 pr-2 font-medium">Name</th>
+                      {isMultiSelectMode && (
+                        <th className="py-2 pl-4 pr-1 font-medium w-10">
+                          <div className="flex items-center justify-center">
+                            <input
+                              type="checkbox"
+                              checked={entries.length > 0 && selectedPaths.size === entries.length}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedPaths(new Set(entries.map(x => x.path)))
+                                } else {
+                                  setSelectedPaths(new Set())
+                                }
+                                setLastSelectedIndex(null)
+                              }}
+                              className="w-4 h-4 text-primary-600 rounded border-primary-300 dark:border-neutral-600 bg-transparent focus:ring-primary-500 cursor-pointer"
+                            />
+                          </div>
+                        </th>
+                      )}
+                      <th className={cn("py-2 pr-2 font-medium", isMultiSelectMode ? "pl-1" : "pl-4")}>Name</th>
                       <th className="py-2 px-3 text-right font-medium w-24">Size</th>
                       <th className="py-2 px-3 font-medium hidden md:table-cell w-44">Modified</th>
                       <th className="py-2 px-3 font-medium hidden lg:table-cell w-20">Type</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-primary-100 dark:divide-neutral-800/50">
-                    {entries.map((entry) => (
+                    {entries.map((entry, index) => (
                       <FileRow
                         key={entry.path}
                         entry={entry}
-                        isSelected={selectedEntry?.path === entry.path}
-                        onClick={() => handleSelect(entry)}
+                        isSelected={selectedPaths.has(entry.path)}
+                        isMultiSelectMode={isMultiSelectMode}
+                        onClick={(e) => handleSelect(e, entry, index)}
                         onDoubleClick={() => handleDoubleClick(entry)}
                         onContextMenu={(e) => handleContextMenu(e, entry)}
                       />
@@ -712,40 +871,50 @@ export function FileManagerScreen() {
         >
           {contextMenu.entry && (
             <>
-              {contextMenu.entry.type === 'folder' && (
+              {contextMenu.entry.type === 'folder' && selectedPaths.size === 1 && (
                 <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { navigateTo(contextMenu.entry!.path); setContextMenu(null) }}>
                   <HugeiconsIcon icon={FolderOpenIcon} size={16} /> Open
                 </button>
               )}
-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { setClipboard({ action: 'cut', entry: contextMenu.entry! }); setContextMenu(null) }}>
-                <HugeiconsIcon icon={Scissor01Icon} size={16} /> Cut
+              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { 
+                const entriesToCut = entries.filter(e => selectedPaths.has(e.path));
+                setClipboard({ action: 'cut', entries: entriesToCut }); 
+                setContextMenu(null) 
+              }}>
+                <HugeiconsIcon icon={Scissor01Icon} size={16} /> Cut {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
               </button>
-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { setClipboard({ action: 'copy', entry: contextMenu.entry! }); setContextMenu(null) }}>
-                <HugeiconsIcon icon={Copy01Icon} size={16} /> Copy
+              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { 
+                const entriesToCopy = entries.filter(e => selectedPaths.has(e.path));
+                setClipboard({ action: 'copy', entries: entriesToCopy }); 
+                setContextMenu(null) 
+              }}>
+                <HugeiconsIcon icon={Copy01Icon} size={16} /> Copy {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
               </button>
               <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { openRenamePrompt(contextMenu.entry!); setContextMenu(null) }}>
-                <HugeiconsIcon icon={Edit02Icon} size={16} /> Rename
-              </button>
-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handleDownload(contextMenu.entry!); setContextMenu(null) }}>
-                <HugeiconsIcon icon={Download01Icon} size={16} /> Download
+              {selectedPaths.size === 1 && (
+                <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { openRenamePrompt(contextMenu.entry!); setContextMenu(null) }}>
+                  <HugeiconsIcon icon={Edit02Icon} size={16} /> Rename
+                </button>
+              )}
+              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handleDownload(selectedPaths); setContextMenu(null) }}>
+                <HugeiconsIcon icon={Download01Icon} size={16} /> Download {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
               </button>
               <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
             </>
           )}
 
-          {(!contextMenu.entry || contextMenu.entry.type === 'folder') && clipboard && (
+          {(!contextMenu.entry || (contextMenu.entry.type === 'folder' && selectedPaths.size === 1)) && clipboard && (
             <>
               <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handlePaste(); setContextMenu(null) }}>
-                <HugeiconsIcon icon={ClipboardIcon} size={16} /> Paste
+                <HugeiconsIcon icon={ClipboardIcon} size={16} /> Paste {clipboard.entries.length > 1 ? `(${clipboard.entries.length})` : ''}
               </button>
               <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
             </>
           )}
 
           {contextMenu.entry && (
-            <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors" onClick={() => { setDeleteConfirm(contextMenu.entry!); setContextMenu(null) }}>
-              <HugeiconsIcon icon={Delete01Icon} size={16} /> Delete
+            <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors" onClick={() => { setDeleteConfirm(true); setContextMenu(null) }}>
+              <HugeiconsIcon icon={Delete01Icon} size={16} /> Delete {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
             </button>
           )}
         </div>
@@ -779,13 +948,12 @@ export function FileManagerScreen() {
       </DialogRoot>
 
       {/* ── Delete confirm dialog ──────────────────────────────────────────── */}
-      <DialogRoot open={Boolean(deleteConfirm)} onOpenChange={(open) => { if (!open) setDeleteConfirm(null) }}>
+      <DialogRoot open={deleteConfirm} onOpenChange={(open) => { if (!open) setDeleteConfirm(false) }}>
         <DialogContent>
           <div className="p-5 space-y-3">
-            <DialogTitle>Delete {deleteConfirm?.type === 'folder' ? 'Folder' : 'File'}</DialogTitle>
+            <DialogTitle>Delete {selectedPaths.size > 1 ? 'Files' : 'File'}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>?
-              {deleteConfirm?.type === 'folder' && ' This will delete all contents inside.'}
+              Are you sure you want to delete <strong>{selectedPaths.size === 1 ? Array.from(selectedPaths)[0].split('/').pop() : `${selectedPaths.size} items`}</strong>?
               {' '}This action cannot be undone.
             </DialogDescription>
             <div className="flex justify-end gap-2 pt-2">

@@ -1711,7 +1711,7 @@ function ChatComposerComponent({
         el.focus()
       }, 0)
     } else {
-      setComposerValue((v) => v + textToInsert)
+      setComposerValue(value + textToInsert)
       focusPrompt()
     }
   }, [activeWorkspacePath, value, setComposerValue, focusPrompt])

@@ -1,0 +1,114 @@
+e2e/chat-flicker-duplicate.spec.ts(1,30): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
+e2e/chat-flicker-duplicate.spec.ts(4,88): error TS7031: Binding element 'page' implicitly has an 'any' type.
+e2e/chat-thinking-state.spec.ts(1,30): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
+e2e/chat-thinking-state.spec.ts(4,98): error TS7031: Binding element 'page' implicitly has an 'any' type.
+e2e/chat-thinking-state.spec.ts(13,31): error TS7006: Parameter 'sessionKey' implicitly has an 'any' type.
+e2e/chat-thinking-state.spec.ts(48,48): error TS7006: Parameter 'key' implicitly has an 'any' type.
+e2e/conductor-mobile-rendering.spec.ts(1,30): error TS2307: Cannot find module '@playwright/test' or its corresponding type declarations.
+e2e/conductor-mobile-rendering.spec.ts(10,75): error TS7031: Binding element 'page' implicitly has an 'any' type.
+e2e/conductor-mobile-rendering.spec.ts(42,72): error TS7031: Binding element 'page' implicitly has an 'any' type.
+e2e/conductor-mobile-rendering.spec.ts(53,67): error TS7031: Binding element 'page' implicitly has an 'any' type.
+e2e/conductor-mobile-rendering.spec.ts(63,81): error TS7031: Binding element 'page' implicitly has an 'any' type.
+e2e/conductor-mobile-rendering.spec.ts(79,94): error TS7031: Binding element 'page' implicitly has an 'any' type.
+src/components/terminal/terminal-workspace.tsx(464,20): error TS2352: Conversion of type 'null' to type 'Timeout' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/routes/api/-models.test.ts(26,31): error TS2322: Type 'string' is not assignable to type 'ModelEntry'.
+src/routes/api/connection-status.ts(120,11): error TS2322: Type 'ChatMode' is not assignable to type '"portable" | "disconnected" | "enhanced-claude"'.
+  Type '"responses"' is not assignable to type '"portable" | "disconnected" | "enhanced-claude"'.
+src/routes/api/files.ts(432,50): error TS2345: Argument of type 'ReadableStream' is not assignable to parameter of type 'Readable'.
+  Type 'ReadableStream' is missing the following properties from type 'Readable': readableAborted, readableDidRead, readableEncoding, readableEnded, and 26 more.
+src/routes/api/files.ts(511,48): error TS2345: Argument of type 'ReadableStream' is not assignable to parameter of type 'Readable'.
+  Type 'ReadableStream' is missing the following properties from type 'Readable': readableAborted, readableDidRead, readableEncoding, readableEnded, and 26 more.
+src/routes/api/mcp/-hub-search.test.ts(36,51): error TS2339: Property 'GET' does not exist on type 'Constrain<{ GET: ({ request }: RouteMethodHandlerCtx<Register, Route<Register, RootRoute<Register, undefined, {}, AnyContext, AnyContext, {}, undefined, unknown, unknown, unknown, unknown, undefined>, ... 15 more ..., { ...; }>, "/hub-search", ResolveParams<...>, unknown, any>) => Promise<...>; }, Partial<...> | ((o...'.
+  Property 'GET' does not exist on type '(opts: HandlersFnOpts<Register, Route<Register, RootRoute<Register, undefined, {}, AnyContext, AnyContext, {}, undefined, unknown, unknown, unknown, unknown, undefined>, ... 15 more ..., { ...; }>, "/hub-search", ResolveParams<...>, unknown>) => CustomHandlerFunctionsRecord<...>'.
+src/routes/api/models.ts(76,35): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/routes/api/models.ts(78,16): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/routes/api/swarm-lifecycle.ts(48,25): error TS2783: 'ok' is specified more than once, so this usage will be overwritten.
+src/routes/api/swarm-lifecycle.ts(52,25): error TS2783: 'ok' is specified more than once, so this usage will be overwritten.
+src/routes/api/swarm-runtime.ts(198,13): error TS18048: 'roster' is possibly 'undefined'.
+src/routes/api/swarm-runtime.ts(198,36): error TS18048: 'roster' is possibly 'undefined'.
+src/routes/api/swarm-runtime.ts(199,19): error TS18048: 'roster' is possibly 'undefined'.
+src/routes/api/swarm-runtime.ts(199,48): error TS18048: 'roster' is possibly 'undefined'.
+src/routes/reserve/confirm.tsx(12,35): error TS2353: Object literal may only specify known properties, and 'strict' does not exist in type 'UseSearchBaseOptions<RouterCore<Route<Register, any, "/", "/", string, "__root__", undefined, {}, {}, AnyContext, AnyContext, {}, undefined, RootRouteChildren, FileRouteTypes, unknown, unknown, undefined>, "never", false, RouterHistory, Record<...>>, ... 4 more ..., boolean> & OptionalStructuralSharing<...>'.
+src/routes/reserve/confirm.tsx(12,52): error TS2339: Property 'token' does not exist on type '{}'.
+src/routes/settings/index.tsx(471,22): error TS2339: Property 'role' does not exist on type 'Persona'.
+src/routes/settings/index.tsx(542,12): error TS2367: This comparison appears to be unintentional because the types 'SettingsNavId' and '"routing"' have no overlap.
+src/routes/settings/index.tsx(2586,27): error TS18048: 'customProviderCatalogEntry' is possibly 'undefined'.
+src/screens/chat/components/chat-composer.tsx(1714,24): error TS2345: Argument of type '(v: any) => string' is not assignable to parameter of type 'string'.
+src/screens/chat/components/chat-composer.tsx(1714,25): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/screens/chat/components/chat-message-list.test.tsx(4,3): error TS2305: Module '"./chat-message-list"' has no exported member 'getTrailingToolOnlyTurnSummary'.
+src/screens/chat/components/chat-sidebar.tsx(276,19): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'true | ParamsReducerFn<RouterCore<Route<Register, any, "/", "/", string, "__root__", undefined, {}, {}, AnyContext, AnyContext, {}, undefined, RootRouteChildren, FileRouteTypes, unknown, unknown, undefined>, "never", false, RouterHistory, Record<...>>, "SEARCH", string, string | undefined> | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'true | ParamsReducerFn<RouterCore<Route<Register, any, "/", "/", string, "__root__", undefined, {}, {}, AnyContext, AnyContext, {}, undefined, RootRouteChildren, FileRouteTypes, unknown, unknown, undefined>, "never", false, RouterHistory, Record<...>>, "SEARCH", string, string | undefined> | undefined'.
+src/screens/chat/components/chat-sidebar.tsx(294,9): error TS2322: Type 'Record<string, unknown> | undefined' is not assignable to type 'true | ParamsReducerFn<RouterCore<Route<Register, any, "/", "/", string, "__root__", undefined, {}, {}, AnyContext, AnyContext, {}, undefined, RootRouteChildren, FileRouteTypes, unknown, unknown, undefined>, "never", false, RouterHistory, Record<...>>, "SEARCH", string, string | undefined> | undefined'.
+  Type 'Record<string, unknown>' is not assignable to type 'true | ParamsReducerFn<RouterCore<Route<Register, any, "/", "/", string, "__root__", undefined, {}, {}, AnyContext, AnyContext, {}, undefined, RootRouteChildren, FileRouteTypes, unknown, unknown, undefined>, "never", false, RouterHistory, Record<...>>, "SEARCH", string, string | undefined> | undefined'.
+src/screens/chat/components/chat-sidebar.tsx(538,38): error TS2300: Duplicate identifier 'asideProps'.
+src/screens/chat/components/chat-sidebar.tsx(750,9): error TS2300: Duplicate identifier 'asideProps'.
+src/screens/chat/components/chat-sidebar.tsx(1002,20): error TS2339: Property 'className' does not exist on type 'ChatSidebarProps'.
+src/screens/chat/components/chat-sidebar.tsx(1205,21): error TS2322: Type '(() => void) | undefined' is not assignable to type '() => void'.
+  Type 'undefined' is not assignable to type '() => void'.
+src/screens/chat/hooks/use-realtime-chat-history.ts(426,61): error TS2307: Cannot find module '@/types/chat' or its corresponding type declarations.
+src/screens/dashboard/components/attention-card.tsx(15,7): error TS2741: Property 'kanban' is missing in type '{ cron: IconSvgObject; platform: IconSvgObject; log: IconSvgObject; config: IconSvgObject; gateway: IconSvgObject; }' but required in type 'Record<"gateway" | "log" | "config" | "kanban" | "cron" | "platform", IconSvgObject>'.
+src/screens/dashboard/components/attention-marquee.tsx(7,7): error TS2741: Property 'kanban' is missing in type '{ cron: string; platform: string; log: string; config: string; gateway: string; }' but required in type 'Record<"gateway" | "log" | "config" | "kanban" | "cron" | "platform", string>'.
+src/screens/editor/editor-screen.tsx(1119,21): error TS2322: Type '{ children: (false | Element)[]; direction: string; autoSaveId: string; className: string; }' is not assignable to type 'IntrinsicAttributes & HTMLAttributes<HTMLDivElement> & { children?: ReactNode; className?: string | undefined; ... 10 more ...; style?: CSSProperties | undefined; }'.
+  Property 'direction' does not exist on type 'IntrinsicAttributes & HTMLAttributes<HTMLDivElement> & { children?: ReactNode; className?: string | undefined; ... 10 more ...; style?: CSSProperties | undefined; }'.
+src/screens/editor/editor-screen.tsx(1122,35): error TS2322: Type '{ children: Element; id: string; order: number; defaultSize: number; minSize: number; }' is not assignable to type 'IntrinsicAttributes & BasePanelAttributes & { className?: string | undefined; collapsedSize?: string | number | undefined; collapsible?: boolean | undefined; ... 9 more ...; style?: CSSProperties | undefined; }'.
+  Property 'order' does not exist on type 'IntrinsicAttributes & BasePanelAttributes & { className?: string | undefined; collapsedSize?: string | number | undefined; collapsible?: boolean | undefined; ... 9 more ...; style?: CSSProperties | undefined; }'.
+src/screens/editor/editor-screen.tsx(1131,30): error TS2322: Type '{ children: Element; id: string; order: number; defaultSize: number | undefined; }' is not assignable to type 'IntrinsicAttributes & BasePanelAttributes & { className?: string | undefined; collapsedSize?: string | number | undefined; collapsible?: boolean | undefined; ... 9 more ...; style?: CSSProperties | undefined; }'.
+  Property 'order' does not exist on type 'IntrinsicAttributes & BasePanelAttributes & { className?: string | undefined; collapsedSize?: string | number | undefined; collapsible?: boolean | undefined; ... 9 more ...; style?: CSSProperties | undefined; }'.
+src/screens/editor/editor-screen.tsx(1140,32): error TS2322: Type '{ children: Element; id: string; order: number; defaultSize: number; minSize: number; }' is not assignable to type 'IntrinsicAttributes & BasePanelAttributes & { className?: string | undefined; collapsedSize?: string | number | undefined; collapsible?: boolean | undefined; ... 9 more ...; style?: CSSProperties | undefined; }'.
+  Property 'order' does not exist on type 'IntrinsicAttributes & BasePanelAttributes & { className?: string | undefined; collapsedSize?: string | number | undefined; collapsible?: boolean | undefined; ... 9 more ...; style?: CSSProperties | undefined; }'.
+src/screens/file-manager/file-manager-screen.tsx(649,53): error TS2322: Type '{ children: Element[]; className: string; type: string; onContextMenu: (e: BaseUIEvent<MouseEvent<HTMLDivElement, MouseEvent>>) => void; }' is not assignable to type 'IntrinsicAttributes & Omit<ScrollAreaRootProps, "ref"> & RefAttributes<HTMLDivElement>'.
+  Property 'type' does not exist on type 'IntrinsicAttributes & Omit<ScrollAreaRootProps, "ref"> & RefAttributes<HTMLDivElement>'.
+src/screens/gateway/hooks/use-conductor-gateway.ts(1666,31): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
+  Type 'null' is not assignable to type 'string'.
+src/screens/graph/graph-screen.tsx(568,19): error TS2339: Property 'isBlackHole' does not exist on type 'LayoutNode'.
+src/screens/graph/workers/force-layout.worker.ts(1,21): error TS7016: Could not find a declaration file for module 'd3-force-3d'. '/home/ahlfs/lam-cyberlab/node_modules/.pnpm/d3-force-3d@3.0.6/node_modules/d3-force-3d/src/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/d3-force-3d` if it exists or add a new declaration (.d.ts) file containing `declare module 'd3-force-3d';`
+src/screens/mcp/-marketplace-install-confirmation.test.tsx(347,13): error TS2352: Conversion of type 'null' to type 'AbortSignal' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/screens/remote-access/remote-access-screen.tsx(411,36): error TS2339: Property 'nineRouterExposed' does not exist on type 'RemoteAccessStatus'.
+src/screens/swarm/swarm-screen.tsx(219,34): error TS2304: Cannot find name 'CpuIcon'.
+src/screens/swarm/swarm-screen.tsx(458,72): error TS2304: Cannot find name 'CpuIcon'.
+src/screens/swarm2/swarm2-orchestrator-card.tsx(137,57): error TS2322: Type '{ id: string; name: string; modelId: string; status: "error" | "done" | "active"; lastLine: string; lastAt: number; taskCount: number; currentTask: string; roleDescription: string; }[]' is not assignable to type 'AgentWorkingRow[]'.
+  Type '{ id: string; name: string; modelId: string; status: "error" | "done" | "active"; lastLine: string; lastAt: number; taskCount: number; currentTask: string; roleDescription: string; }' is not assignable to type 'AgentWorkingRow'.
+    Types of property 'status' are incompatible.
+      Type '"error" | "done" | "active"' is not assignable to type 'AgentWorkingStatus'.
+        Type '"done"' is not assignable to type 'AgentWorkingStatus'.
+src/screens/swarm2/swarm2-orchestrator-card.tsx(349,18): error TS2741: Property 'processType' is missing in type '{ agentRows: AgentWorkingRow[]; missionRunning: boolean; onViewOutput: () => undefined; containerHeight: number; hideHeader: true; }' but required in type 'OfficeViewProps'.
+src/screens/swarm2/swarm2-reports-view.tsx(820,25): error TS2322: Type '"done" | "running" | "thinking" | "failed"' is not assignable to type 'AgentProgressStatus'.
+  Type '"done"' is not assignable to type 'AgentProgressStatus'.
+src/screens/swarm2/swarm2-reports-view.tsx(847,27): error TS2339: Property 'prUrl' does not exist on type 'WorkerReportCard'.
+src/screens/swarm2/swarm2-reports-view.tsx(849,36): error TS2339: Property 'prUrl' does not exist on type 'WorkerReportCard'.
+src/screens/swarm2/swarm2-reports-view.tsx(860,60): error TS2345: Argument of type 'WorkerReportCard' is not assignable to parameter of type 'Swarm2InboxItem'.
+  Type 'WorkerReportCard' is missing the following properties from type 'Swarm2ReportRow': id, kind, title, missionId, and 13 more.
+src/screens/swarm2/swarm2-screen.tsx(638,32): error TS2551: Property 'lastRealSummary' does not exist on type 'RuntimeEntry'. Did you mean 'lastSummary'?
+src/screens/swarm2/swarm2-screen.tsx(639,31): error TS2551: Property 'lastRealResult' does not exist on type 'RuntimeEntry'. Did you mean 'lastResult'?
+src/screens/swarm2/swarm2-screen.tsx(847,47): error TS2551: Property 'lastRealSummary' does not exist on type 'RuntimeEntry'. Did you mean 'lastSummary'?
+src/screens/swarm2/swarm2-screen.tsx(847,75): error TS2551: Property 'lastRealResult' does not exist on type 'RuntimeEntry'. Did you mean 'lastResult'?
+src/screens/swarm2/swarm2-screen.tsx(1056,19): error TS2345: Argument of type '{ title: string; description: string; variant: string; }' is not assignable to parameter of type 'string'.
+src/screens/swarm2/swarm2-screen.tsx(1063,19): error TS2345: Argument of type '{ title: string; description: string; variant: string; }' is not assignable to parameter of type 'string'.
+src/screens/swarm2/swarm2-screen.tsx(1073,15): error TS2345: Argument of type '{ title: string; description: string; variant: string; }' is not assignable to parameter of type 'string'.
+src/screens/swarm2/swarm2-screen.tsx(1404,34): error TS2551: Property 'lastRealSummary' does not exist on type 'RuntimeEntry'. Did you mean 'lastSummary'?
+src/screens/swarm2/swarm2-screen.tsx(1404,62): error TS2551: Property 'lastRealResult' does not exist on type 'RuntimeEntry'. Did you mean 'lastResult'?
+src/server/__tests__/gateway-capabilities.test.ts(68,11): error TS2345: Argument of type '{ health: true; chatCompletions: true; models: true; streaming: true; probed: true; sessions: false; enhancedChat: false; skills: false; memory: true; config: false; jobs: true; mcp: false; mcpFallback: false; conductor: false; kanban: false; dashboard: { ...; }; }' is not assignable to parameter of type 'GatewayCapabilities'.
+  Property 'responsesApi' is missing in type '{ health: true; chatCompletions: true; models: true; streaming: true; probed: true; sessions: false; enhancedChat: false; skills: false; memory: true; config: false; jobs: true; mcp: false; mcpFallback: false; conductor: false; kanban: false; dashboard: { ...; }; }' but required in type 'EnhancedCapabilities'.
+src/server/__tests__/gateway-capabilities.test.ts(98,11): error TS2345: Argument of type '{ health: true; chatCompletions: false; models: true; streaming: false; probed: true; sessions: false; enhancedChat: false; skills: false; memory: true; config: false; jobs: false; mcp: false; mcpFallback: false; conductor: false; kanban: false; dashboard: { ...; }; }' is not assignable to parameter of type 'GatewayCapabilities'.
+  Property 'responsesApi' is missing in type '{ health: true; chatCompletions: false; models: true; streaming: false; probed: true; sessions: false; enhancedChat: false; skills: false; memory: true; config: false; jobs: false; mcp: false; mcpFallback: false; conductor: false; kanban: false; dashboard: { ...; }; }' but required in type 'EnhancedCapabilities'.
+src/server/swarm-lifecycle.ts(381,14): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'string | null' is not assignable to parameter of type 'string'.
+      Type 'null' is not assignable to type 'string'.
+src/server/swarm-lifecycle.ts(381,59): error TS7006: Parameter 'err' implicitly has an 'any' type.
+src/server/swarm-lifecycle.ts(381,64): error TS7006: Parameter '_out' implicitly has an 'any' type.
+src/server/swarm-lifecycle.ts(381,70): error TS7006: Parameter 'stderr' implicitly has an 'any' type.
+src/server/swarm-lifecycle.ts(393,14): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'string | null' is not assignable to parameter of type 'string'.
+      Type 'null' is not assignable to type 'string'.
+src/server/swarm-lifecycle.ts(393,73): error TS7006: Parameter 'err' implicitly has an 'any' type.
+src/server/swarm-lifecycle.ts(393,78): error TS7006: Parameter '_out' implicitly has an 'any' type.
+src/server/swarm-lifecycle.ts(393,84): error TS7006: Parameter 'stderr' implicitly has an 'any' type.
+src/server/swarm-roster.ts(98,5): error TS2322: Type '{ id: string; name: string; role: string; specialty: string; model: string; mission: string; skills: never[]; capabilities: never[]; defaultCwd: undefined; preferredTaskTypes: never[]; maxConcurrentTasks: number; acceptsBroadcast: true; reviewRequired: false; }[]' is not assignable to type '{ name: string; plugins: string[]; id: string; role: string; skills: string[]; model: string; specialty: string; mission: string; modes: string[]; tools: string[]; pluginToolsets: string[]; mcpServers: string[]; ... 8 more ...; defaultCwd?: string | undefined; }[]'.
+  Type '{ id: string; name: string; role: string; specialty: string; model: string; mission: string; skills: never[]; capabilities: never[]; defaultCwd: undefined; preferredTaskTypes: never[]; maxConcurrentTasks: number; acceptsBroadcast: true; reviewRequired: false; }' is missing the following properties from type '{ name: string; plugins: string[]; id: string; role: string; skills: string[]; model: string; specialty: string; mission: string; modes: string[]; tools: string[]; pluginToolsets: string[]; mcpServers: string[]; ... 8 more ...; defaultCwd?: string | undefined; }': plugins, modes, tools, pluginToolsets, and 2 more.
+src/stores/chat-store.ts(916,50): error TS2550: Property 'findLastIndex' does not exist on type 'ChatMessage[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.
+src/stores/chat-store.ts(917,16): error TS7006: Parameter 'm' implicitly has an 'any' type.

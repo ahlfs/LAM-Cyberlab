@@ -212,33 +212,40 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-6 py-10 text-white"
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-6 py-10 text-white bg-[#0A0E1A] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#0A0E1A] to-[#0A0E1A]"
       style={{
-        backgroundColor: '#0A0E1A',
         fontFamily: 'Inter, system-ui, sans-serif',
       }}
     >
       <div className="flex w-full max-w-lg flex-col items-center text-center">
-        <img
-          src="/claude-avatar.webp"
-          alt="Hermes Agent"
-          className="mb-5 h-20 w-20 rounded-2xl object-cover shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
-        />
+        {/* Avatar with glowing ring */}
+        <div className="relative mb-8 group">
+          <div className="absolute -inset-1 rounded-[1.25rem] bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-60 blur-md animate-pulse" />
+          <img
+            src="/claude-avatar.webp"
+            alt="Hermes Agent"
+            className="relative h-24 w-24 rounded-2xl object-cover shadow-[0_0_40px_rgba(99,102,241,0.3)] border border-white/10"
+          />
+        </div>
 
-        <h1 className="text-[2rem] font-semibold tracking-tight text-white">
+        <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-2">
           LAM Cyberlab
         </h1>
 
         {/* Connecting spinner */}
         <div
           className={[
-            'mt-4 flex items-center gap-3 text-sm text-white/72 transition-opacity duration-300',
-            showFailureState ? 'opacity-0 h-0' : 'opacity-100',
+            'mt-6 flex flex-col items-center gap-4 text-sm text-white/70 transition-all duration-500',
+            showFailureState ? 'opacity-0 scale-95 h-0 overflow-hidden' : 'opacity-100 scale-100',
           ].join(' ')}
           aria-hidden={showFailureState}
         >
-          <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
-          <span>Connecting to your backend...</span>
+          <div className="flex gap-2 items-center justify-center h-8">
+            <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-[bounce_1.4s_infinite_0s]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-[bounce_1.4s_infinite_0.2s]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-[bounce_1.4s_infinite_0.4s]" />
+          </div>
+          <span className="font-medium tracking-widest uppercase text-[10px] text-indigo-200/70">Connecting to Backend...</span>
         </div>
 
         {/* Failure state — setup guide */}

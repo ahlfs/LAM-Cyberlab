@@ -509,7 +509,7 @@ export const Route = createFileRoute('/api/files')({
                 const zip = new JSZip()
                 await addDirectoryToZip(zip, browsePath, browsePath)
                 const nodeStream = zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true })
-                const webStream = Readable.toWeb(nodeStream)
+                const webStream = Readable.toWeb(nodeStream as any)
                 return new Response(webStream as any, {
                   headers: {
                     'Content-Type': 'application/zip',
@@ -647,7 +647,7 @@ export const Route = createFileRoute('/api/files')({
               const zip = new JSZip()
               await addDirectoryToZip(zip, resolvedPath, resolvedPath)
               const nodeStream = zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true })
-              const webStream = Readable.toWeb(nodeStream)
+              const webStream = Readable.toWeb(nodeStream as any)
               return new Response(webStream as any, {
                 headers: {
                   'Content-Type': 'application/zip',
@@ -705,6 +705,8 @@ export const Route = createFileRoute('/api/files')({
           if (contentType.includes('multipart/form-data')) {
             const form = await request.formData()
             const action = String(form.get('action') || 'upload')
+            const mode = String(form.get('mode') || 'workspace')
+            const browseMode = mode === 'browse'
             if (action !== 'upload') {
               return json({ error: 'Invalid upload request' }, { status: 400 })
             }
@@ -713,21 +715,24 @@ export const Route = createFileRoute('/api/files')({
             if (!(file instanceof File)) {
               return json({ error: 'Missing file' }, { status: 400 })
             }
-            const resolvedTarget = ensureWorkspacePath(
-              targetPath,
-              workspaceRoot,
-            )
+            const resolvedTarget = browseMode
+              ? ensureBrowsePath(targetPath)
+              : ensureWorkspacePath(targetPath, workspaceRoot)
             const isDir = (await fs.stat(resolvedTarget)).isDirectory()
             const destination = isDir
               ? path.join(resolvedTarget, path.basename(file.name))
               : resolvedTarget
-            ensureWorkspacePath(destination, workspaceRoot)
+            if (browseMode) {
+              ensureBrowsePath(destination)
+            } else {
+              ensureWorkspacePath(destination, workspaceRoot)
+            }
             await fs.mkdir(path.dirname(destination), { recursive: true })
             const buffer = Buffer.from(await file.arrayBuffer())
             await fs.writeFile(destination, buffer)
             return json({
               ok: true,
-              path: toRelative(destination, workspaceRoot),
+              path: browseMode ? destination : toRelative(destination, workspaceRoot),
             })
           }
 

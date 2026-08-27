@@ -46,6 +46,7 @@ type LayoutNode = GraphNode & {
   y: number
   z: number
   connections: number
+  isBlackHole?: boolean
 }
 
 // ── Colors & Sizes ──────────────────────────────────────────────────

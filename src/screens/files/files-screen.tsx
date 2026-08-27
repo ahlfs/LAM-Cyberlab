@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { FileIcon } from '@/components/ui/file-icon'
 import { usePageTitle } from '@/hooks/use-page-title'
 import {
   ScrollAreaCorner,
@@ -119,17 +120,6 @@ function isHtmlFile(name: string): boolean {
 
 function isEditableFile(name: string): boolean {
   return !isImageFile(name)
-}
-
-function getFileIcon(entry: FileEntry): string {
-  if (entry.type === 'folder') return '📁'
-  const ext = getExt(entry.name)
-  if (ext === 'md' || ext === 'mdx') return '📄'
-  if (ext === 'json') return '📋'
-  if (ext === 'ts' || ext === 'tsx' || ext === 'js' || ext === 'jsx')
-    return '📜'
-  if (IMAGE_EXTS.has(ext)) return '🖼'
-  return '📃'
 }
 
 function formatBytes(bytes: number): string {
@@ -575,7 +565,6 @@ function TreeNode({
 }: TreeNodeProps) {
   const isExpanded = expanded.has(entry.path)
   const isSelected = selectedPath === entry.path
-  const icon = getFileIcon(entry)
   const paddingLeft = 12 + depth * 16
 
   const handleClick = () => {
@@ -612,8 +601,8 @@ function TreeNode({
         ) : (
           <span className="w-3 shrink-0" />
         )}
-        <span className="shrink-0 text-base leading-none">{icon}</span>
-        <span className="truncate">{entry.name}</span>
+        <FileIcon name={entry.name} type={entry.type} size={16} />
+        <span className="truncate leading-none">{entry.name}</span>
       </button>
 
       {entry.type === 'folder' && isExpanded && entry.children ? (
@@ -822,9 +811,9 @@ function FilePanel({ selectedEntry }: FilePanelProps) {
 
   const header = (
     <div className="flex shrink-0 items-center justify-between gap-3 border-b border-primary-200 dark:border-neutral-800 px-4 py-2.5">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="text-lg">{getFileIcon(selectedEntry)}</span>
-        <span className="truncate text-sm font-semibold text-primary-900 dark:text-neutral-100">
+      <div className="flex items-center gap-2 min-w-0 mt-0.5">
+        <FileIcon name={selectedEntry.name} type={selectedEntry.type} size={20} />
+        <span className="truncate text-sm font-semibold text-primary-900 dark:text-neutral-100 mb-0.5">
           {selectedEntry.name}
         </span>
       </div>

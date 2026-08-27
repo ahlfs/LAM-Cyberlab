@@ -17,6 +17,7 @@ import {
   GlobeIcon,
   Link01Icon,
   File01Icon,
+  Folder01Icon,
   McpServerIcon,
   MessageMultiple01Icon,
   Logout01Icon,
@@ -846,7 +847,7 @@ export function ChatSidebarComponent(props: ChatSidebarProps & { className?: str
     {
       kind: 'link',
       to: '/file-manager',
-      icon: File01Icon,
+      icon: Folder01Icon,
       label: 'File Manager',
       active: isFileManagerActive,
     },

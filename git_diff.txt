@@ -1,0 +1,984 @@
+diff --git a/src/components/connection-startup-screen.tsx b/src/components/connection-startup-screen.tsx
+index fdc153ee..692e5e4b 100644
+--- a/src/components/connection-startup-screen.tsx
++++ b/src/components/connection-startup-screen.tsx
+@@ -212,33 +212,40 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
+ 
+   return (
+     <div
+-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-6 py-10 text-white"
++      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-6 py-10 text-white bg-[#0A0E1A] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#0A0E1A] to-[#0A0E1A]"
+       style={{
+-        backgroundColor: '#0A0E1A',
+         fontFamily: 'Inter, system-ui, sans-serif',
+       }}
+     >
+       <div className="flex w-full max-w-lg flex-col items-center text-center">
+-        <img
+-          src="/claude-avatar.webp"
+-          alt="Hermes Agent"
+-          className="mb-5 h-20 w-20 rounded-2xl object-cover shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+-        />
++        {/* Avatar with glowing ring */}
++        <div className="relative mb-8 group">
++          <div className="absolute -inset-1 rounded-[1.25rem] bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-60 blur-md animate-pulse" />
++          <img
++            src="/claude-avatar.webp"
++            alt="Hermes Agent"
++            className="relative h-24 w-24 rounded-2xl object-cover shadow-[0_0_40px_rgba(99,102,241,0.3)] border border-white/10"
++          />
++        </div>
+ 
+-        <h1 className="text-[2rem] font-semibold tracking-tight text-white">
++        <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-2">
+           LAM Cyberlab
+         </h1>
+ 
+         {/* Connecting spinner */}
+         <div
+           className={[
+-            'mt-4 flex items-center gap-3 text-sm text-white/72 transition-opacity duration-300',
+-            showFailureState ? 'opacity-0 h-0' : 'opacity-100',
++            'mt-6 flex flex-col items-center gap-4 text-sm text-white/70 transition-all duration-500',
++            showFailureState ? 'opacity-0 scale-95 h-0 overflow-hidden' : 'opacity-100 scale-100',
+           ].join(' ')}
+           aria-hidden={showFailureState}
+         >
+-          <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
+-          <span>Connecting to your backend...</span>
++          <div className="flex gap-2 items-center justify-center h-8">
++            <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-[bounce_1.4s_infinite_0s]" />
++            <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-[bounce_1.4s_infinite_0.2s]" />
++            <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-[bounce_1.4s_infinite_0.4s]" />
++          </div>
++          <span className="font-medium tracking-widest uppercase text-[10px] text-indigo-200/70">Connecting to Backend...</span>
+         </div>
+ 
+         {/* Failure state — setup guide */}
+diff --git a/src/components/file-explorer/file-explorer-sidebar.tsx b/src/components/file-explorer/file-explorer-sidebar.tsx
+index 68f6fd78..cde83e6f 100644
+--- a/src/components/file-explorer/file-explorer-sidebar.tsx
++++ b/src/components/file-explorer/file-explorer-sidebar.tsx
+@@ -10,8 +10,10 @@ import {
+   Pen01Icon,
+   PlusSignIcon,
+   RefreshIcon,
++  Search01Icon,
+   Upload01Icon,
+ } from '@hugeicons/core-free-icons'
++import { FileIcon } from '@/components/ui/file-icon'
+ import FilePreviewDialog from './file-preview-dialog'
+ import { cn } from '@/lib/utils'
+ import {
+@@ -65,17 +67,6 @@ type PromptState = {
+ 
+ const ROOT_LABEL = 'Workspace'
+ 
+-function isImageFile(fileName: string) {
+-  const ext = fileName.split('.').pop()?.toLowerCase() || ''
+-  return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext)
+-}
+-
+-function getFileIcon(entry: FileEntry) {
+-  if (entry.type === 'folder') return Folder01Icon
+-  if (isImageFile(entry.name)) return Image01Icon
+-  return File01Icon
+-}
+-
+ function normalizePath(pathValue: string) {
+   return pathValue.replace(/\\/g, '/')
+ }
+@@ -329,7 +320,6 @@ export function FileExplorerSidebar({
+ 
+   const renderEntry = useCallback(
+     (entry: FileEntry, depth: number) => {
+-      const Icon = getFileIcon(entry)
+       const isExpanded = isSearchActive ? true : expanded.has(entry.path)
+       const padding = 12 + depth * 14
+ 
+@@ -367,7 +357,7 @@ export function FileExplorerSidebar({
+             ) : (
+               <span className="w-4" />
+             )}
+-            <HugeiconsIcon icon={Icon} size={18} strokeWidth={1.6} />
++            <FileIcon name={entry.name} type={entry.type} size={18} />
+             <span className="truncate">{entry.name}</span>
+           </button>
+           {entry.type === 'folder' && isExpanded && entry.children?.length ? (
+diff --git a/src/components/mobile-hamburger-menu.tsx b/src/components/mobile-hamburger-menu.tsx
+index 246ed1ab..398aa2a9 100644
+--- a/src/components/mobile-hamburger-menu.tsx
++++ b/src/components/mobile-hamburger-menu.tsx
+@@ -12,9 +12,11 @@ import {
+   CpuIcon,
+   CodeIcon,
+   GlobeIcon,
++  Database01Icon,
+   Link01Icon,
+   DashboardSquare01Icon,
+   File01Icon,
++  Folder01Icon,
+   McpServerIcon,
+   Menu01Icon,
+   PuzzleIcon,
+@@ -71,7 +73,7 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
+   {
+     id: 'file-manager',
+     label: 'File Manager',
+-    icon: File01Icon,
++    icon: Folder01Icon,
+     to: '/file-manager',
+     match: (p: string) => p.startsWith('/file-manager'),
+   },
+diff --git a/src/routes/api/files.ts b/src/routes/api/files.ts
+index 4c6af774..971d0583 100644
+--- a/src/routes/api/files.ts
++++ b/src/routes/api/files.ts
+@@ -509,7 +509,7 @@ export const Route = createFileRoute('/api/files')({
+                 const zip = new JSZip()
+                 await addDirectoryToZip(zip, browsePath, browsePath)
+                 const nodeStream = zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true })
+-                const webStream = Readable.toWeb(nodeStream)
++                const webStream = Readable.toWeb(nodeStream as any)
+                 return new Response(webStream as any, {
+                   headers: {
+                     'Content-Type': 'application/zip',
+@@ -647,7 +647,7 @@ export const Route = createFileRoute('/api/files')({
+               const zip = new JSZip()
+               await addDirectoryToZip(zip, resolvedPath, resolvedPath)
+               const nodeStream = zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true })
+-              const webStream = Readable.toWeb(nodeStream)
++              const webStream = Readable.toWeb(nodeStream as any)
+               return new Response(webStream as any, {
+                 headers: {
+                   'Content-Type': 'application/zip',
+@@ -705,6 +705,8 @@ export const Route = createFileRoute('/api/files')({
+           if (contentType.includes('multipart/form-data')) {
+             const form = await request.formData()
+             const action = String(form.get('action') || 'upload')
++            const mode = String(form.get('mode') || 'workspace')
++            const browseMode = mode === 'browse'
+             if (action !== 'upload') {
+               return json({ error: 'Invalid upload request' }, { status: 400 })
+             }
+@@ -713,21 +715,24 @@ export const Route = createFileRoute('/api/files')({
+             if (!(file instanceof File)) {
+               return json({ error: 'Missing file' }, { status: 400 })
+             }
+-            const resolvedTarget = ensureWorkspacePath(
+-              targetPath,
+-              workspaceRoot,
+-            )
++            const resolvedTarget = browseMode
++              ? ensureBrowsePath(targetPath)
++              : ensureWorkspacePath(targetPath, workspaceRoot)
+             const isDir = (await fs.stat(resolvedTarget)).isDirectory()
+             const destination = isDir
+               ? path.join(resolvedTarget, path.basename(file.name))
+               : resolvedTarget
+-            ensureWorkspacePath(destination, workspaceRoot)
++            if (browseMode) {
++              ensureBrowsePath(destination)
++            } else {
++              ensureWorkspacePath(destination, workspaceRoot)
++            }
+             await fs.mkdir(path.dirname(destination), { recursive: true })
+             const buffer = Buffer.from(await file.arrayBuffer())
+             await fs.writeFile(destination, buffer)
+             return json({
+               ok: true,
+-              path: toRelative(destination, workspaceRoot),
++              path: browseMode ? destination : toRelative(destination, workspaceRoot),
+             })
+           }
+ 
+diff --git a/src/routes/api/models.ts b/src/routes/api/models.ts
+index d9e8f5cc..644f9c32 100644
+--- a/src/routes/api/models.ts
++++ b/src/routes/api/models.ts
+@@ -73,7 +73,7 @@ export function mergeModelEntries(...sources: Array<Array<ModelEntry>>): Array<M
+   for (const source of sources) {
+     for (const model of source) {
+       const normalized = normalizeModel(model)
+-      if (!normalized || seen.has(normalized.id)) continue
++      if (!normalized || !normalized.id || seen.has(normalized.id)) continue
+       merged.push(normalized)
+       seen.add(normalized.id)
+     }
+diff --git a/src/screens/chat/components/chat-composer.tsx b/src/screens/chat/components/chat-composer.tsx
+index e287fec9..b8e78b47 100644
+--- a/src/screens/chat/components/chat-composer.tsx
++++ b/src/screens/chat/components/chat-composer.tsx
+@@ -1711,7 +1711,7 @@ function ChatComposerComponent({
+         el.focus()
+       }, 0)
+     } else {
+-      setComposerValue((v) => v + textToInsert)
++      setComposerValue(value + textToInsert)
+       focusPrompt()
+     }
+   }, [activeWorkspacePath, value, setComposerValue, focusPrompt])
+diff --git a/src/screens/chat/components/chat-sidebar.tsx b/src/screens/chat/components/chat-sidebar.tsx
+index 0f24ddb6..e287638f 100644
+--- a/src/screens/chat/components/chat-sidebar.tsx
++++ b/src/screens/chat/components/chat-sidebar.tsx
+@@ -17,6 +17,7 @@ import {
+   GlobeIcon,
+   Link01Icon,
+   File01Icon,
++  Folder01Icon,
+   McpServerIcon,
+   MessageMultiple01Icon,
+   Logout01Icon,
+@@ -846,7 +847,7 @@ export function ChatSidebarComponent(props: ChatSidebarProps & { className?: str
+     {
+       kind: 'link',
+       to: '/file-manager',
+-      icon: File01Icon,
++      icon: Folder01Icon,
+       label: 'File Manager',
+       active: isFileManagerActive,
+     },
+diff --git a/src/screens/editor/components/file-tree.tsx b/src/screens/editor/components/file-tree.tsx
+index e1599d48..48ce5cad 100644
+--- a/src/screens/editor/components/file-tree.tsx
++++ b/src/screens/editor/components/file-tree.tsx
+@@ -18,7 +18,7 @@ import {
+   Edit02Icon,
+ } from '@hugeicons/core-free-icons'
+ import { cn } from '@/lib/utils'
+-import { getFileIconClass } from '@/lib/file-icons'
++import { FileIcon } from '@/components/ui/file-icon'
+ 
+ /* ── Types ──────────────────────────────────────────────────────────── */
+ 
+@@ -111,8 +111,6 @@ function TreeNode({
+   const isSelected = selectedPath === entry.path
+   const isCut = clipboard?.type === 'cut' && clipboard.entry.path === entry.path
+ 
+-  const devIcon = !isFolder ? getFileIconClass(entry.name) : null
+-
+   const handleContextMenu = (e: React.MouseEvent | React.TouchEvent) => {
+     e.preventDefault()
+     e.stopPropagation()
+@@ -182,23 +180,7 @@ function TreeNode({
+         )}
+ 
+         {/* Icon */}
+-        {isFolder ? (
+-          <HugeiconsIcon
+-            icon={expanded ? FolderOpenIcon : Folder01Icon}
+-            size={14}
+-            className="shrink-0"
+-            style={{ color: 'var(--theme-warning, #f59e0b)' }}
+-          />
+-        ) : devIcon ? (
+-          <i className={cn(devIcon, 'shrink-0 text-[14px]')} />
+-        ) : (
+-          <HugeiconsIcon
+-            icon={File01Icon}
+-            size={14}
+-            className="shrink-0"
+-            style={{ color: 'var(--theme-muted)' }}
+-          />
+-        )}
++        <FileIcon name={entry.name} type={entry.type} size={14} className="shrink-0" />
+ 
+         {/* Name */}
+         <span className="min-w-0 truncate font-mono">{entry.name}</span>
+diff --git a/src/screens/editor/editor-screen.tsx b/src/screens/editor/editor-screen.tsx
+index 543c889d..9a59860a 100644
+--- a/src/screens/editor/editor-screen.tsx
++++ b/src/screens/editor/editor-screen.tsx
+@@ -521,7 +521,7 @@ export function EditorScreen() {
+ 
+   const sidebarElement = (
+     <div
+-      className={cn("flex h-full w-full flex-col border-r", isMobile ? "absolute inset-0 z-[100]" : "")}
++      className={cn("flex h-full w-full flex-col border-r", isMobile ? "absolute inset-0 z-40" : "")}
+       style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card)' }}
+     >
+         {/* Sidebar header */}
+@@ -1032,7 +1032,7 @@ export function EditorScreen() {
+ 
+   const chatElement = (
+     <div 
+-      className={cn("flex h-full w-full flex-col border-l", isMobile ? "absolute inset-0 z-[100]" : "")}
++      className={cn("flex h-full w-full flex-col border-l", isMobile ? "absolute inset-0 z-40" : "")}
+       style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-bg)' }}
+     >
+           {/* Agent Session Header */}
+diff --git a/src/screens/file-manager/file-manager-screen.tsx b/src/screens/file-manager/file-manager-screen.tsx
+index 54537d1c..ab4216a0 100644
+--- a/src/screens/file-manager/file-manager-screen.tsx
++++ b/src/screens/file-manager/file-manager-screen.tsx
+@@ -22,11 +22,14 @@ import {
+   DialogRoot,
+   DialogTitle,
+ } from '@/components/ui/dialog'
++import { toast } from '@/components/ui/toast'
++import { FileIcon } from '@/components/ui/file-icon'
+ import { HugeiconsIcon } from '@hugeicons/react'
+ import {
+   ArrowLeft01Icon,
+   ArrowRight01Icon,
+   ClipboardIcon,
++  CloudUploadIcon,
+   Copy01Icon,
+   Delete01Icon,
+   Download01Icon,
+@@ -38,6 +41,7 @@ import {
+   Loading03Icon,
+   RefreshIcon,
+   Scissor01Icon,
++  CheckListIcon,
+ } from '@hugeicons/core-free-icons'
+ 
+ // ──────────────────────────────────────────────────────────────────────────────
+@@ -164,26 +168,20 @@ function PathBreadcrumb({ currentPath, onNavigate }: { currentPath: string; onNa
+ function FileRow({
+   entry,
+   isSelected,
++  isMultiSelectMode,
+   onDoubleClick,
+   onClick,
+   onContextMenu,
+ }: {
+   entry: FileEntry
+   isSelected: boolean
++  isMultiSelectMode: boolean
+   onDoubleClick: () => void
+-  onClick: () => void
++  onClick: (e: React.MouseEvent) => void
+   onContextMenu: (e: React.MouseEvent) => void
+ }) {
+   const isFolder = entry.type === 'folder'
+-  const devIcon = !isFolder ? getFileIconClass(entry.name) : null
+-
+-  const icon = isFolder ? (
+-    <HugeiconsIcon icon={Folder01Icon} size={16} className="text-amber-500" />
+-  ) : devIcon ? (
+-    <i className={cn(devIcon, 'text-[16px]')} />
+-  ) : (
+-    <HugeiconsIcon icon={File01Icon} size={16} className="opacity-50" />
+-  )
++
+   return (
+     <tr
+       tabIndex={0}
+@@ -197,9 +195,23 @@ function FileRow({
+       onDoubleClick={onDoubleClick}
+       onContextMenu={onContextMenu}
+     >
+-      <td className="py-2 pl-4 pr-2">
++      {isMultiSelectMode && (
++        <td className="py-2 pl-4 pr-1 w-10">
++          <div className="flex items-center justify-center">
++            <input
++              type="checkbox"
++              checked={isSelected}
++              readOnly
++              className="w-4 h-4 text-primary-600 rounded border-primary-300 dark:border-neutral-600 bg-transparent focus:ring-primary-500"
++            />
++          </div>
++        </td>
++      )}
++      <td className={cn("py-2 pr-2", isMultiSelectMode ? "pl-1" : "pl-4")}>
+         <div className="flex items-start gap-2 min-w-0">
+-          <span className="shrink-0 text-base leading-none mt-0.5">{icon}</span>
++          <span className="shrink-0 text-base leading-none mt-0.5">
++            <FileIcon name={entry.name} type={entry.type} size={16} className={isFolder ? "text-amber-500" : ""} />
++          </span>
+           <span className="break-all">{entry.name}</span>
+         </div>
+       </td>
+@@ -322,29 +334,39 @@ function FilePreview({ entry }: { entry: FileEntry | null }) {
+ 
+ export function FileManagerScreen() {
+   usePageTitle('File Manager')
+-
+   const [entries, setEntries] = useState<Array<FileEntry>>([])
+   const [loading, setLoading] = useState(false)
+   const [error, setError] = useState<string | null>(null)
+-  const [selectedEntry, setSelectedEntry] = useState<FileEntry | null>(null)
+-  const [currentPath, setCurrentPath] = useState<string>(() => {
++  const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set())
++  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null)
++  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false)
++
++  const [history, setHistory] = useState<{ stack: string[], index: number }>(() => {
++    let initial = ''
+     if (typeof window !== 'undefined') {
+-      return localStorage.getItem('file-manager-path') || ''
++      initial = localStorage.getItem('file-manager-path') || ''
+     }
+-    return ''
++    return { stack: [initial || '/'], index: 0 }
+   })
+-  const [pathHistory, setPathHistory] = useState<string[]>([])
+-  const [historyIndex, setHistoryIndex] = useState(-1)
++  const currentPath = history.stack[history.index] || '/'
++
++  // Update local storage when path changes
++  useEffect(() => {
++    if (typeof window !== 'undefined') {
++      localStorage.setItem('file-manager-path', currentPath)
++    }
++  }, [currentPath])
++
+   const [homedirResolved, setHomedirResolved] = useState(false)
+   const homedirRef = useRef<string>('/')
+ 
+-  const [clipboard, setClipboard] = useState<{ action: 'copy' | 'cut'; entry: FileEntry } | null>(null)
++  const [clipboard, setClipboard] = useState<{ action: 'copy' | 'cut'; entries: FileEntry[] } | null>(null)
+ 
+   // CRUD state
+   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+   const [promptState, setPromptState] = useState<PromptState | null>(null)
+   const [promptValue, setPromptValue] = useState('')
+-  const [deleteConfirm, setDeleteConfirm] = useState<FileEntry | null>(null)
++  const [deleteConfirm, setDeleteConfirm] = useState<boolean>(false)
+   const [modalPreviewEntry, setModalPreviewEntry] = useState<FileEntry | null>(null)
+ 
+   // ── Load directory ──────────────────────────────────────────────────────────
+@@ -370,7 +392,12 @@ export function FileManagerScreen() {
+       // On first load without a saved path, redirect to home directory
+       if (!homedirResolved && data.homedir && !localStorage.getItem('file-manager-path')) {
+         setHomedirResolved(true)
+-        setCurrentPath(data.homedir)
++        setHistory(prev => {
++          if (prev.stack[0] === '' || prev.stack[0] === '/') {
++            return { stack: [data.homedir!], index: 0 }
++          }
++          return prev
++        })
+         return // will re-trigger via useEffect
+       }
+       setHomedirResolved(true)
+@@ -418,11 +445,14 @@ export function FileManagerScreen() {
+   // ── Navigation ──────────────────────────────────────────────────────────────
+ 
+   const navigateTo = useCallback((path: string) => {
+-    setCurrentPath(path)
+-    setSelectedEntry(null)
+-    setPathHistory(prev => [...prev.slice(0, historyIndex + 1), path])
+-    setHistoryIndex(prev => prev + 1)
+-  }, [historyIndex])
++    setSelectedPaths(new Set())
++    setLastSelectedIndex(null)
++    setHistory(prev => {
++      if (prev.stack[prev.index] === path) return prev
++      const newStack = [...prev.stack.slice(0, prev.index + 1), path]
++      return { stack: newStack, index: newStack.length - 1 }
++    })
++  }, [])
+ 
+   const goUp = useCallback(() => {
+     if (currentPath === '/') return
+@@ -430,20 +460,22 @@ export function FileManagerScreen() {
+   }, [currentPath, navigateTo])
+ 
+   const goBack = useCallback(() => {
+-    if (historyIndex <= 0) return
+-    const prevPath = pathHistory[historyIndex - 1]
+-    setHistoryIndex(prev => prev - 1)
+-    setCurrentPath(prevPath)
+-    setSelectedEntry(null)
+-  }, [historyIndex, pathHistory])
++    setSelectedPaths(new Set())
++    setLastSelectedIndex(null)
++    setHistory(prev => ({
++      ...prev,
++      index: Math.max(0, prev.index - 1)
++    }))
++  }, [])
+ 
+   const goForward = useCallback(() => {
+-    if (historyIndex >= pathHistory.length - 1) return
+-    const nextPath = pathHistory[historyIndex + 1]
+-    setHistoryIndex(prev => prev + 1)
+-    setCurrentPath(nextPath)
+-    setSelectedEntry(null)
+-  }, [historyIndex, pathHistory])
++    setSelectedPaths(new Set())
++    setLastSelectedIndex(null)
++    setHistory(prev => ({
++      ...prev,
++      index: Math.min(prev.stack.length - 1, prev.index + 1)
++    }))
++  }, [])
+ 
+   // ── Handlers ────────────────────────────────────────────────────────────────
+ 
+@@ -456,41 +488,85 @@ export function FileManagerScreen() {
+     }
+   }, [navigateTo])
+ 
+-  const handleSelect = useCallback((entry: FileEntry) => {
+-    setSelectedEntry(entry)
+-  }, [])
++  const handleSelect = useCallback((e: React.MouseEvent, entry: FileEntry, index: number) => {
++    e.stopPropagation()
++    setSelectedPaths(prev => {
++      const newSet = new Set(prev)
++      if (e.shiftKey && lastSelectedIndex !== null) {
++        const start = Math.min(lastSelectedIndex, index)
++        const end = Math.max(lastSelectedIndex, index)
++        newSet.clear() // Optional: clear or add to existing selection? Standard shift-click clears other selection usually, but we'll just add for now, wait, let's clear and add range.
++        for (let i = start; i <= end; i++) {
++          newSet.add(entries[i].path)
++        }
++      } else if (e.ctrlKey || e.metaKey || isMultiSelectMode) {
++        if (newSet.has(entry.path)) {
++          newSet.delete(entry.path)
++        } else {
++          newSet.add(entry.path)
++        }
++        setLastSelectedIndex(index)
++      } else {
++        newSet.clear()
++        newSet.add(entry.path)
++        setLastSelectedIndex(index)
++      }
++      return newSet
++    })
++  }, [entries, lastSelectedIndex, isMultiSelectMode])
+ 
+   const handleContextMenu = useCallback((e: React.MouseEvent, entry: FileEntry | null) => {
+     e.preventDefault()
+     e.stopPropagation()
++    if (entry && !selectedPaths.has(entry.path)) {
++      setSelectedPaths(new Set([entry.path]))
++      const idx = entries.findIndex(x => x.path === entry.path)
++      setLastSelectedIndex(idx >= 0 ? idx : null)
++    }
+     setContextMenu({ x: e.clientX, y: e.clientY, entry })
+-  }, [])
++  }, [selectedPaths, entries])
+ 
+   // ── CRUD actions ────────────────────────────────────────────────────────────
+ 
+   const handleDeleteConfirmed = useCallback(async () => {
+-    if (!deleteConfirm) return
+-    await fetch('/api/files', {
+-      method: 'POST',
+-      headers: { 'content-type': 'application/json' },
+-      body: JSON.stringify({ action: 'delete', mode: 'browse', path: deleteConfirm.path }),
++    if (!deleteConfirm || selectedPaths.size === 0) return
++    setLoading(true)
++    try {
++      await Promise.all(
++        Array.from(selectedPaths).map(path =>
++          fetch('/api/files', {
++            method: 'POST',
++            headers: { 'content-type': 'application/json' },
++            body: JSON.stringify({ action: 'delete', mode: 'browse', path }),
++          })
++        )
++      )
++      toast(`Deleted ${selectedPaths.size} item(s)`, { type: 'success' })
++      setSelectedPaths(new Set())
++      setLastSelectedIndex(null)
++      setDeleteConfirm(false)
++      await loadDirectory(currentPath)
++    } catch (err: any) {
++      toast(err.message, { type: 'error' })
++      setLoading(false)
++    }
++  }, [deleteConfirm, selectedPaths, loadDirectory, currentPath])
++
++  const handleDownload = useCallback((paths: Set<string>) => {
++    if (paths.size === 0) return
++    toast(`Starting download for ${paths.size} item(s)...`, { type: 'info' })
++    Array.from(paths).forEach(path => {
++      const entry = entries.find(e => e.path === path)
++      if (!entry) return
++      const url = `/api/files?action=download&mode=browse&path=${encodeURIComponent(path)}`
++      const anchor = document.createElement('a')
++      anchor.href = url
++      anchor.download = entry.type === 'folder' ? `${entry.name}.zip` : entry.name
++      document.body.appendChild(anchor)
++      anchor.click()
++      document.body.removeChild(anchor)
+     })
+-    if (selectedEntry?.path === deleteConfirm.path) setSelectedEntry(null)
+-    setDeleteConfirm(null)
+-    await loadDirectory(currentPath)
+-  }, [deleteConfirm, selectedEntry, loadDirectory, currentPath])
+-
+-  const handleDownload = useCallback(async (entry: FileEntry) => {
+-    const res = await fetch(`/api/files?action=download&mode=browse&path=${encodeURIComponent(entry.path)}`)
+-    if (!res.ok) return
+-    const blob = await res.blob()
+-    const url = URL.createObjectURL(blob)
+-    const anchor = document.createElement('a')
+-    anchor.href = url
+-    anchor.download = entry.type === 'folder' ? `${entry.name}.zip` : entry.name
+-    anchor.click()
+-    URL.revokeObjectURL(url)
+-  }, [])
++  }, [entries])
+ 
+   const openRenamePrompt = useCallback((entry: FileEntry) => {
+     setPromptState({ mode: 'rename', targetPath: entry.path, defaultValue: entry.name })
+@@ -502,23 +578,70 @@ export function FileManagerScreen() {
+     setPromptValue('')
+   }, [currentPath])
+ 
+-  const handlePaste = useCallback(async () => {
+-    if (!clipboard) return
+-    const targetFolder = contextMenu?.entry?.type === 'folder' ? contextMenu.entry.path : currentPath
+-    const targetPath = targetFolder + '/' + clipboard.entry.name
++  const fileInputRef = useRef<HTMLInputElement>(null)
+ 
+-    const action = clipboard.action === 'copy' ? 'copy' : 'rename'
+-    const res = await fetch('/api/files', {
+-      method: 'POST',
+-      headers: { 'content-type': 'application/json' },
+-      body: JSON.stringify({ action, mode: 'browse', from: clipboard.entry.path, to: targetPath }),
+-    })
++  const handleFileUpload = useCallback(
++    async (event: React.ChangeEvent<HTMLInputElement>) => {
++      const file = event.target.files?.[0]
++      if (!file) return
+ 
+-    if (res.ok) {
++      setLoading(true)
++      try {
++        const formData = new FormData()
++        formData.append('action', 'upload')
++        formData.append('path', currentPath)
++        formData.append('mode', 'browse')
++        formData.append('file', file)
++
++        const res = await fetch('/api/files', {
++          method: 'POST',
++          body: formData,
++        })
++
++        if (!res.ok) {
++          const errorData = await res.json().catch(() => null)
++          throw new Error(errorData?.error || `Upload failed: ${res.statusText}`)
++        }
++
++        toast(`Uploaded ${file.name}`, { type: 'success' })
++        void loadDirectory(currentPath)
++      } catch (err: any) {
++        toast(err.message, { type: 'error' })
++        setLoading(false)
++      } finally {
++        if (fileInputRef.current) {
++          fileInputRef.current.value = ''
++        }
++      }
++    },
++    [currentPath, loadDirectory]
++  )
++
++  const handlePaste = useCallback(async () => {
++    if (!clipboard || clipboard.entries.length === 0) return
++    const targetFolder = contextMenu?.entry?.type === 'folder' ? contextMenu.entry.path : currentPath
++    
++    setLoading(true)
++    try {
++      await Promise.all(
++        clipboard.entries.map(entry => {
++          const targetPath = targetFolder + '/' + entry.name
++          const action = clipboard.action === 'copy' ? 'copy' : 'rename'
++          return fetch('/api/files', {
++            method: 'POST',
++            headers: { 'content-type': 'application/json' },
++            body: JSON.stringify({ action, mode: 'browse', from: entry.path, to: targetPath }),
++          })
++        })
++      )
++      toast(`Pasted ${clipboard.entries.length} item(s)`, { type: 'success' })
+       if (clipboard.action === 'cut') {
+         setClipboard(null)
+       }
+       await loadDirectory(currentPath)
++    } catch (err: any) {
++      toast(err.message, { type: 'error' })
++      setLoading(false)
+     }
+   }, [clipboard, contextMenu, currentPath, loadDirectory])
+ 
+@@ -570,34 +693,38 @@ export function FileManagerScreen() {
+       }
+ 
+       if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+-        if (selectedEntry) {
++        if (selectedPaths.size > 0) {
+           e.preventDefault()
+-          setClipboard({ action: 'copy', entry: selectedEntry })
++          const entriesToCopy = entries.filter(entry => selectedPaths.has(entry.path))
++          setClipboard({ action: 'copy', entries: entriesToCopy })
+         }
+       } else if (e.key === 'x' && (e.ctrlKey || e.metaKey)) {
+-        if (selectedEntry) {
++        if (selectedPaths.size > 0) {
+           e.preventDefault()
+-          setClipboard({ action: 'cut', entry: selectedEntry })
++          const entriesToCut = entries.filter(entry => selectedPaths.has(entry.path))
++          setClipboard({ action: 'cut', entries: entriesToCut })
+         }
+       } else if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+         e.preventDefault()
+         void handlePaste()
+       } else if (e.key === 'Delete') {
+-        if (selectedEntry) {
++        if (selectedPaths.size > 0) {
+           e.preventDefault()
+-          setDeleteConfirm(selectedEntry)
++          setDeleteConfirm(true)
+         }
+       } else if (e.key === 'F2') {
+-        if (selectedEntry) {
++        if (selectedPaths.size === 1) {
+           e.preventDefault()
+-          openRenamePrompt(selectedEntry)
++          const selectedPath = Array.from(selectedPaths)[0]
++          const entry = entries.find(e => e.path === selectedPath)
++          if (entry) openRenamePrompt(entry)
+         }
+       }
+     }
+ 
+     window.addEventListener('keydown', handleKeyDown)
+     return () => window.removeEventListener('keydown', handleKeyDown)
+-  }, [selectedEntry, handlePaste, openRenamePrompt])
++  }, [selectedPaths, entries, handlePaste, openRenamePrompt])
+ 
+   // ── Render ──────────────────────────────────────────────────────────────────
+ 
+@@ -609,10 +736,10 @@ export function FileManagerScreen() {
+           <HamburgerTrigger />
+         </div>
+         {/* Navigation buttons */}
+-        <button type="button" onClick={goBack} disabled={historyIndex <= 0} title="Back" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
++        <button type="button" onClick={goBack} disabled={history.index <= 0} title="Back" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
+           <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />
+         </button>
+-        <button type="button" onClick={goForward} disabled={historyIndex >= pathHistory.length - 1} title="Forward" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
++        <button type="button" onClick={goForward} disabled={history.index >= history.stack.length - 1} title="Forward" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
+           <HugeiconsIcon icon={ArrowRight01Icon} size={18} />
+         </button>
+         <button type="button" onClick={goUp} disabled={currentPath === '/'} title="Go up" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
+@@ -636,6 +763,18 @@ export function FileManagerScreen() {
+ 
+         {/* Action buttons */}
+         <div className="flex items-center gap-1 ml-auto md:ml-0 order-2 md:order-none">
++          <button type="button" onClick={() => {
++            setIsMultiSelectMode(!isMultiSelectMode)
++            setSelectedPaths(new Set())
++            setLastSelectedIndex(null)
++          }} title="Toggle Multi-Select" className={cn("rounded p-1.5 transition-colors", isMultiSelectMode ? "bg-primary-200 text-primary-800 dark:bg-neutral-800 dark:text-neutral-100" : "text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800")}>
++            <HugeiconsIcon icon={CheckListIcon} size={16} />
++          </button>
++          <div className="h-4 w-px bg-primary-200 dark:bg-neutral-700 mx-1" />
++          <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
++          <button type="button" onClick={() => fileInputRef.current?.click()} title="Upload file" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors">
++            <HugeiconsIcon icon={CloudUploadIcon} size={16} />
++          </button>
+           <button type="button" onClick={openNewFilePrompt} title="New file" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors">
+             <HugeiconsIcon icon={File01Icon} size={16} />
+           </button>
+@@ -668,19 +807,39 @@ export function FileManagerScreen() {
+                 <table className="w-full text-left table-fixed">
+                   <thead className="sticky top-0 z-10 bg-primary-100/80 dark:bg-neutral-900/80 backdrop-blur-sm text-xs text-primary-500 dark:text-neutral-500 uppercase tracking-wider">
+                     <tr>
+-                      <th className="py-2 pl-4 pr-2 font-medium">Name</th>
++                      {isMultiSelectMode && (
++                        <th className="py-2 pl-4 pr-1 font-medium w-10">
++                          <div className="flex items-center justify-center">
++                            <input
++                              type="checkbox"
++                              checked={entries.length > 0 && selectedPaths.size === entries.length}
++                              onChange={(e) => {
++                                if (e.target.checked) {
++                                  setSelectedPaths(new Set(entries.map(x => x.path)))
++                                } else {
++                                  setSelectedPaths(new Set())
++                                }
++                                setLastSelectedIndex(null)
++                              }}
++                              className="w-4 h-4 text-primary-600 rounded border-primary-300 dark:border-neutral-600 bg-transparent focus:ring-primary-500 cursor-pointer"
++                            />
++                          </div>
++                        </th>
++                      )}
++                      <th className={cn("py-2 pr-2 font-medium", isMultiSelectMode ? "pl-1" : "pl-4")}>Name</th>
+                       <th className="py-2 px-3 text-right font-medium w-24">Size</th>
+                       <th className="py-2 px-3 font-medium hidden md:table-cell w-44">Modified</th>
+                       <th className="py-2 px-3 font-medium hidden lg:table-cell w-20">Type</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-primary-100 dark:divide-neutral-800/50">
+-                    {entries.map((entry) => (
++                    {entries.map((entry, index) => (
+                       <FileRow
+                         key={entry.path}
+                         entry={entry}
+-                        isSelected={selectedEntry?.path === entry.path}
+-                        onClick={() => handleSelect(entry)}
++                        isSelected={selectedPaths.has(entry.path)}
++                        isMultiSelectMode={isMultiSelectMode}
++                        onClick={(e) => handleSelect(e, entry, index)}
+                         onDoubleClick={() => handleDoubleClick(entry)}
+                         onContextMenu={(e) => handleContextMenu(e, entry)}
+                       />
+@@ -712,40 +871,50 @@ export function FileManagerScreen() {
+         >
+           {contextMenu.entry && (
+             <>
+-              {contextMenu.entry.type === 'folder' && (
++              {contextMenu.entry.type === 'folder' && selectedPaths.size === 1 && (
+                 <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { navigateTo(contextMenu.entry!.path); setContextMenu(null) }}>
+                   <HugeiconsIcon icon={FolderOpenIcon} size={16} /> Open
+                 </button>
+               )}
+-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { setClipboard({ action: 'cut', entry: contextMenu.entry! }); setContextMenu(null) }}>
+-                <HugeiconsIcon icon={Scissor01Icon} size={16} /> Cut
++              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { 
++                const entriesToCut = entries.filter(e => selectedPaths.has(e.path));
++                setClipboard({ action: 'cut', entries: entriesToCut }); 
++                setContextMenu(null) 
++              }}>
++                <HugeiconsIcon icon={Scissor01Icon} size={16} /> Cut {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
+               </button>
+-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { setClipboard({ action: 'copy', entry: contextMenu.entry! }); setContextMenu(null) }}>
+-                <HugeiconsIcon icon={Copy01Icon} size={16} /> Copy
++              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { 
++                const entriesToCopy = entries.filter(e => selectedPaths.has(e.path));
++                setClipboard({ action: 'copy', entries: entriesToCopy }); 
++                setContextMenu(null) 
++              }}>
++                <HugeiconsIcon icon={Copy01Icon} size={16} /> Copy {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
+               </button>
+               <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
+-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { openRenamePrompt(contextMenu.entry!); setContextMenu(null) }}>
+-                <HugeiconsIcon icon={Edit02Icon} size={16} /> Rename
+-              </button>
+-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handleDownload(contextMenu.entry!); setContextMenu(null) }}>
+-                <HugeiconsIcon icon={Download01Icon} size={16} /> Download
++              {selectedPaths.size === 1 && (
++                <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { openRenamePrompt(contextMenu.entry!); setContextMenu(null) }}>
++                  <HugeiconsIcon icon={Edit02Icon} size={16} /> Rename
++                </button>
++              )}
++              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handleDownload(selectedPaths); setContextMenu(null) }}>
++                <HugeiconsIcon icon={Download01Icon} size={16} /> Download {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
+               </button>
+               <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
+             </>
+           )}
+ 
+-          {(!contextMenu.entry || contextMenu.entry.type === 'folder') && clipboard && (
++          {(!contextMenu.entry || (contextMenu.entry.type === 'folder' && selectedPaths.size === 1)) && clipboard && (
+             <>
+               <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handlePaste(); setContextMenu(null) }}>
+-                <HugeiconsIcon icon={ClipboardIcon} size={16} /> Paste
++                <HugeiconsIcon icon={ClipboardIcon} size={16} /> Paste {clipboard.entries.length > 1 ? `(${clipboard.entries.length})` : ''}
+               </button>
+               <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
+             </>
+           )}
+ 
+           {contextMenu.entry && (
+-            <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors" onClick={() => { setDeleteConfirm(contextMenu.entry!); setContextMenu(null) }}>
+-              <HugeiconsIcon icon={Delete01Icon} size={16} /> Delete
++            <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors" onClick={() => { setDeleteConfirm(true); setContextMenu(null) }}>
++              <HugeiconsIcon icon={Delete01Icon} size={16} /> Delete {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
+             </button>
+           )}
+         </div>
+@@ -779,13 +948,12 @@ export function FileManagerScreen() {
+       </DialogRoot>
+ 
+       {/* ── Delete confirm dialog ──────────────────────────────────────────── */}
+-      <DialogRoot open={Boolean(deleteConfirm)} onOpenChange={(open) => { if (!open) setDeleteConfirm(null) }}>
++      <DialogRoot open={deleteConfirm} onOpenChange={(open) => { if (!open) setDeleteConfirm(false) }}>
+         <DialogContent>
+           <div className="p-5 space-y-3">
+-            <DialogTitle>Delete {deleteConfirm?.type === 'folder' ? 'Folder' : 'File'}</DialogTitle>
++            <DialogTitle>Delete {selectedPaths.size > 1 ? 'Files' : 'File'}</DialogTitle>
+             <DialogDescription>
+-              Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>?
+-              {deleteConfirm?.type === 'folder' && ' This will delete all contents inside.'}
++              Are you sure you want to delete <strong>{selectedPaths.size === 1 ? Array.from(selectedPaths)[0].split('/').pop() : `${selectedPaths.size} items`}</strong>?
+               {' '}This action cannot be undone.
+             </DialogDescription>
+             <div className="flex justify-end gap-2 pt-2">
+diff --git a/src/screens/files/files-screen.tsx b/src/screens/files/files-screen.tsx
+index ecdcbfcd..667fcb0d 100644
+--- a/src/screens/files/files-screen.tsx
++++ b/src/screens/files/files-screen.tsx
+@@ -1,5 +1,6 @@
+ import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+ import { cn } from '@/lib/utils'
++import { FileIcon } from '@/components/ui/file-icon'
+ import { usePageTitle } from '@/hooks/use-page-title'
+ import {
+   ScrollAreaCorner,
+@@ -121,17 +122,6 @@ function isEditableFile(name: string): boolean {
+   return !isImageFile(name)
+ }
+ 
+-function getFileIcon(entry: FileEntry): string {
+-  if (entry.type === 'folder') return '📁'
+-  const ext = getExt(entry.name)
+-  if (ext === 'md' || ext === 'mdx') return '📄'
+-  if (ext === 'json') return '📋'
+-  if (ext === 'ts' || ext === 'tsx' || ext === 'js' || ext === 'jsx')
+-    return '📜'
+-  if (IMAGE_EXTS.has(ext)) return '🖼'
+-  return '📃'
+-}
+-
+ function formatBytes(bytes: number): string {
+   if (bytes < 1024) return `${bytes} B`
+   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+@@ -575,7 +565,6 @@ function TreeNode({
+ }: TreeNodeProps) {
+   const isExpanded = expanded.has(entry.path)
+   const isSelected = selectedPath === entry.path
+-  const icon = getFileIcon(entry)
+   const paddingLeft = 12 + depth * 16
+ 
+   const handleClick = () => {
+@@ -612,8 +601,8 @@ function TreeNode({
+         ) : (
+           <span className="w-3 shrink-0" />
+         )}
+-        <span className="shrink-0 text-base leading-none">{icon}</span>
+-        <span className="truncate">{entry.name}</span>
++        <FileIcon name={entry.name} type={entry.type} size={16} />
++        <span className="truncate leading-none">{entry.name}</span>
+       </button>
+ 
+       {entry.type === 'folder' && isExpanded && entry.children ? (
+@@ -822,9 +811,9 @@ function FilePanel({ selectedEntry }: FilePanelProps) {
+ 
+   const header = (
+     <div className="flex shrink-0 items-center justify-between gap-3 border-b border-primary-200 dark:border-neutral-800 px-4 py-2.5">
+-      <div className="flex items-center gap-2 min-w-0">
+-        <span className="text-lg">{getFileIcon(selectedEntry)}</span>
+-        <span className="truncate text-sm font-semibold text-primary-900 dark:text-neutral-100">
++      <div className="flex items-center gap-2 min-w-0 mt-0.5">
++        <FileIcon name={selectedEntry.name} type={selectedEntry.type} size={20} />
++        <span className="truncate text-sm font-semibold text-primary-900 dark:text-neutral-100 mb-0.5">
+           {selectedEntry.name}
+         </span>
+       </div>
+diff --git a/src/screens/graph/graph-screen.tsx b/src/screens/graph/graph-screen.tsx
+index a70264e5..f41ad6ff 100644
+--- a/src/screens/graph/graph-screen.tsx
++++ b/src/screens/graph/graph-screen.tsx
+@@ -46,6 +46,7 @@ type LayoutNode = GraphNode & {
+   y: number
+   z: number
+   connections: number
++  isBlackHole?: boolean
+ }
+ 
+ // ── Colors & Sizes ──────────────────────────────────────────────────

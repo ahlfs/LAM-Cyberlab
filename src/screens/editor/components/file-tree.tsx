@@ -18,7 +18,7 @@ import {
   Edit02Icon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
-import { getFileIconClass } from '@/lib/file-icons'
+import { FileIcon } from '@/components/ui/file-icon'
 
 /* ── Types ──────────────────────────────────────────────────────────── */
 
@@ -111,8 +111,6 @@ function TreeNode({
   const isSelected = selectedPath === entry.path
   const isCut = clipboard?.type === 'cut' && clipboard.entry.path === entry.path
 
-  const devIcon = !isFolder ? getFileIconClass(entry.name) : null
-
   const handleContextMenu = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -182,23 +180,7 @@ function TreeNode({
         )}
 
         {/* Icon */}
-        {isFolder ? (
-          <HugeiconsIcon
-            icon={expanded ? FolderOpenIcon : Folder01Icon}
-            size={14}
-            className="shrink-0"
-            style={{ color: 'var(--theme-warning, #f59e0b)' }}
-          />
-        ) : devIcon ? (
-          <i className={cn(devIcon, 'shrink-0 text-[14px]')} />
-        ) : (
-          <HugeiconsIcon
-            icon={File01Icon}
-            size={14}
-            className="shrink-0"
-            style={{ color: 'var(--theme-muted)' }}
-          />
-        )}
+        <FileIcon name={entry.name} type={entry.type} size={14} className="shrink-0" />
 
         {/* Name */}
         <span className="min-w-0 truncate font-mono">{entry.name}</span>

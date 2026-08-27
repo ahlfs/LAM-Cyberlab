@@ -73,7 +73,7 @@ export function mergeModelEntries(...sources: Array<Array<ModelEntry>>): Array<M
   for (const source of sources) {
     for (const model of source) {
       const normalized = normalizeModel(model)
-      if (!normalized || seen.has(normalized.id)) continue
+      if (!normalized || !normalized.id || seen.has(normalized.id)) continue
       merged.push(normalized)
       seen.add(normalized.id)
     }

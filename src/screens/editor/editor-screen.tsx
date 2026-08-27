@@ -521,7 +521,7 @@ export function EditorScreen() {
 
   const sidebarElement = (
     <div
-      className={cn("flex h-full w-full flex-col border-r", isMobile ? "absolute inset-0 z-[100]" : "")}
+      className={cn("flex h-full w-full flex-col border-r", isMobile ? "absolute inset-0 z-40" : "")}
       style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card)' }}
     >
         {/* Sidebar header */}
@@ -1032,7 +1032,7 @@ export function EditorScreen() {
 
   const chatElement = (
     <div 
-      className={cn("flex h-full w-full flex-col border-l", isMobile ? "absolute inset-0 z-[100]" : "")}
+      className={cn("flex h-full w-full flex-col border-l", isMobile ? "absolute inset-0 z-40" : "")}
       style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-bg)' }}
     >
           {/* Agent Session Header */}
