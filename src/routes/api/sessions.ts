@@ -147,27 +147,40 @@ export const Route = createFileRoute('/api/sessions')({
 
           
           let resolvedGatewayProvider: string | undefined
-          let resolvedGatewayModel = model
+          let rawModel = typeof model === 'string' ? model.trim() : ''
+          const nonSlugMatch = rawModel.match(/^[^/]*[\s()][^/]*\/(.+)$/)
+          const cleanModel = nonSlugMatch ? nonSlugMatch[1] : rawModel
+          let resolvedGatewayModel = cleanModel || model
 
-          if (model) {
+          if (cleanModel) {
             const { fetchConfiguredLiveModels, readClaudeConfigCatalog } = await import('./models')
             const configuredLiveModels = await fetchConfiguredLiveModels().catch(() => [])
             const catalogModels = readClaudeConfigCatalog()
             const allModels = [...configuredLiveModels, ...catalogModels]
             
-            const bareModel = model.includes('/') ? model.split('/').slice(1).join('/') : model
+            const bareModel = cleanModel.includes('/') ? cleanModel.split('/').slice(1).join('/') : cleanModel
             const liveMatch = allModels.find((m) => {
-              if (m.id === model || m.id === bareModel) return true
-              if (m.provider && model === `${m.provider}/${m.id}`) return true
-              if (m.provider && model.startsWith(`${m.provider}/`) && model.slice(m.provider.length + 1) === m.id) return true
+              if (m.id === cleanModel || m.id === bareModel) return true
+              if (m.provider && cleanModel === `${m.provider}/${m.id}`) return true
+              if (m.provider && cleanModel.startsWith(`${m.provider}/`) && cleanModel.slice(m.provider.length + 1) === m.id) return true
               return false
             })
             if (liveMatch) {
                const prov = (liveMatch as any).endpointProvider || liveMatch.provider;
-               if (prov && prov.toLowerCase() !== 'custom' && prov.toLowerCase() !== 'configured') {
+               const isLiveProxyModel = Boolean((liveMatch as any).source === 'live-proxy' || (liveMatch as any).baseUrl);
+               const isMultiSegmentModel = (cleanModel && cleanModel.includes('/')) || (liveMatch.id && liveMatch.id.includes('/'));
+               const isValidProviderSlug = prov && /^[a-z0-9_-]+$/i.test(prov);
+               if (prov && prov.toLowerCase() !== 'custom' && prov.toLowerCase() !== 'configured' && !isLiveProxyModel && !isMultiSegmentModel && isValidProviderSlug) {
                   resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
+               } else {
+                  resolvedGatewayProvider = 'custom'
                }
-               resolvedGatewayModel = liveMatch.id
+               // Prefer the original model ID over liveMatch.id to avoid stripping
+               // the routing prefix (e.g. vps/ag/) that 9router needs.
+               const matchId = liveMatch.id ?? ''
+               resolvedGatewayModel = (cleanModel && matchId && cleanModel.includes(matchId))
+                 ? cleanModel
+                 : (liveMatch.id || cleanModel)
             }
           }
 

@@ -564,6 +564,10 @@ function getResolvedModelKey(model: string, provider?: string): string {
 
   if (!normalizedModel) return ''
   if (!normalizedProvider) return normalizedModel
+  // If model already contains a path/prefix (e.g. "vps/ag/...") or provider has spaces/parentheses, don't prepend provider
+  if (normalizedModel.includes('/') || /[\s()]/g.test(normalizedProvider)) {
+    return normalizedModel
+  }
   if (normalizedModel.startsWith(`${normalizedProvider}/`))
     return normalizedModel
   return `${normalizedProvider}/${normalizedModel}`

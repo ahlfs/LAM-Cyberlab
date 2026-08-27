@@ -366,7 +366,11 @@ export const Route = createFileRoute('/api/send-stream')({
         let chatMode = getChatMode()
         let localBaseUrl: string | undefined
         let localApiKey: string | undefined
-        const requestModel = typeof body.model === 'string' ? body.model : ''; console.log("LAM-CYBERLAB RECEIVED MODEL:", requestModel, "ORIGINAL BODY:", body.model);
+        let rawRequestModel = typeof body.model === 'string' ? body.model.trim() : ''
+        // Strip non-slug provider prefixes (e.g. "Local (localhost:3035)/vps/ag/...")
+        const nonSlugMatch = rawRequestModel.match(/^[^/]*[\s()][^/]*\/(.+)$/)
+        const requestModel = nonSlugMatch ? nonSlugMatch[1] : rawRequestModel
+        console.log("[LAM-DEBUG] RECEIVED MODEL:", requestModel, "| bareModel:", requestModel.includes('/') ? requestModel.split('/').slice(1).join('/') : requestModel)
         let bareModel = requestModel.includes('/') ? requestModel.split('/').slice(1).join('/') : requestModel
 
         // Resolve Gateway Provider if it's a custom model (fixes routing when Gateway uses default provider)
@@ -385,15 +389,31 @@ export const Route = createFileRoute('/api/send-stream')({
             return false
           })
           if (!liveMatch) {
-            liveMatch = allModels.find((m) => m.id === bareModel)
+            // Prioritize live-proxy models on bareModel fallback to preserve source: 'live-proxy'
+            // so isLiveProxyModel check works correctly and resolvedGatewayProvider is not set
+            liveMatch = configuredLiveModels.find((m) => m.id === bareModel)
+              ?? allModels.find((m) => m.id === bareModel)
           }
           if (liveMatch) {
              const prov = (liveMatch as any).endpointProvider || liveMatch.provider;
-             if (prov && prov.toLowerCase() !== 'custom' && prov.toLowerCase() !== 'configured') {
+             // If this model belongs to a configured live model endpoint (from custom_providers, etc.), 
+             // skip resolvedGatewayProvider to let the gateway routing by model prefix handle it
+             const isLiveProxyModel = Boolean((liveMatch as any).source === 'live-proxy' || (liveMatch as any).baseUrl);
+             const isMultiSegmentModel = requestModel.includes('/') || (liveMatch.id && liveMatch.id.includes('/'));
+             const isValidProviderSlug = prov && /^[a-z0-9_-]+$/i.test(prov);
+             if (prov && prov.toLowerCase() !== 'custom' && prov.toLowerCase() !== 'configured' && !isLiveProxyModel && !isMultiSegmentModel && isValidProviderSlug) {
                 resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
+             } else {
+                resolvedGatewayProvider = 'custom'
              }
-             // default provider resolution. This avoids 'custom:custom' errors.
-             resolvedGatewayModel = liveMatch.id
+             // Prefer the original requestModel over liveMatch.id to avoid stripping the
+             // routing prefix (e.g. vps/ag/) that 9router needs for correct upstream dispatch.
+             // Only fall back to liveMatch.id when requestModel is not a superset of it.
+             const matchId = liveMatch.id ?? ''
+             resolvedGatewayModel = (requestModel && matchId && requestModel.includes(matchId))
+               ? requestModel
+               : (liveMatch.id || requestModel)
+             console.log("[LAM-DEBUG] resolvedGatewayModel:", resolvedGatewayModel, "| resolvedGatewayProvider:", resolvedGatewayProvider, "| isLiveProxyModel:", isLiveProxyModel, "| liveMatch.id:", liveMatch.id)
           }
         }
 
@@ -428,7 +448,9 @@ export const Route = createFileRoute('/api/send-stream')({
               chatMode = 'portable'
               localBaseUrl = (liveMatch as any).baseUrl
               localApiKey = (liveMatch as any).apiKey
-              bareModel = liveMatch.id || ''
+              // Keep requestModel as-is so 9router can route by full prefix (e.g. vps/ag/claude-sonnet-4-6)
+              // Do NOT override bareModel with liveMatch.id — that strips the prefix 9router needs
+              bareModel = requestModel || liveMatch.id || ''
             }
           }
 

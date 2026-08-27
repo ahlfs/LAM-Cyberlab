@@ -2686,7 +2686,22 @@ export function ChatScreen({
     setSending(false)
     setPendingGeneration(false)
     setWaitingForResponse(false)
-  }, [cancelStreaming, queryClient])
+
+    // Tell the Hermes backend to stop the running agent process.
+    // cancelStreaming() only closes the browser-side SSE reader; without this
+    // the upstream Hermes process keeps running until it naturally completes.
+    const sessionKeyToStop =
+      resolvedSessionKey || activeCanonicalKey || activeSessionKey || activeFriendlyId
+    if (sessionKeyToStop && sessionKeyToStop !== 'new') {
+      fetch('/api/conductor-stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionKeys: [sessionKeyToStop] }),
+      }).catch(() => {
+        // Fire-and-forget — UI already reflects stopped state.
+      })
+    }
+  }, [cancelStreaming, queryClient, resolvedSessionKey, activeCanonicalKey, activeSessionKey, activeFriendlyId])
 
   const runPaletteSlashCommand = useCallback(
     (command: string) => {

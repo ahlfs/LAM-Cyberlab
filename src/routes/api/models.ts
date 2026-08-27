@@ -374,6 +374,41 @@ export function readClaudeConfigCatalog(): Array<ModelEntry> {
       }
     }
 
+    // Also parse custom_providers — these are user-defined provider blocks with
+    // a 'models' list and a 'name' field. Without this, models from custom_providers
+    // are invisible to resolveGatewayProvider in send-stream.ts, causing the gateway
+    // to fall back to its default provider instead of routing correctly.
+    const customProviders = Array.isArray(config.custom_providers)
+      ? config.custom_providers
+      : []
+    for (const item of customProviders) {
+      const record = asRecord(item)
+      const providerId =
+        readString(record.name) || readString(record.id) || 'custom'
+      const defaultModel = readString(record.model)
+      if (defaultModel) {
+        pushEntry({ id: defaultModel, name: defaultModel, provider: providerId })
+      }
+      const modelList = Array.isArray(record.models) ? record.models : []
+      for (const m of modelList) {
+        if (typeof m === 'string') {
+          const id = m.trim()
+          if (!id) continue
+          pushEntry({ id, name: id, provider: providerId })
+        } else {
+          const mr = asRecord(m)
+          const id =
+            readString(mr.id) || readString(mr.model) || readString(mr.name)
+          if (!id) continue
+          pushEntry({
+            id,
+            name: readString(mr.name) || id,
+            provider: readString(mr.provider) || providerId,
+          })
+        }
+      }
+    }
+
     const aliases = asRecord(config.model_aliases)
     for (const [alias, target] of Object.entries(aliases)) {
       const aliasId = alias.trim()
