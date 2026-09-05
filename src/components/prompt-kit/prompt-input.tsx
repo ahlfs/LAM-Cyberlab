@@ -84,7 +84,7 @@ function isInteractiveTarget(target: HTMLElement | null): boolean {
   if (!target) return false
   return Boolean(
     target.closest(
-      'button, a, select, input[type="file"], [role="button"], [contenteditable]',
+      'button, a, select, input, textarea, [role="button"], [contenteditable]',
     ),
   )
 }
