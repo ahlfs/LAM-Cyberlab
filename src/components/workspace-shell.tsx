@@ -42,6 +42,7 @@ import { MobileHamburgerMenu } from '@/components/mobile-hamburger-menu'
 import { MobilePageHeader } from '@/components/mobile-page-header'
 
 import { MobileTerminalInput } from '@/components/terminal/mobile-terminal-input'
+import { isTouchDevice } from '@/lib/touch-detect'
 import { ClaudeReconnectBanner } from '@/components/claude-reconnect-banner'
 import { useMobileKeyboard } from '@/hooks/use-mobile-keyboard'
 import { SystemMetricsFooter } from '@/components/system-metrics-footer'
@@ -91,6 +92,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     if (typeof window === 'undefined') return false
     return window.matchMedia('(max-width: 767px)').matches
   })
+  const [isTouch, setIsTouch] = useState(() => isTouchDevice())
 
   // Slide transition direction tracking (mobile only)
   const [slideClass, setSlideClass] = useState<string>('')
@@ -249,7 +251,10 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)')
-    const update = () => setIsMobile(media.matches)
+    const update = () => {
+      setIsMobile(media.matches)
+      setIsTouch(isTouchDevice())
+    }
     update()
     media.addEventListener('change', update)
     return () => media.removeEventListener('change', update)
@@ -427,10 +432,8 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
                   />
                 </Suspense>
               </div>
-              {/* Mobile input bar — only mount on the terminal route.
-                  It uses fixed bottom positioning, so if it stays mounted while
-                  hidden it leaks onto other mobile pages like Operations. */}
-              {isMobile && isOnTerminalRoute && <MobileTerminalInput />}
+              {/* Mobile / Touch accessory bar — mounted on the terminal route for phones, iPads, and touch tablets. */}
+              {(isMobile || isTouch) && isOnTerminalRoute && <MobileTerminalInput />}
             </div>
 
             <div

@@ -1,11 +1,22 @@
 /**
- * MobileTerminalInput — completely isolated from TerminalWorkspace.
- * Rendered as a sibling in WorkspaceShell so SSE stream re-renders
- * in the terminal component never freeze this input.
+ * MobileTerminalInput — Termux-style accessory bar + touch input for Web Terminal.
+ * Supports touch devices (iPad, iPad Pro, Android tablets, smartphones).
+ * Provides Esc, Tab, Arrow keys (Up, Down, Left, Right), Ctrl/Alt sticky modifiers,
+ * Ctrl+C, Ctrl+D, Ctrl+Z shortcuts, quick symbols, and paste.
  */
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { ArrowUp02Icon, Copy01Icon } from '@hugeicons/core-free-icons'
+import {
+  ArrowDown01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  ArrowUp01Icon,
+  ArrowUp02Icon,
+  Copy01Icon,
+  ViewIcon,
+  ViewOffSlashIcon,
+} from '@hugeicons/core-free-icons'
+import { cn } from '@/lib/utils'
 import { useTerminalPanelStore } from '@/stores/terminal-panel-store'
 
 async function sendToActiveTab(data: string) {
@@ -19,15 +30,73 @@ async function sendToActiveTab(data: string) {
   }).catch(() => undefined)
 }
 
+const QUICK_SYMBOLS = ['~', '/', '-', '_', '|', ':', '$', '&', '>', '<', ';', '"', "'"]
+
+const STORAGE_KEY_SHOW_BAR = 'lam.terminal.extra_keys_visible'
+
 export function MobileTerminalInput() {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [ctrlActive, setCtrlActive] = useState(false)
+  const [altActive, setAltActive] = useState(false)
+  const [showExtraKeys, setShowExtraKeys] = useState(() => {
+    if (typeof window === 'undefined') return true
+    const stored = localStorage.getItem(STORAGE_KEY_SHOW_BAR)
+    return stored !== 'false'
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_SHOW_BAR, String(showExtraKeys))
+    } catch {
+      // ignore
+    }
+  }, [showExtraKeys])
+
+  const sendKey = useCallback((seq: string) => {
+    void sendToActiveTab(seq)
+  }, [])
+
+  const handleCharInput = useCallback(
+    (char: string) => {
+      let data = char
+      if (ctrlActive) {
+        // Compute control character if letter (a-z, A-Z)
+        const code = char.toUpperCase().charCodeAt(0)
+        if (code >= 64 && code <= 95) {
+          data = String.fromCharCode(code - 64)
+        } else if (char === ' ') {
+          data = '\x00'
+        }
+        setCtrlActive(false)
+      } else if (altActive) {
+        data = '\x1b' + char
+        setAltActive(false)
+      }
+      void sendToActiveTab(data)
+    },
+    [altActive, ctrlActive],
+  )
 
   const send = useCallback(() => {
     const val = inputRef.current?.value
-    if (!val) return
-    void sendToActiveTab(val + '\r')
+    if (!val) {
+      // If empty, send Enter (Carriage Return)
+      void sendToActiveTab('\r')
+      return
+    }
+
+    if (ctrlActive || altActive) {
+      // Process first char with active modifiers if any, then remainder
+      handleCharInput(val.charAt(0))
+      if (val.length > 1) {
+        void sendToActiveTab(val.slice(1) + '\r')
+      }
+    } else {
+      void sendToActiveTab(val + '\r')
+    }
+
     if (inputRef.current) inputRef.current.value = ''
-  }, [])
+  }, [altActive, ctrlActive, handleCharInput])
 
   const paste = useCallback(async () => {
     try {
@@ -41,69 +110,253 @@ export function MobileTerminalInput() {
     }
   }, [])
 
-  const ctrlC = useCallback(() => {
-    void sendToActiveTab('\x03')
-  }, [])
-
   return (
     <div
-      className="flex items-center gap-1 px-2 py-1.5 shrink-0"
-      style={{ background: '#1a1a1a', borderTop: '1px solid #333' }}
+      className="flex flex-col shrink-0 select-none touch-manipulation z-30"
+      style={{
+        background: '#141414',
+        borderTop: '1px solid #2d2d2d',
+      }}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
     >
-      <button
-        type="button"
-        onClick={() => void paste()}
-        className="flex items-center justify-center size-8 rounded-lg shrink-0 active:opacity-60"
-        style={{ background: '#2a2a2a', color: '#aaa' }}
-        aria-label="Paste"
-      >
-        <HugeiconsIcon icon={Copy01Icon} size={16} strokeWidth={1.6} />
-      </button>
-      <input
-        ref={inputRef}
-        type="text"
-        defaultValue=""
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            send()
+      {/* Termux-Style Extra Keys Row */}
+      {showExtraKeys ? (
+        <div
+          className="flex items-center gap-1 px-1.5 py-1 overflow-x-auto no-scrollbar border-b border-[#252525]"
+          style={{ background: '#181818' }}
+        >
+          {/* ESC */}
+          <button
+            type="button"
+            onClick={() => sendKey('\x1b')}
+            className="flex items-center justify-center h-7 min-w-[38px] px-2 rounded font-mono text-xs font-semibold text-neutral-300 bg-[#262626] active:bg-[#3a3a3a] border border-[#333] transition-colors"
+            title="Escape key"
+          >
+            ESC
+          </button>
+
+          {/* TAB */}
+          <button
+            type="button"
+            onClick={() => sendKey('\t')}
+            className="flex items-center justify-center h-7 min-w-[38px] px-2 rounded font-mono text-xs font-semibold text-neutral-300 bg-[#262626] active:bg-[#3a3a3a] border border-[#333] transition-colors"
+            title="Tab key"
+          >
+            TAB
+          </button>
+
+          {/* CTRL Sticky */}
+          <button
+            type="button"
+            onClick={() => setCtrlActive((prev) => !prev)}
+            className={cn(
+              'flex items-center justify-center h-7 min-w-[38px] px-2 rounded font-mono text-xs font-semibold border transition-colors',
+              ctrlActive
+                ? 'bg-[#ea580c] text-white border-[#ea580c] shadow-sm'
+                : 'text-neutral-300 bg-[#262626] active:bg-[#3a3a3a] border-[#333]',
+            )}
+            title="Sticky Control key"
+          >
+            CTRL
+          </button>
+
+          {/* ALT Sticky */}
+          <button
+            type="button"
+            onClick={() => setAltActive((prev) => !prev)}
+            className={cn(
+              'flex items-center justify-center h-7 min-w-[36px] px-2 rounded font-mono text-xs font-semibold border transition-colors',
+              altActive
+                ? 'bg-[#ea580c] text-white border-[#ea580c] shadow-sm'
+                : 'text-neutral-300 bg-[#262626] active:bg-[#3a3a3a] border-[#333]',
+            )}
+            title="Sticky Alt key"
+          >
+            ALT
+          </button>
+
+          {/* Arrow Navigation Up */}
+          <button
+            type="button"
+            onClick={() => sendKey('\x1b[A')}
+            className="flex items-center justify-center h-7 w-8 rounded font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#333] transition-colors"
+            title="Up Arrow"
+            aria-label="Up"
+          >
+            <HugeiconsIcon icon={ArrowUp01Icon} size={15} strokeWidth={2} />
+          </button>
+
+          {/* Arrow Navigation Down */}
+          <button
+            type="button"
+            onClick={() => sendKey('\x1b[B')}
+            className="flex items-center justify-center h-7 w-8 rounded font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#333] transition-colors"
+            title="Down Arrow"
+            aria-label="Down"
+          >
+            <HugeiconsIcon icon={ArrowDown01Icon} size={15} strokeWidth={2} />
+          </button>
+
+          {/* Arrow Navigation Left */}
+          <button
+            type="button"
+            onClick={() => sendKey('\x1b[D')}
+            className="flex items-center justify-center h-7 w-8 rounded font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#333] transition-colors"
+            title="Left Arrow"
+            aria-label="Left"
+          >
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={15} strokeWidth={2} />
+          </button>
+
+          {/* Arrow Navigation Right */}
+          <button
+            type="button"
+            onClick={() => sendKey('\x1b[C')}
+            className="flex items-center justify-center h-7 w-8 rounded font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#333] transition-colors"
+            title="Right Arrow"
+            aria-label="Right"
+          >
+            <HugeiconsIcon icon={ArrowRight01Icon} size={15} strokeWidth={2} />
+          </button>
+
+          {/* Shortcuts: Ctrl+C, Ctrl+D, Ctrl+Z */}
+          <button
+            type="button"
+            onClick={() => sendKey('\x03')}
+            className="flex items-center justify-center h-7 px-2 rounded font-mono text-xs font-semibold text-rose-400 bg-[#2c1b1b] active:bg-rose-950 border border-rose-900/50 transition-colors"
+            title="Interrupt (SIGINT)"
+          >
+            ^C
+          </button>
+          <button
+            type="button"
+            onClick={() => sendKey('\x04')}
+            className="flex items-center justify-center h-7 px-2 rounded font-mono text-xs font-semibold text-amber-400 bg-[#2a241b] active:bg-amber-950 border border-amber-900/50 transition-colors"
+            title="EOF / Exit"
+          >
+            ^D
+          </button>
+          <button
+            type="button"
+            onClick={() => sendKey('\x1a')}
+            className="flex items-center justify-center h-7 px-2 rounded font-mono text-xs font-semibold text-sky-400 bg-[#1b242a] active:bg-sky-950 border border-sky-900/50 transition-colors"
+            title="Suspend (SIGTSTP)"
+          >
+            ^Z
+          </button>
+
+          {/* Quick Symbol Keys */}
+          <div className="flex items-center gap-1 pl-1 border-l border-[#333]">
+            {QUICK_SYMBOLS.map((sym) => (
+              <button
+                key={sym}
+                type="button"
+                onClick={() => sendKey(sym)}
+                className="flex items-center justify-center h-7 min-w-[26px] px-1.5 rounded font-mono text-xs font-medium text-neutral-400 bg-[#202020] active:bg-[#333] active:text-white border border-[#2d2d2d] transition-colors"
+              >
+                {sym}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Main Command Input Row */}
+      <div className="flex items-center gap-1.5 px-2 py-1.5">
+        {/* Toggle Extra Keys Bar */}
+        <button
+          type="button"
+          onClick={() => setShowExtraKeys((prev) => !prev)}
+          className="flex items-center justify-center size-8 rounded-lg shrink-0 active:opacity-60 transition-colors"
+          style={{
+            background: showExtraKeys ? '#222' : '#2a2018',
+            color: showExtraKeys ? '#888' : '#ea580c',
+            border: showExtraKeys ? '1px solid #333' : '1px solid #ea580c44',
+          }}
+          title={showExtraKeys ? 'Hide Extra Keys Bar' : 'Show Extra Keys Bar'}
+          aria-label="Toggle Extra Keys"
+        >
+          <HugeiconsIcon
+            icon={showExtraKeys ? ViewOffSlashIcon : ViewIcon}
+            size={16}
+            strokeWidth={1.8}
+          />
+        </button>
+
+        {/* Paste from clipboard */}
+        <button
+          type="button"
+          onClick={() => void paste()}
+          className="flex items-center justify-center size-8 rounded-lg shrink-0 active:opacity-60 transition-colors"
+          style={{ background: '#252525', color: '#aaa', border: '1px solid #333' }}
+          title="Paste from clipboard"
+          aria-label="Paste"
+        >
+          <HugeiconsIcon icon={Copy01Icon} size={15} strokeWidth={1.7} />
+        </button>
+
+        {/* Text Input */}
+        <input
+          ref={inputRef}
+          type="text"
+          defaultValue=""
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              send()
+            } else if (e.key === 'Tab') {
+              e.preventDefault()
+              sendKey('\t')
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              sendKey('\x1b[A')
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              sendKey('\x1b[B')
+            } else if (e.key === 'ArrowLeft') {
+              e.preventDefault()
+              sendKey('\x1b[D')
+            } else if (e.key === 'ArrowRight') {
+              e.preventDefault()
+              sendKey('\x1b[C')
+            } else if (e.key === 'Escape') {
+              e.preventDefault()
+              sendKey('\x1b')
+            }
+          }}
+          placeholder={
+            ctrlActive
+              ? 'CTRL active — tap key or type…'
+              : altActive
+                ? 'ALT active — tap key or type…'
+                : 'Type terminal command…'
           }
-          if (e.key === 'Tab') {
-            e.preventDefault()
-            void sendToActiveTab('\t')
-          }
-        }}
-        placeholder="Type command…"
-        autoCapitalize="none"
-        autoCorrect="off"
-        autoComplete="off"
-        spellCheck={false}
-        className="flex-1 min-w-0 text-sm outline-none px-2 py-1 rounded-lg"
-        style={{
-          background: '#2a2a2a',
-          color: '#e6e6e6',
-          border: '1px solid #444',
-          fontFamily: 'JetBrains Mono, Menlo, monospace',
-        }}
-      />
-      <button
-        type="button"
-        onClick={ctrlC}
-        className="flex items-center justify-center px-2 h-8 rounded-lg shrink-0 text-xs active:opacity-60"
-        style={{ background: '#3a1a1a', color: '#f87171' }}
-        aria-label="Ctrl+C"
-      >
-        ^C
-      </button>
-      <button
-        type="button"
-        onClick={send}
-        className="flex items-center justify-center size-8 rounded-lg shrink-0 active:opacity-60"
-        style={{ background: '#ea580c', color: '#fff' }}
-        aria-label="Send"
-      >
-        <HugeiconsIcon icon={ArrowUp02Icon} size={16} strokeWidth={1.8} />
-      </button>
+          autoCapitalize="none"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          className="flex-1 min-w-0 text-sm outline-none px-2.5 py-1 rounded-lg focus:border-[#ea580c] transition-colors"
+          style={{
+            background: '#1f1f1f',
+            color: '#f0f0f0',
+            border: ctrlActive || altActive ? '1px solid #ea580c' : '1px solid #383838',
+            fontFamily: 'JetBrains Mono, Menlo, monospace',
+          }}
+        />
+
+        {/* Send / Enter */}
+        <button
+          type="button"
+          onClick={send}
+          className="flex items-center justify-center size-8 rounded-lg shrink-0 active:scale-95 transition-all shadow-sm"
+          style={{ background: '#ea580c', color: '#fff' }}
+          title="Send (Enter)"
+          aria-label="Send"
+        >
+          <HugeiconsIcon icon={ArrowUp02Icon} size={16} strokeWidth={2} />
+        </button>
+      </div>
     </div>
   )
 }
