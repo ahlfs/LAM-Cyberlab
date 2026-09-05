@@ -226,6 +226,7 @@ export function readConfiguredLiveModelEndpoints(): Array<LiveModelEndpoint> {
     const seen = new Set<string>()
 
     const pushEndpoint = (provider: string, block: Record<string, unknown>) => {
+      if (block.discover_models === false) return
       const baseUrl =
         normalizeConfiguredBaseUrl(block.base_url) ||
         normalizeConfiguredBaseUrl(block.baseUrl) ||
