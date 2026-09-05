@@ -388,7 +388,7 @@ function getTextPreview(buffer: Buffer): string {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Helpers for zipping directories
+// Helpers for zipping & unzipping
 // ──────────────────────────────────────────────────────────────────────────────
 async function addDirectoryToZip(zip: JSZip, dirPath: string, rootDir: string) {
   const entries = await fs.readdir(dirPath, { withFileTypes: true })
@@ -402,6 +402,27 @@ async function addDirectoryToZip(zip: JSZip, dirPath: string, rootDir: string) {
       zip.file(relativePath, buffer)
     }
   }
+}
+
+async function extractZipBuffer(zipBuffer: Buffer, targetDir: string): Promise<number> {
+  const zip = await JSZip.loadAsync(zipBuffer)
+  let count = 0
+  for (const [relPath, zipEntry] of Object.entries(zip.files)) {
+    // Zip-slip guard
+    if (relPath.includes('..') || path.isAbsolute(relPath)) continue
+    const destPath = path.resolve(targetDir, relPath)
+    if (!destPath.startsWith(path.resolve(targetDir))) continue
+
+    if (zipEntry.dir) {
+      await fs.mkdir(destPath, { recursive: true })
+    } else {
+      await fs.mkdir(path.dirname(destPath), { recursive: true })
+      const data = await zipEntry.async('nodebuffer')
+      await fs.writeFile(destPath, data)
+      count++
+    }
+  }
+  return count
 }
 
 export const Route = createFileRoute('/api/files')({
@@ -710,29 +731,39 @@ export const Route = createFileRoute('/api/files')({
             if (action !== 'upload') {
               return json({ error: 'Invalid upload request' }, { status: 400 })
             }
-            const file = form.get('file')
+            // Support multiple files from formData (getAll('files') or getAll('file'))
+            const rawFiles = form.getAll('files').length > 0 ? form.getAll('files') : form.getAll('file')
+            const files = rawFiles.filter((f): f is File => f instanceof File)
             const targetPath = String(form.get('path') || '')
-            if (!(file instanceof File)) {
-              return json({ error: 'Missing file' }, { status: 400 })
+            if (files.length === 0) {
+              return json({ error: 'Missing file(s)' }, { status: 400 })
             }
             const resolvedTarget = browseMode
               ? ensureBrowsePath(targetPath)
               : ensureWorkspacePath(targetPath, workspaceRoot)
             const isDir = (await fs.stat(resolvedTarget)).isDirectory()
-            const destination = isDir
-              ? path.join(resolvedTarget, path.basename(file.name))
-              : resolvedTarget
-            if (browseMode) {
-              ensureBrowsePath(destination)
-            } else {
-              ensureWorkspacePath(destination, workspaceRoot)
+            
+            const uploadedPaths: string[] = []
+            for (const file of files) {
+              const destination = isDir
+                ? path.join(resolvedTarget, path.basename(file.name))
+                : resolvedTarget
+              if (browseMode) {
+                ensureBrowsePath(destination)
+              } else {
+                ensureWorkspacePath(destination, workspaceRoot)
+              }
+              await fs.mkdir(path.dirname(destination), { recursive: true })
+              const buffer = Buffer.from(await file.arrayBuffer())
+              await fs.writeFile(destination, buffer)
+              uploadedPaths.push(browseMode ? destination : toRelative(destination, workspaceRoot))
             }
-            await fs.mkdir(path.dirname(destination), { recursive: true })
-            const buffer = Buffer.from(await file.arrayBuffer())
-            await fs.writeFile(destination, buffer)
+
             return json({
               ok: true,
-              path: browseMode ? destination : toRelative(destination, workspaceRoot),
+              count: uploadedPaths.length,
+              path: uploadedPaths[0],
+              paths: uploadedPaths,
             })
           }
 
@@ -790,6 +821,59 @@ export const Route = createFileRoute('/api/files')({
               await fs.rm(targetPath, { recursive: true, force: true })
             }
             return json({ ok: true })
+          }
+
+          if (action === 'zip') {
+            const sourcePaths = Array.isArray(body.paths)
+              ? (body.paths as string[])
+              : [String(body.path || '')]
+            const targetZipPath = String(body.zipPath || '')
+            if (!targetZipPath) {
+              return json({ error: 'Missing target zipPath' }, { status: 400 })
+            }
+            const resolvedZipPath = browseMode
+              ? ensureBrowsePath(targetZipPath)
+              : ensureWorkspacePath(targetZipPath, workspaceRoot)
+
+            const zip = new JSZip()
+            for (const src of sourcePaths) {
+              if (!src) continue
+              const resolvedSrc = browseMode
+                ? ensureBrowsePath(src)
+                : ensureWorkspacePath(src, workspaceRoot)
+              const stat = await fs.stat(resolvedSrc)
+              if (stat.isDirectory()) {
+                await addDirectoryToZip(zip, resolvedSrc, path.dirname(resolvedSrc))
+              } else {
+                const buffer = await fs.readFile(resolvedSrc)
+                zip.file(path.basename(resolvedSrc), buffer)
+              }
+            }
+
+            const zipContent = await zip.generateAsync({
+              type: 'nodebuffer',
+              compression: 'DEFLATE',
+              compressionOptions: { level: 6 },
+            })
+            await fs.mkdir(path.dirname(resolvedZipPath), { recursive: true })
+            await fs.writeFile(resolvedZipPath, zipContent)
+            return json({
+              ok: true,
+              path: browseMode ? resolvedZipPath : toRelative(resolvedZipPath, workspaceRoot),
+            })
+          }
+
+          if (action === 'unzip') {
+            const zipPath = browseMode
+              ? ensureBrowsePath(String(body.path || ''))
+              : ensureWorkspacePath(String(body.path || ''), workspaceRoot)
+            const destDir = browseMode
+              ? ensureBrowsePath(String(body.destination || path.dirname(zipPath)))
+              : ensureWorkspacePath(String(body.destination || path.dirname(zipPath)), workspaceRoot)
+
+            const zipBuffer = await fs.readFile(zipPath)
+            const extractedCount = await extractZipBuffer(zipBuffer, destDir)
+            return json({ ok: true, count: extractedCount, destination: browseMode ? destDir : toRelative(destDir, workspaceRoot) })
           }
 
           const filePath = browseMode

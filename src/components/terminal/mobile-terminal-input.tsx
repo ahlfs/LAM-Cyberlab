@@ -123,14 +123,14 @@ export function MobileTerminalInput() {
       {/* Termux-Style Extra Keys Row */}
       {showExtraKeys ? (
         <div
-          className="flex items-center gap-1 px-1.5 py-1 overflow-x-auto no-scrollbar border-b border-[#252525]"
+          className="flex items-center gap-1.5 px-2 py-1.5 overflow-x-auto no-scrollbar border-b border-[#252525]"
           style={{ background: '#181818' }}
         >
           {/* ESC */}
           <button
             type="button"
             onClick={() => sendKey('\x1b')}
-            className="flex items-center justify-center h-7 min-w-[38px] px-2 rounded font-mono text-xs font-semibold text-neutral-300 bg-[#262626] active:bg-[#3a3a3a] border border-[#333] transition-colors"
+            className="flex items-center justify-center h-10 min-w-[50px] px-3 rounded-lg font-mono text-xs font-semibold text-neutral-200 bg-[#262626] active:bg-[#3a3a3a] border border-[#383838] transition-colors shrink-0 touch-manipulation"
             title="Escape key"
           >
             ESC
@@ -140,7 +140,7 @@ export function MobileTerminalInput() {
           <button
             type="button"
             onClick={() => sendKey('\t')}
-            className="flex items-center justify-center h-7 min-w-[38px] px-2 rounded font-mono text-xs font-semibold text-neutral-300 bg-[#262626] active:bg-[#3a3a3a] border border-[#333] transition-colors"
+            className="flex items-center justify-center h-10 min-w-[50px] px-3 rounded-lg font-mono text-xs font-semibold text-neutral-200 bg-[#262626] active:bg-[#3a3a3a] border border-[#383838] transition-colors shrink-0 touch-manipulation"
             title="Tab key"
           >
             TAB
@@ -151,10 +151,10 @@ export function MobileTerminalInput() {
             type="button"
             onClick={() => setCtrlActive((prev) => !prev)}
             className={cn(
-              'flex items-center justify-center h-7 min-w-[38px] px-2 rounded font-mono text-xs font-semibold border transition-colors',
+              'flex items-center justify-center h-10 min-w-[50px] px-3 rounded-lg font-mono text-xs font-semibold border transition-colors shrink-0 touch-manipulation',
               ctrlActive
                 ? 'bg-[#ea580c] text-white border-[#ea580c] shadow-sm'
-                : 'text-neutral-300 bg-[#262626] active:bg-[#3a3a3a] border-[#333]',
+                : 'text-neutral-200 bg-[#262626] active:bg-[#3a3a3a] border-[#383838]',
             )}
             title="Sticky Control key"
           >
@@ -166,10 +166,10 @@ export function MobileTerminalInput() {
             type="button"
             onClick={() => setAltActive((prev) => !prev)}
             className={cn(
-              'flex items-center justify-center h-7 min-w-[36px] px-2 rounded font-mono text-xs font-semibold border transition-colors',
+              'flex items-center justify-center h-10 min-w-[50px] px-3 rounded-lg font-mono text-xs font-semibold border transition-colors shrink-0 touch-manipulation',
               altActive
                 ? 'bg-[#ea580c] text-white border-[#ea580c] shadow-sm'
-                : 'text-neutral-300 bg-[#262626] active:bg-[#3a3a3a] border-[#333]',
+                : 'text-neutral-200 bg-[#262626] active:bg-[#3a3a3a] border-[#383838]',
             )}
             title="Sticky Alt key"
           >
@@ -180,51 +180,51 @@ export function MobileTerminalInput() {
           <button
             type="button"
             onClick={() => sendKey('\x1b[A')}
-            className="flex items-center justify-center h-7 w-8 rounded font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#333] transition-colors"
+            className="flex items-center justify-center h-10 w-10 rounded-lg font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#383838] transition-colors shrink-0 touch-manipulation"
             title="Up Arrow"
             aria-label="Up"
           >
-            <HugeiconsIcon icon={ArrowUp01Icon} size={15} strokeWidth={2} />
+            <HugeiconsIcon icon={ArrowUp01Icon} size={20} strokeWidth={2.2} />
           </button>
 
           {/* Arrow Navigation Down */}
           <button
             type="button"
             onClick={() => sendKey('\x1b[B')}
-            className="flex items-center justify-center h-7 w-8 rounded font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#333] transition-colors"
+            className="flex items-center justify-center h-10 w-10 rounded-lg font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#383838] transition-colors shrink-0 touch-manipulation"
             title="Down Arrow"
             aria-label="Down"
           >
-            <HugeiconsIcon icon={ArrowDown01Icon} size={15} strokeWidth={2} />
+            <HugeiconsIcon icon={ArrowDown01Icon} size={20} strokeWidth={2.2} />
           </button>
 
           {/* Arrow Navigation Left */}
           <button
             type="button"
             onClick={() => sendKey('\x1b[D')}
-            className="flex items-center justify-center h-7 w-8 rounded font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#333] transition-colors"
+            className="flex items-center justify-center h-10 w-10 rounded-lg font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#383838] transition-colors shrink-0 touch-manipulation"
             title="Left Arrow"
             aria-label="Left"
           >
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={15} strokeWidth={2} />
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={20} strokeWidth={2.2} />
           </button>
 
           {/* Arrow Navigation Right */}
           <button
             type="button"
             onClick={() => sendKey('\x1b[C')}
-            className="flex items-center justify-center h-7 w-8 rounded font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#333] transition-colors"
+            className="flex items-center justify-center h-10 w-10 rounded-lg font-mono text-xs font-bold text-neutral-200 bg-[#262626] active:bg-[#ea580c] active:text-white border border-[#383838] transition-colors shrink-0 touch-manipulation"
             title="Right Arrow"
             aria-label="Right"
           >
-            <HugeiconsIcon icon={ArrowRight01Icon} size={15} strokeWidth={2} />
+            <HugeiconsIcon icon={ArrowRight01Icon} size={20} strokeWidth={2.2} />
           </button>
 
           {/* Shortcuts: Ctrl+C, Ctrl+D, Ctrl+Z */}
           <button
             type="button"
             onClick={() => sendKey('\x03')}
-            className="flex items-center justify-center h-7 px-2 rounded font-mono text-xs font-semibold text-rose-400 bg-[#2c1b1b] active:bg-rose-950 border border-rose-900/50 transition-colors"
+            className="flex items-center justify-center h-10 min-w-[44px] px-2.5 rounded-lg font-mono text-xs font-semibold text-rose-300 bg-[#2c1b1b] active:bg-rose-950 border border-rose-900/60 transition-colors shrink-0 touch-manipulation"
             title="Interrupt (SIGINT)"
           >
             ^C
@@ -232,7 +232,7 @@ export function MobileTerminalInput() {
           <button
             type="button"
             onClick={() => sendKey('\x04')}
-            className="flex items-center justify-center h-7 px-2 rounded font-mono text-xs font-semibold text-amber-400 bg-[#2a241b] active:bg-amber-950 border border-amber-900/50 transition-colors"
+            className="flex items-center justify-center h-10 min-w-[44px] px-2.5 rounded-lg font-mono text-xs font-semibold text-amber-300 bg-[#2a241b] active:bg-amber-950 border border-amber-900/60 transition-colors shrink-0 touch-manipulation"
             title="EOF / Exit"
           >
             ^D
@@ -240,20 +240,20 @@ export function MobileTerminalInput() {
           <button
             type="button"
             onClick={() => sendKey('\x1a')}
-            className="flex items-center justify-center h-7 px-2 rounded font-mono text-xs font-semibold text-sky-400 bg-[#1b242a] active:bg-sky-950 border border-sky-900/50 transition-colors"
+            className="flex items-center justify-center h-10 min-w-[44px] px-2.5 rounded-lg font-mono text-xs font-semibold text-sky-300 bg-[#1b242a] active:bg-sky-950 border border-sky-900/60 transition-colors shrink-0 touch-manipulation"
             title="Suspend (SIGTSTP)"
           >
             ^Z
           </button>
 
           {/* Quick Symbol Keys */}
-          <div className="flex items-center gap-1 pl-1 border-l border-[#333]">
+          <div className="flex items-center gap-1.5 pl-1 border-l border-[#333]">
             {QUICK_SYMBOLS.map((sym) => (
               <button
                 key={sym}
                 type="button"
                 onClick={() => sendKey(sym)}
-                className="flex items-center justify-center h-7 min-w-[26px] px-1.5 rounded font-mono text-xs font-medium text-neutral-400 bg-[#202020] active:bg-[#333] active:text-white border border-[#2d2d2d] transition-colors"
+                className="flex items-center justify-center h-10 min-w-[38px] px-2.5 rounded-lg font-mono text-sm font-semibold text-neutral-300 bg-[#202020] active:bg-[#333] active:text-white border border-[#333] transition-colors shrink-0 touch-manipulation"
               >
                 {sym}
               </button>
@@ -263,12 +263,12 @@ export function MobileTerminalInput() {
       ) : null}
 
       {/* Main Command Input Row */}
-      <div className="flex items-center gap-1.5 px-2 py-1.5">
+      <div className="flex items-center gap-2 px-2.5 py-2">
         {/* Toggle Extra Keys Bar */}
         <button
           type="button"
           onClick={() => setShowExtraKeys((prev) => !prev)}
-          className="flex items-center justify-center size-8 rounded-lg shrink-0 active:opacity-60 transition-colors"
+          className="flex items-center justify-center h-10 w-10 rounded-lg shrink-0 active:opacity-60 transition-colors touch-manipulation"
           style={{
             background: showExtraKeys ? '#222' : '#2a2018',
             color: showExtraKeys ? '#888' : '#ea580c',
@@ -279,7 +279,7 @@ export function MobileTerminalInput() {
         >
           <HugeiconsIcon
             icon={showExtraKeys ? ViewOffSlashIcon : ViewIcon}
-            size={16}
+            size={20}
             strokeWidth={1.8}
           />
         </button>
@@ -288,12 +288,12 @@ export function MobileTerminalInput() {
         <button
           type="button"
           onClick={() => void paste()}
-          className="flex items-center justify-center size-8 rounded-lg shrink-0 active:opacity-60 transition-colors"
+          className="flex items-center justify-center h-10 w-10 rounded-lg shrink-0 active:opacity-60 transition-colors touch-manipulation"
           style={{ background: '#252525', color: '#aaa', border: '1px solid #333' }}
           title="Paste from clipboard"
           aria-label="Paste"
         >
-          <HugeiconsIcon icon={Copy01Icon} size={15} strokeWidth={1.7} />
+          <HugeiconsIcon icon={Copy01Icon} size={19} strokeWidth={1.8} />
         </button>
 
         {/* Text Input */}
@@ -336,7 +336,7 @@ export function MobileTerminalInput() {
           autoCorrect="off"
           autoComplete="off"
           spellCheck={false}
-          className="flex-1 min-w-0 text-sm outline-none px-2.5 py-1 rounded-lg focus:border-[#ea580c] transition-colors"
+          className="flex-1 min-w-0 h-10 text-sm outline-none px-3 py-1.5 rounded-lg focus:border-[#ea580c] transition-colors"
           style={{
             background: '#1f1f1f',
             color: '#f0f0f0',
@@ -349,12 +349,12 @@ export function MobileTerminalInput() {
         <button
           type="button"
           onClick={send}
-          className="flex items-center justify-center size-8 rounded-lg shrink-0 active:scale-95 transition-all shadow-sm"
+          className="flex items-center justify-center h-10 w-10 rounded-lg shrink-0 active:scale-95 transition-all shadow-sm touch-manipulation"
           style={{ background: '#ea580c', color: '#fff' }}
           title="Send (Enter)"
           aria-label="Send"
         >
-          <HugeiconsIcon icon={ArrowUp02Icon} size={16} strokeWidth={2} />
+          <HugeiconsIcon icon={ArrowUp02Icon} size={20} strokeWidth={2.2} />
         </button>
       </div>
     </div>

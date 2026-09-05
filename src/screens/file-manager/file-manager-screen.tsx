@@ -42,6 +42,7 @@ import {
   RefreshIcon,
   Scissor01Icon,
   CheckListIcon,
+  Archive01Icon,
 } from '@hugeicons/core-free-icons'
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -364,6 +365,41 @@ export function FileManagerScreen() {
 
   // CRUD state
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+  const contextMenuRef = useRef<HTMLDivElement>(null)
+
+  // Ensure context menu stays within viewport
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
+
+  useEffect(() => {
+    if (!contextMenu) {
+      setMenuPosition(null)
+      return
+    }
+
+    const updatePosition = () => {
+      const padding = 12
+      const el = contextMenuRef.current
+      const width = el ? el.offsetWidth : 200
+      const height = el ? el.offsetHeight : 280
+
+      let nextX = contextMenu.x
+      let nextY = contextMenu.y
+
+      if (nextX + width > window.innerWidth - padding) {
+        nextX = Math.max(padding, window.innerWidth - width - padding)
+      }
+      if (nextY + height > window.innerHeight - padding) {
+        nextY = Math.max(padding, window.innerHeight - height - padding)
+      }
+
+      setMenuPosition({ x: Math.max(padding, nextX), y: Math.max(padding, nextY) })
+    }
+
+    // Run layout calculation after render
+    updatePosition()
+    const raf = requestAnimationFrame(updatePosition)
+    return () => cancelAnimationFrame(raf)
+  }, [contextMenu])
   const [promptState, setPromptState] = useState<PromptState | null>(null)
   const [promptValue, setPromptValue] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<boolean>(false)
@@ -568,6 +604,69 @@ export function FileManagerScreen() {
     })
   }, [entries])
 
+  const handleZip = useCallback(async (paths: Set<string>) => {
+    if (paths.size === 0) return
+    const pathList = Array.from(paths)
+    const firstEntry = entries.find(e => e.path === pathList[0])
+    const defaultZipName = pathList.length === 1 && firstEntry
+      ? `${firstEntry.name.replace(/\.[^/.]+$/, '')}.zip`
+      : 'archive.zip'
+    
+    const zipName = window.prompt('Enter archive name (.zip):', defaultZipName)
+    if (!zipName) return
+    const finalZipName = zipName.endsWith('.zip') ? zipName : `${zipName}.zip`
+    const targetZipPath = `${currentPath === '/' ? '' : currentPath}/${finalZipName}`
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          action: 'zip',
+          mode: 'browse',
+          paths: pathList,
+          zipPath: targetZipPath,
+        }),
+      })
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        throw new Error(errorData?.error || `Zip failed: ${res.statusText}`)
+      }
+      toast(`Created archive ${finalZipName}`, { type: 'success' })
+      await loadDirectory(currentPath)
+    } catch (err: any) {
+      toast(err.message, { type: 'error' })
+      setLoading(false)
+    }
+  }, [entries, currentPath, loadDirectory])
+
+  const handleUnzip = useCallback(async (zipEntry: FileEntry) => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          action: 'unzip',
+          mode: 'browse',
+          path: zipEntry.path,
+          destination: currentPath,
+        }),
+      })
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null)
+        throw new Error(errorData?.error || `Unzip failed: ${res.statusText}`)
+      }
+      const data = await res.json().catch(() => ({}))
+      toast(`Extracted ${data.count ?? ''} files from ${zipEntry.name}`, { type: 'success' })
+      await loadDirectory(currentPath)
+    } catch (err: any) {
+      toast(err.message, { type: 'error' })
+      setLoading(false)
+    }
+  }, [currentPath, loadDirectory])
+
   const openRenamePrompt = useCallback((entry: FileEntry) => {
     setPromptState({ mode: 'rename', targetPath: entry.path, defaultValue: entry.name })
     setPromptValue(entry.name)
@@ -582,8 +681,8 @@ export function FileManagerScreen() {
 
   const handleFileUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0]
-      if (!file) return
+      const files = event.target.files ? Array.from(event.target.files) : []
+      if (files.length === 0) return
 
       setLoading(true)
       try {
@@ -591,7 +690,9 @@ export function FileManagerScreen() {
         formData.append('action', 'upload')
         formData.append('path', currentPath)
         formData.append('mode', 'browse')
-        formData.append('file', file)
+        for (const file of files) {
+          formData.append('files', file)
+        }
 
         const res = await fetch('/api/files', {
           method: 'POST',
@@ -603,7 +704,7 @@ export function FileManagerScreen() {
           throw new Error(errorData?.error || `Upload failed: ${res.statusText}`)
         }
 
-        toast(`Uploaded ${file.name}`, { type: 'success' })
+        toast(files.length > 1 ? `Uploaded ${files.length} files` : `Uploaded ${files[0].name}`, { type: 'success' })
         void loadDirectory(currentPath)
       } catch (err: any) {
         toast(err.message, { type: 'error' })
@@ -771,7 +872,7 @@ export function FileManagerScreen() {
             <HugeiconsIcon icon={CheckListIcon} size={16} />
           </button>
           <div className="h-4 w-px bg-primary-200 dark:bg-neutral-700 mx-1" />
-          <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+          <input type="file" ref={fileInputRef} multiple className="hidden" onChange={handleFileUpload} />
           <button type="button" onClick={() => fileInputRef.current?.click()} title="Upload file" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors">
             <HugeiconsIcon icon={CloudUploadIcon} size={16} />
           </button>
@@ -865,8 +966,13 @@ export function FileManagerScreen() {
       {/* ── Context menu ──────────────────────────────────────────────────── */}
       {contextMenu && (
         <div
+          ref={contextMenuRef}
           className="fixed z-50 min-w-[180px] rounded-lg bg-primary-50 dark:bg-neutral-900 p-1 text-sm text-primary-900 dark:text-neutral-100 shadow-xl outline outline-primary-900/10 dark:outline-neutral-700"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
+          style={{
+            top: menuPosition ? menuPosition.y : contextMenu.y,
+            left: menuPosition ? menuPosition.x : contextMenu.x,
+            visibility: menuPosition ? 'visible' : 'hidden',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
           {contextMenu.entry && (
@@ -899,6 +1005,14 @@ export function FileManagerScreen() {
               <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handleDownload(selectedPaths); setContextMenu(null) }}>
                 <HugeiconsIcon icon={Download01Icon} size={16} /> Download {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
               </button>
+              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handleZip(selectedPaths); setContextMenu(null) }}>
+                <HugeiconsIcon icon={Archive01Icon} size={16} /> Compress to ZIP {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
+              </button>
+              {selectedPaths.size === 1 && contextMenu.entry.name.toLowerCase().endsWith('.zip') && (
+                <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors text-amber-600 dark:text-amber-400" onClick={() => { void handleUnzip(contextMenu.entry!); setContextMenu(null) }}>
+                  <HugeiconsIcon icon={Archive01Icon} size={16} /> Extract ZIP Here
+                </button>
+              )}
               <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
             </>
           )}
