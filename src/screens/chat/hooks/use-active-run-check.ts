@@ -22,10 +22,7 @@ type ActiveRunResponse = {
 const ACTIVE_STATUSES: ReadonlySet<string> = new Set([
   'accepted',
   'active',
-  // NOTE: 'handoff' is deliberately excluded. A handoff run means the
-  // SSE client disconnected — the browser has no active stream. Keeping
-  // the waiting state alive for handoff runs causes ghost "Thinking"
-  // indicators on session reopen for runs that completed hours ago.
+  'handoff',
 ])
 
 const ACTIVE_RUN_CHECK_TIMEOUT_MS = 2000

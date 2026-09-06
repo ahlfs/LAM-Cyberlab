@@ -595,11 +595,17 @@ export const Route = createFileRoute('/api/send-stream')({
         let streamTimeoutTimer: ReturnType<typeof setTimeout> | null = null
         let heartbeatTimer: ReturnType<typeof setInterval> | null = null
         const abortController = new AbortController()
-        // Close out the SSE stream — stop enqueueing, clear timers, and
-        // abort the upstream Hermes gateway request so the agent stops
-        // processing.  Does NOT touch run status (persistActiveRun etc.).
-        // The abort path (request.signal / handleAbort) owns run cleanup.
-        let closeStream = () => {
+
+        // Background Resilience: disconnect timer (5 min grace period)
+        // When client disconnects (refresh/nav), keep Hermes running in background
+        // but set a failsafe timer so orphan tasks don't run indefinitely.
+        let backgroundFailsafeTimer: ReturnType<typeof setTimeout> | null = null
+        const BACKGROUND_FAILSAFE_MS = 5 * 60 * 1000
+
+        // Close out the SSE stream — stop enqueueing, clear timers.
+        // If hardAbort=true (explicit Stop), abort upstream Hermes.
+        // If hardAbort=false (browser refresh/close), DO NOT abort Hermes upstream.
+        let closeStream = (hardAbort = false) => {
           if (streamClosed) return
           streamClosed = true
           if (heartbeatTimer) {
@@ -614,21 +620,33 @@ export const Route = createFileRoute('/api/send-stream')({
             clearTimeout(streamTimeoutTimer)
             streamTimeoutTimer = null
           }
-          abortController.abort()
+          if (hardAbort) {
+            if (backgroundFailsafeTimer) {
+              clearTimeout(backgroundFailsafeTimer)
+              backgroundFailsafeTimer = null
+            }
+            abortController.abort()
+          } else {
+            // Client disconnected passively (refresh / close tab)
+            // Allow Hermes to finish in background with a 5-minute failsafe cap
+            if (!backgroundFailsafeTimer) {
+              backgroundFailsafeTimer = setTimeout(() => {
+                abortController.abort()
+              }, BACKGROUND_FAILSAFE_MS)
+            }
+          }
         }
 
-        // When the client hits Stop / navigates away / closes the tab, the
-        // request.signal fires abort.  Stop the upstream agent (closeStream)
-        // and clean up run tracking so we don't burn API credits on an orphan.
+        // When the browser disconnects (refresh / tab close), request.signal fires abort.
+        // In Smart Background mode, we mark the run as handoff and close the SSE stream,
+        // but DO NOT kill the upstream agent execution so it can finish in the background.
         function handleAbort() {
           if (activeRunId && !streamClosed) {
             persistActiveRun((runSessionKey, activeId) =>
               markRunStatus(runSessionKey, activeId, 'handoff'),
             )
-            unregisterActiveSendRun(activeRunId)
-            activeRunId = null
           }
-          closeStream()
+          closeStream(false)
         }
         request.signal.addEventListener('abort', () => handleAbort(), { once: true })
 
@@ -745,7 +763,7 @@ export const Route = createFileRoute('/api/send-stream')({
                 let accumulated = ''
 
                 activeRunId = runId
-                registerActiveSendRun(runId)
+                registerActiveSendRun(runId, portableSessionKey, abortController)
                 persistRunStarted(runId, portableSessionKey, portableFriendlyId)
                 unregisterTimer = setTimeout(() => {
                   if (activeRunId) {
@@ -1287,7 +1305,7 @@ export const Route = createFileRoute('/api/send-stream')({
 
                     if (runId && !activeRunId) {
                       activeRunId = runId
-                      registerActiveSendRun(runId)
+                      registerActiveSendRun(runId, sessionKey, abortController)
                       persistRunStarted(
                         runId,
                         sessionKeyFromEvent,

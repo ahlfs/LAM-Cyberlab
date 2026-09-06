@@ -986,10 +986,9 @@ export function ChatScreen({
   }, [waitingForResponse])
 
   // Issue #43 polling fallback: when waiting but SSE hasn't reconnected,
-  // poll the active-run endpoint every 5s to detect completion.
+  // poll the active-run endpoint every 2s to detect progress/completion.
   useEffect(() => {
     if (!waitingForResponse || !resolvedSessionKey) return
-    if (sseConnectionState === 'connected') return // SSE will deliver the event
     const interval = window.setInterval(async () => {
       try {
         const res = await fetch(
@@ -998,19 +997,18 @@ export function ChatScreen({
         if (!res.ok) return
         const data = await res.json()
         if (!data.ok) return
-        // Run not yet registered (gateway lag during silent processing) → keep waiting
-        if (!data.run) return
-        // Treat unknown / transient statuses as still-active to avoid premature teardown
-        if (isTerminalActiveRunStatus(data.run.status)) {
+        
+        // If run completed or no active run remains, finish waiting and refresh history
+        if (!data.run || isTerminalActiveRunStatus(data.run.status)) {
           streamFinish()
           refreshHistoryRef.current()
         }
       } catch {
         // ignore network errors
       }
-    }, 5000)
+    }, 2000)
     return () => window.clearInterval(interval)
-  }, [waitingForResponse, resolvedSessionKey, sseConnectionState, streamFinish])
+  }, [waitingForResponse, resolvedSessionKey, streamFinish])
 
   useAutoSessionTitle({
     friendlyId: activeFriendlyId,
@@ -2693,6 +2691,12 @@ export function ChatScreen({
     }
     if (sessionKeyToStop) {
       clearPendingSendForSession(sessionKeyToStop, activeFriendlyId)
+      // Call explicit stop API on backend to stop upstream agent execution
+      void fetch('/api/chat-stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionKey: sessionKeyToStop }),
+      }).catch(() => null)
     }
     resetPendingSend()
     activeSendRef.current = null

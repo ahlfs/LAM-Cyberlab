@@ -120,6 +120,7 @@ import { Route as ApiClaudeTasksAssigneesRouteImport } from './routes/api/claude
 import { Route as ApiClaudeTasksRouteImport } from './routes/api/claude-tasks'
 import { Route as ApiClaudeJobsRouteImport } from './routes/api/claude-jobs'
 import { Route as ApiClaudeConfigRouteImport } from './routes/api/claude-config'
+import { Route as ApiChatStopRouteImport } from './routes/api/chat-stop'
 import { Route as ApiChatEventsRouteImport } from './routes/api/chat-events'
 import { Route as ApiAuthCheckRouteImport } from './routes/api/auth-check'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
@@ -759,6 +760,11 @@ const ApiClaudeConfigRoute = ApiClaudeConfigRouteImport.update({
   path: '/api/claude-config',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChatStopRoute = ApiChatStopRouteImport.update({
+  id: '/api/chat-stop',
+  path: '/api/chat-stop',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiChatEventsRoute = ApiChatEventsRouteImport.update({
   id: '/api/chat-events',
   path: '/api/chat-events',
@@ -1214,6 +1220,7 @@ export interface FileRoutesByFullPath {
   '/api/auth': typeof ApiAuthRoute
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
+  '/api/chat-stop': typeof ApiChatStopRoute
   '/api/claude-config': typeof ApiClaudeConfigRoute
   '/api/claude-jobs': typeof ApiClaudeJobsRouteWithChildren
   '/api/claude-tasks': typeof ApiClaudeTasksRouteWithChildren
@@ -1408,6 +1415,7 @@ export interface FileRoutesByTo {
   '/api/auth': typeof ApiAuthRoute
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
+  '/api/chat-stop': typeof ApiChatStopRoute
   '/api/claude-config': typeof ApiClaudeConfigRoute
   '/api/claude-jobs': typeof ApiClaudeJobsRouteWithChildren
   '/api/claude-tasks': typeof ApiClaudeTasksRouteWithChildren
@@ -1604,6 +1612,7 @@ export interface FileRoutesById {
   '/api/auth': typeof ApiAuthRoute
   '/api/auth-check': typeof ApiAuthCheckRoute
   '/api/chat-events': typeof ApiChatEventsRoute
+  '/api/chat-stop': typeof ApiChatStopRoute
   '/api/claude-config': typeof ApiClaudeConfigRoute
   '/api/claude-jobs': typeof ApiClaudeJobsRouteWithChildren
   '/api/claude-tasks': typeof ApiClaudeTasksRouteWithChildren
@@ -1801,6 +1810,7 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/api/auth-check'
     | '/api/chat-events'
+    | '/api/chat-stop'
     | '/api/claude-config'
     | '/api/claude-jobs'
     | '/api/claude-tasks'
@@ -1995,6 +2005,7 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/api/auth-check'
     | '/api/chat-events'
+    | '/api/chat-stop'
     | '/api/claude-config'
     | '/api/claude-jobs'
     | '/api/claude-tasks'
@@ -2190,6 +2201,7 @@ export interface FileRouteTypes {
     | '/api/auth'
     | '/api/auth-check'
     | '/api/chat-events'
+    | '/api/chat-stop'
     | '/api/claude-config'
     | '/api/claude-jobs'
     | '/api/claude-tasks'
@@ -2386,6 +2398,7 @@ export interface RootRouteChildren {
   ApiAuthRoute: typeof ApiAuthRoute
   ApiAuthCheckRoute: typeof ApiAuthCheckRoute
   ApiChatEventsRoute: typeof ApiChatEventsRoute
+  ApiChatStopRoute: typeof ApiChatStopRoute
   ApiClaudeConfigRoute: typeof ApiClaudeConfigRoute
   ApiClaudeJobsRoute: typeof ApiClaudeJobsRouteWithChildren
   ApiClaudeTasksRoute: typeof ApiClaudeTasksRouteWithChildren
@@ -3284,6 +3297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiClaudeConfigRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/chat-stop': {
+      id: '/api/chat-stop'
+      path: '/api/chat-stop'
+      fullPath: '/api/chat-stop'
+      preLoaderRoute: typeof ApiChatStopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat-events': {
       id: '/api/chat-events'
       path: '/api/chat-events'
@@ -4160,6 +4180,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthRoute: ApiAuthRoute,
   ApiAuthCheckRoute: ApiAuthCheckRoute,
   ApiChatEventsRoute: ApiChatEventsRoute,
+  ApiChatStopRoute: ApiChatStopRoute,
   ApiClaudeConfigRoute: ApiClaudeConfigRoute,
   ApiClaudeJobsRoute: ApiClaudeJobsRouteWithChildren,
   ApiClaudeTasksRoute: ApiClaudeTasksRouteWithChildren,
