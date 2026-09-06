@@ -998,9 +998,13 @@ export function ChatScreen({
         const data = await res.json()
         if (!data.ok) return
         
-        // If run completed or no active run remains, finish waiting and refresh history
+        // If run completed, error, or no active run remains, finish waiting and refresh history
         if (!data.run || isTerminalActiveRunStatus(data.run.status)) {
           streamFinish()
+          refreshHistoryRef.current()
+        } else {
+          // While run is still in progress (e.g. handoff / active in background),
+          // periodically refresh history so if messages land in DB, they appear in UI
           refreshHistoryRef.current()
         }
       } catch {

@@ -712,7 +712,7 @@ export const Route = createFileRoute('/api/send-stream')({
               enqueueRaw(': keepalive\n\n')
             }, 10_000)
 
-            closeStream = () => {
+            closeStream = (hardAbort = false) => {
               if (streamClosed) return
               streamClosed = true
               if (heartbeatTimer) {
@@ -727,11 +727,13 @@ export const Route = createFileRoute('/api/send-stream')({
                 clearTimeout(streamTimeoutTimer)
                 streamTimeoutTimer = null
               }
-              if (activeRunId) {
-                unregisterActiveSendRun(activeRunId)
-                activeRunId = null
+              if (hardAbort) {
+                if (activeRunId) {
+                  unregisterActiveSendRun(activeRunId)
+                  activeRunId = null
+                }
+                abortController.abort()
               }
-              abortController.abort()
               try {
                 controller.close()
               } catch {
