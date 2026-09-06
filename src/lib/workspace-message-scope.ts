@@ -32,6 +32,28 @@ export function buildWorkspaceScopedTextMessage(
   return `${directive}\n\n${message}`
 }
 
+export function buildWorkspaceScopedMultimodalContent(
+  content: string | Array<any>,
+  workspace: WorkspaceScope | null | undefined,
+): string | Array<any> {
+  if (typeof content === 'string') {
+    return buildWorkspaceScopedTextMessage(content, workspace)
+  }
+  if (!Array.isArray(content)) return content
+  const firstTextIndex = content.findIndex((part) => part && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string')
+  if (firstTextIndex >= 0) {
+    const next = [...content]
+    next[firstTextIndex] = {
+      ...next[firstTextIndex],
+      text: buildWorkspaceScopedTextMessage(next[firstTextIndex].text, workspace),
+    }
+    return next
+  }
+  const directive = workspace ? buildWorkspaceDirective(workspace) : ''
+  if (!directive) return content
+  return [{ type: 'text', text: directive }, ...content]
+}
+
 export function stripWorkspaceDirective(message: string): string {
   if (!message.includes('<workspace_context active="true"')) return message
   return message.replace(WORKSPACE_DIRECTIVE_RE, '').trimStart()

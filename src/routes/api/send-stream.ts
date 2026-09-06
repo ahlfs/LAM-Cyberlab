@@ -1,6 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { buildResolvedSessionHeaders } from '../../lib/send-stream-session-headers'
-import { buildWorkspaceScopedTextMessage } from '../../lib/workspace-message-scope'
+import {
+  buildWorkspaceScopedMultimodalContent,
+  buildWorkspaceScopedTextMessage,
+} from '../../lib/workspace-message-scope'
 import { resolveSessionKey } from '../../server/session-utils'
 import { isAuthenticated } from '../../server/auth-middleware'
 import { requireJsonContentType } from '../../server/rate-limit'
@@ -17,7 +20,14 @@ import {
   upsertRunToolCall,
 } from '../../server/run-store'
 import { getChatMode } from '../../server/gateway-capabilities'
-import { appendLocalMessage, ensureLocalSession, getLocalMessages, touchLocalSession } from '../../server/local-session-store'
+import {
+  appendLocalMessage,
+  ensureLocalSession,
+  getLocalMessages,
+  touchLocalSession,
+  type LocalMessageAttachment,
+} from '../../server/local-session-store'
+import { saveAttachment } from '../../server/attachment-store'
 import { getDiscoveredModels, getLocalProviderDef } from '../../server/local-provider-discovery'
 import { openaiChat } from '../../server/openai-compat-api'
 import { streamResponses } from '../../server/responses-api'
@@ -551,6 +561,29 @@ export const Route = createFileRoute('/api/send-stream')({
           getChatMessage(message, attachments),
           workspaceScope,
         )
+        // Append image reference tags so history can reconstruct exact attachment per turn
+        let messageForHermes = scopedMessage
+        if (attachments && attachments.length > 0) {
+          const imageTags = attachments
+            .filter((a) => {
+              const mime = (a.contentType || a.mimeType || a.mediaType || '') as string
+              return mime.toLowerCase().startsWith('image/')
+            })
+            .map((a) => {
+              const name = (a.name || a.fileName || 'image') as string
+              const id = (a.id || '') as string
+              return `\n\n<media:image id="${id}" name="${name}">`
+            })
+            .join('')
+          if (imageTags) {
+            messageForHermes += imageTags
+          }
+        }
+
+        const scopedMultimodalContent = buildWorkspaceScopedMultimodalContent(
+          buildMultimodalContent(messageForHermes, attachments),
+          workspaceScope,
+        )
 
         // Create streaming response using the SHARED server connection
         const encoder = new TextEncoder()
@@ -748,12 +781,40 @@ export const Route = createFileRoute('/api/send-stream')({
                     role: m.role as 'user' | 'assistant' | 'system',
                     content: m.content,
                   }))
+                  // Save attachments to server storage & attach metadata
+                  const savedAttachments: Array<LocalMessageAttachment> = []
+                  if (attachments && attachments.length > 0) {
+                    for (const att of attachments) {
+                      const dataOrBase64 = (att.data || att.base64 || att.dataUrl || att.content || '') as string
+                      if (dataOrBase64) {
+                        try {
+                          const stored = saveAttachment(dataOrBase64, {
+                            id: typeof att.id === 'string' ? att.id : undefined,
+                            fileName: typeof att.name === 'string' ? att.name : typeof att.fileName === 'string' ? att.fileName : undefined,
+                            contentType: typeof att.contentType === 'string' ? att.contentType : typeof att.mimeType === 'string' ? att.mimeType : undefined,
+                            sessionId: portableSessionKey,
+                          })
+                          savedAttachments.push({
+                            id: stored.id,
+                            name: stored.fileName,
+                            url: stored.url,
+                            contentType: stored.contentType,
+                            size: stored.size,
+                          })
+                        } catch {
+                          // ignore attachment save error
+                        }
+                      }
+                    }
+                  }
+
                   // Persist user message AFTER reading history to avoid duplication
                   appendLocalMessage(portableSessionKey, {
                     id: crypto.randomUUID(),
                     role: 'user',
                     content: typeof body.message === 'string' ? body.message : '',
                     timestamp: Date.now(),
+                    attachments: savedAttachments.length > 0 ? savedAttachments : undefined,
                   })
                   const effectiveHistory = selectPortableConversationHistory(
                     persistedHistory,
@@ -796,7 +857,7 @@ export const Route = createFileRoute('/api/send-stream')({
                     >()
                     try {
                       const responsesStream = streamResponses({
-                        input: scopedMessage,
+                        input: scopedMultimodalContent,
                         conversationHistory: effectiveHistory,
                         model:
                           resolvedGatewayModel || requestModel || undefined,
@@ -1144,10 +1205,29 @@ export const Route = createFileRoute('/api/send-stream')({
               })()
 
               try {
+                // Save attachments to server storage for this session (for enhanced-claude mode)
+                if (attachments && attachments.length > 0) {
+                  for (const att of attachments) {
+                    const dataOrBase64 = (att.data || att.base64 || att.dataUrl || att.content || '') as string
+                    if (dataOrBase64) {
+                      try {
+                        saveAttachment(dataOrBase64, {
+                          id: typeof att.id === 'string' ? att.id : undefined,
+                          fileName: typeof att.name === 'string' ? att.name : typeof att.fileName === 'string' ? att.fileName : undefined,
+                          contentType: typeof att.contentType === 'string' ? att.contentType : typeof att.mimeType === 'string' ? att.mimeType : undefined,
+                          sessionId: sessionKey,
+                        })
+                      } catch {
+                        // ignore
+                      }
+                    }
+                  }
+                }
+
                 await streamChat(
                 sessionKey,
                 {
-                  message: scopedMessage,
+                  message: scopedMultimodalContent,
                   model:
                     resolvedGatewayModel || requestModel || undefined,
                   provider: resolvedGatewayProvider || undefined,

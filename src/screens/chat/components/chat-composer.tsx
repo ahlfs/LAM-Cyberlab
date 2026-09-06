@@ -431,14 +431,86 @@ const IMAGE_EXTENSION_TO_MIME: Record<string, string> = {
 }
 
 const TEXT_EXTENSION_TO_MIME: Record<string, string> = {
+  // Documentation & Text
   md: 'text/markdown',
+  markdown: 'text/markdown',
+  mdx: 'text/markdown',
   txt: 'text/plain',
-  json: 'application/json',
+  text: 'text/plain',
+  log: 'text/plain',
   csv: 'text/csv',
+  tsv: 'text/tab-separated-values',
+  pdf: 'application/pdf',
+  json: 'application/json',
+  jsonl: 'application/json',
+  jsonc: 'application/json',
+  xml: 'application/xml',
+  yaml: 'text/yaml',
+  yml: 'text/yaml',
+  toml: 'text/plain',
+  ini: 'text/plain',
+  env: 'text/plain',
+  conf: 'text/plain',
+  config: 'text/plain',
+  // Web & Frontend
+  html: 'text/html',
+  htm: 'text/html',
+  css: 'text/css',
+  scss: 'text/x-scss',
+  sass: 'text/x-sass',
+  less: 'text/x-less',
+  js: 'text/javascript',
+  mjs: 'text/javascript',
+  cjs: 'text/javascript',
+  jsx: 'text/javascript',
   ts: 'text/plain',
+  mts: 'text/plain',
+  cts: 'text/plain',
   tsx: 'text/plain',
-  js: 'text/plain',
-  py: 'text/plain',
+  vue: 'text/plain',
+  svelte: 'text/plain',
+  astro: 'text/plain',
+  graphql: 'text/plain',
+  gql: 'text/plain',
+  // Backend & Systems
+  py: 'text/x-python',
+  pyw: 'text/x-python',
+  ipynb: 'application/json',
+  php: 'text/x-php',
+  rb: 'text/x-ruby',
+  rs: 'text/plain',
+  go: 'text/plain',
+  java: 'text/x-java-source',
+  c: 'text/x-c',
+  h: 'text/x-c',
+  cpp: 'text/x-c++',
+  hpp: 'text/x-c++',
+  cc: 'text/x-c++',
+  cxx: 'text/x-c++',
+  cs: 'text/plain',
+  swift: 'text/plain',
+  kt: 'text/plain',
+  kts: 'text/plain',
+  scala: 'text/plain',
+  dart: 'text/plain',
+  lua: 'text/plain',
+  zig: 'text/plain',
+  nim: 'text/plain',
+  r: 'text/plain',
+  // Shell, DevOps & Infra
+  sh: 'text/x-sh',
+  bash: 'text/x-sh',
+  zsh: 'text/x-sh',
+  fish: 'text/plain',
+  ps1: 'text/plain',
+  bat: 'text/plain',
+  cmd: 'text/plain',
+  dockerfile: 'text/plain',
+  containerfile: 'text/plain',
+  sql: 'text/x-sql',
+  proto: 'text/plain',
+  diff: 'text/plain',
+  patch: 'text/plain',
 }
 
 function normalizeMimeType(value: string): string {
@@ -2254,7 +2326,7 @@ function ChatComposerComponent({
       <input
         ref={attachmentInputRef}
         type="file"
-        accept="image/*,.md,.txt,.json,.csv,.ts,.tsx,.js,.py"
+        accept="image/*,.pdf,.md,.markdown,.mdx,.txt,.text,.log,.csv,.tsv,.json,.jsonl,.jsonc,.xml,.yaml,.yml,.toml,.ini,.env,.conf,.config,.html,.htm,.css,.scss,.sass,.less,.js,.mjs,.cjs,.jsx,.ts,.mts,.cts,.tsx,.vue,.svelte,.astro,.graphql,.gql,.py,.pyw,.ipynb,.php,.rb,.rs,.go,.java,.c,.h,.cpp,.hpp,.cc,.cxx,.cs,.swift,.kt,.kts,.scala,.dart,.lua,.zig,.nim,.r,.sh,.bash,.zsh,.fish,.ps1,.bat,.cmd,.sql,.proto,.diff,.patch,application/pdf,text/*"
         multiple
         className="hidden"
         onChange={handleAttachmentInputChange}

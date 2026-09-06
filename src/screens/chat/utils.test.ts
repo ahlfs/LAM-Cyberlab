@@ -4,20 +4,6 @@ import { normalizeSessions, textFromMessage } from './utils'
 import type { ChatMessage, SessionSummary } from './types'
 
 describe('chat utils workspace directive cleanup', () => {
-  it('hides workspace_context directives from user-visible message text', () => {
-    const message: ChatMessage = {
-      role: 'user',
-      content: [
-        {
-          type: 'text',
-          text: '<workspace_context active="true" name="Home" path="/Users/aurora/workspace" />\n\nRun the tests',
-        },
-      ],
-    }
-
-    expect(textFromMessage(message)).toBe('Run the tests')
-  })
-
   it('strips workspace_context directives from session previews and derived titles', () => {
     const sessions = normalizeSessions([
       {

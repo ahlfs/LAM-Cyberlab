@@ -14,11 +14,20 @@ export type LocalSession = {
   messageCount: number
 }
 
+export type LocalMessageAttachment = {
+  id: string
+  name: string
+  url: string
+  contentType?: string
+  size?: number
+}
+
 export type LocalMessage = {
   id: string
   role: string
   content: string
   timestamp: number
+  attachments?: Array<LocalMessageAttachment>
   toolCalls?: unknown
   toolCallId?: string
   toolName?: string

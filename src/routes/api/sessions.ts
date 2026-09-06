@@ -21,6 +21,7 @@ import {
   listLocalSessions,
   updateLocalSessionTitle,
 } from '../../server/local-session-store'
+import { deleteAttachmentsForSession } from '../../server/attachment-store'
 
 export const Route = createFileRoute('/api/sessions')({
   server: {
@@ -332,6 +333,7 @@ export const Route = createFileRoute('/api/sessions')({
 
         // Local sessions live in the workspace portable store, not the
         // gateway. Delete them locally without hitting the gateway.
+        deleteAttachmentsForSession(sessionKey)
         if (getLocalSession(sessionKey)) {
           deleteLocalSession(sessionKey)
           return json({ ok: true, sessionKey, source: 'local' })

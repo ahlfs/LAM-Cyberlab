@@ -47,8 +47,8 @@ export type ResponsesStreamEvent =
   | { kind: 'failed'; error: string }
 
 export type ResponsesChatRequest = {
-  input: string
-  conversationHistory?: Array<{ role: string; content: string }>
+  input: string | Array<OpenAICompatContentPart>
+  conversationHistory?: Array<{ role: string; content: string | Array<OpenAICompatContentPart> }>
   instructions?: string
   model?: string
   provider?: string

@@ -137,14 +137,18 @@ function normalizeMessageText(message: ChatMessage): string {
       })
       .join('')
       .trim()
-    if (text.length > 0) return text
+    if (text.length > 0) {
+      return text.replace(/<attachment\s+name="[^"]*">[\s\S]*?<\/attachment>/gi, '').trim()
+    }
   }
 
   // Fall back to legacy top-level text/message fields (some server / channel
   // adapters use these instead of the content-array format)
   for (const key of ['text', 'message', 'body']) {
     const val = raw[key]
-    if (typeof val === 'string' && val.trim().length > 0) return val.trim()
+    if (typeof val === 'string' && val.trim().length > 0) {
+      return val.replace(/<attachment\s+name="[^"]*">[\s\S]*?<\/attachment>/gi, '').trim()
+    }
   }
 
   return ''
@@ -199,6 +203,11 @@ function replaceMatchingOptimisticUserMessage(
       return true
     }
 
+    // Fallback: strip [screenshot] placeholder for image-only or mixed prompts
+    if (incomingText.replace(/\[screenshot\]/gi, '').trim() === normalizeMessageText(message).replace(/\[screenshot\]/gi, '').trim()) {
+      return true
+    }
+
     if (!incomingText && !incomingAttachSig) return false
 
     const textMatch =
@@ -227,9 +236,17 @@ function replaceMatchingOptimisticUserMessage(
   if (matchIndex === -1) return null
 
   const existing = messages[matchIndex]
+  const preservedAttachments =
+    (Array.isArray(incomingMessage.attachments) && incomingMessage.attachments.length > 0)
+      ? incomingMessage.attachments
+      : (Array.isArray(existing.attachments) && existing.attachments.length > 0)
+        ? existing.attachments
+        : undefined
+
   const replacement: ChatMessage = {
     ...existing,
     ...incomingMessage,
+    attachments: preservedAttachments,
     clientId: incomingClientId || getMessageClientId(existing) || undefined,
     client_id: incomingClientId || getMessageClientId(existing) || undefined,
     __optimisticId: undefined,

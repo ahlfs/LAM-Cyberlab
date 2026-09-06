@@ -24,6 +24,7 @@ import {
   searchSessions as searchDashboardSessions,
   updateSession as updateDashboardSession,
 } from './claude-dashboard-api'
+import { getAttachmentById, getAttachmentsForSession } from './attachment-store'
 
 const _authHeaders = (): Record<string, string> =>
   BEARER_TOKEN ? { Authorization: `Bearer ${BEARER_TOKEN}` } : {}
@@ -354,11 +355,82 @@ export function toChatMessage(
     content.push({ type: 'text', text: msg.content })
   }
 
+  // Parse any text/file attachment tags embedded in message content: <attachment name="...">...</attachment>
+  // and media image tags: <media:image id="..." name="...">
+  let extractedAttachments: Array<{ id: string; name: string; url?: string; dataUrl?: string; contentType?: string; size?: number }> | undefined
+  if (msg.role === 'user' && msg.content) {
+    const list: Array<{ id: string; name: string; url?: string; dataUrl?: string; contentType?: string; size?: number }> = []
+
+    // 1. Image tags <media:image id="..." name="...">
+    const mediaImageMatches = Array.from(
+      msg.content.matchAll(/<media:image\s+id="([^"]*)"(?:\s+name="([^"]*)")?[^>]*>/gi),
+    )
+    for (const m of mediaImageMatches) {
+      const id = m[1]
+      const name = m[2] || 'image.png'
+      const stored = id ? getAttachmentById(id) : null
+      list.push({
+        id: id || `img-att-${msg.id}`,
+        name: stored?.fileName || name,
+        url: stored?.url || `/api/attachments?id=${encodeURIComponent(id)}`,
+        contentType: stored?.contentType || 'image/jpeg',
+        size: stored?.size,
+      })
+    }
+
+    // 2. Legacy [screenshot] fallback if no explicit media tags but contains [screenshot]
+    // Pair sequentially based on the order of user messages with screenshot in this session
+    if (mediaImageMatches.length === 0 && msg.content.includes('[screenshot]') && msg.session_id) {
+      const storedList = getAttachmentsForSession(msg.session_id)
+      const imageAtt = storedList.filter((a) => (a.contentType || '').startsWith('image/'))
+      
+      const sessionHistoryIndex = typeof options?.historyIndex === 'number' ? options.historyIndex : 0
+      // If we have single image attachment and single screenshot turn or multiple
+      const attIndex = Math.min(sessionHistoryIndex, Math.max(0, imageAtt.length - 1))
+      const targetAtt = imageAtt[attIndex] || imageAtt[0]
+      if (targetAtt) {
+        list.push({
+          id: targetAtt.id,
+          name: targetAtt.fileName,
+          url: targetAtt.url,
+          contentType: targetAtt.contentType,
+          size: targetAtt.size,
+        })
+      }
+    }
+
+    // 3. Text/File attachment tags <attachment name="...">...</attachment>
+    const attachmentMatches = Array.from(
+      msg.content.matchAll(/<attachment\s+name="([^"]*)">([\s\S]*?)<\/attachment>/gi),
+    )
+    for (let idx = 0; idx < attachmentMatches.length; idx++) {
+      const m = attachmentMatches[idx]
+      const name = m[1] || 'file'
+      const rawBody = m[2] || ''
+      const ext = name.split('.').pop()?.toLowerCase() || ''
+      const isPdf = ext === 'pdf' || rawBody.startsWith('%PDF-')
+      const contentType = isPdf ? 'application/pdf' : 'text/plain'
+      list.push({
+        id: `embedded-att-${msg.id}-${idx}`,
+        name,
+        url: `#attachment-${encodeURIComponent(name)}`,
+        dataUrl: `#attachment-${encodeURIComponent(name)}`,
+        contentType,
+        size: rawBody.length,
+      })
+    }
+
+    if (list.length > 0) {
+      extractedAttachments = list
+    }
+  }
+
   return {
     id: `msg-${msg.id}`,
     role: msg.role,
     content,
     text: msg.content || '',
+    attachments: extractedAttachments && extractedAttachments.length > 0 ? extractedAttachments : undefined,
     timestamp: msg.timestamp ? msg.timestamp * 1000 : Date.now(),
     createdAt: msg.timestamp
       ? new Date(msg.timestamp * 1000).toISOString()

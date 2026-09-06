@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowDown01Icon, Idea01Icon } from '@hugeicons/core-free-icons'
+import { createPortal } from 'react-dom'
+import { ArrowDown01Icon, Cancel01Icon, Idea01Icon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   getMessageTimestamp,
@@ -1272,6 +1273,10 @@ function attachmentSource(attachment: ChatAttachment | undefined): string {
       return candidate
     }
   }
+  // If attachment is a named document/file (e.g. PDF or code), provide fallback #attachment anchor
+  if (typeof attachment.name === 'string' && attachment.name.trim().length > 0) {
+    return `#attachment-${encodeURIComponent(attachment.name)}`
+  }
   return ''
 }
 
@@ -2112,6 +2117,7 @@ function MessageItemComponent({
     ? (remoteStreamingText ?? fullText)
     : fullText
   const [displayText, setDisplayText] = useState(() => initialDisplayText)
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null)
   const [revealedWordCount, setRevealedWordCount] = useState(() =>
     remoteStreamingActive || _simulateStreaming
       ? 0
@@ -2722,12 +2728,16 @@ function MessageItemComponent({
 
                   if (imageAttachment) {
                     return (
-                      <a
+                      <button
                         key={attachment.id}
-                        href={source}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block overflow-hidden rounded-lg border border-primary-200 hover:border-primary-400 transition-colors max-w-full"
+                        type="button"
+                        onClick={() =>
+                          setPreviewImage({
+                            url: source,
+                            name: attachment.name || 'Attached image',
+                          })
+                        }
+                        className="block overflow-hidden rounded-lg border border-primary-200 hover:border-primary-400 transition-colors max-w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400"
                       >
                         <img
                           src={source}
@@ -2735,7 +2745,7 @@ function MessageItemComponent({
                           className="max-h-64 w-auto max-w-full object-contain"
                           loading="lazy"
                         />
-                      </a>
+                      </button>
                     )
                   }
 
@@ -2776,12 +2786,16 @@ function MessageItemComponent({
             {hasInlineImages && (
               <div className="flex flex-wrap gap-2">
                 {inlineImages.map((img) => (
-                  <a
+                  <button
                     key={img.id}
-                    href={img.src}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block overflow-hidden rounded-lg border border-primary-200 hover:border-primary-400 transition-colors max-w-full"
+                    type="button"
+                    onClick={() =>
+                      setPreviewImage({
+                        url: img.src,
+                        name: 'Shared image',
+                      })
+                    }
+                    className="block overflow-hidden rounded-lg border border-primary-200 hover:border-primary-400 transition-colors max-w-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-400"
                   >
                     <img
                       src={img.src}
@@ -2789,7 +2803,7 @@ function MessageItemComponent({
                       className="max-h-64 w-auto max-w-full object-contain"
                       loading="lazy"
                     />
-                  </a>
+                  </button>
                 ))}
               </div>
             )}
@@ -2905,6 +2919,36 @@ function MessageItemComponent({
           }
         />
       )}
+
+      {/* Fullscreen Image Preview Overlay Modal */}
+      {previewImage &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setPreviewImage(null)}
+            role="dialog"
+            aria-label="Image preview"
+          >
+            <button
+              type="button"
+              className="absolute right-4 top-4 z-10 inline-flex size-10 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white dark:hover:bg-white/10/30 active:bg-white/40 transition-colors cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation()
+                setPreviewImage(null)
+              }}
+              aria-label="Close preview"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} size={24} strokeWidth={2} />
+            </button>
+            <img
+              src={previewImage.url}
+              alt={previewImage.name}
+              className="max-h-[85vh] max-w-[92vw] rounded-lg object-contain shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

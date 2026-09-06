@@ -55,6 +55,9 @@ function stripChannelPrefix(text: string): string {
 function cleanUserText(raw: string): string {
   let text = stripWorkspaceDirective(raw)
 
+  // Remove <attachment name="...">...</attachment> blocks (text/doc file attachments injected into prompt)
+  text = text.replace(/<attachment\s+name="[^"]*">[\s\S]*?<\/attachment>\s*/gi, '')
+
   // Remove "Conversation info (untrusted metadata):" headers + JSON block
   // Format: "Conversation info (untrusted metadata):\n```json\n{...}\n```\n\n"
   text = text.replace(
@@ -96,6 +99,9 @@ function cleanUserText(raw: string): string {
     /Read HEARTBEAT\.md if it exists.*?reply HEARTBEAT_OK\.\s*/gs,
     '',
   )
+
+  // Remove [screenshot] placeholder appended by hermes-agent for image content
+  text = text.replace(/\[screenshot\]\s*/gi, '')
 
   return text.trim()
 }
