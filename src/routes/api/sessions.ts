@@ -23,6 +23,8 @@ import {
 } from '../../server/local-session-store'
 import { deleteAttachmentsForSession } from '../../server/attachment-store'
 
+let lastKnownGatewaySessions: Array<any> = []
+
 export const Route = createFileRoute('/api/sessions')({
   server: {
     handlers: {
@@ -32,7 +34,7 @@ export const Route = createFileRoute('/api/sessions')({
           return json({ ok: false, error: 'Unauthorized' }, { status: 401 })
         }
         const capabilities = await ensureGatewayProbed()
-        if (!capabilities.sessions) {
+        if (!capabilities.sessions && lastKnownGatewaySessions.length === 0) {
           return json({
             ok: true,
             sessions: [],
@@ -54,9 +56,17 @@ export const Route = createFileRoute('/api/sessions')({
           const isPortable = chatMode === 'portable' || chatMode === 'responses'
 
           let gatewaySessions: Array<any> = []
-          if (!isPortable) {
-            const sessions = await listSessions(50, 0)
-            gatewaySessions = sessions.map(toSessionSummary)
+          if (!isPortable && capabilities.sessions) {
+            try {
+              const sessions = await listSessions(50, 0)
+              gatewaySessions = sessions.map(toSessionSummary)
+              lastKnownGatewaySessions = gatewaySessions
+            } catch {
+              // Graceful fallback: use cached sessions if transient error occurred
+              gatewaySessions = [...lastKnownGatewaySessions]
+            }
+          } else if (!isPortable && lastKnownGatewaySessions.length > 0) {
+            gatewaySessions = [...lastKnownGatewaySessions]
           }
 
           // Always merge local portable sessions

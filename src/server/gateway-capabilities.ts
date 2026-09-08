@@ -968,8 +968,13 @@ export async function probeGateway(options?: {
 
 export async function ensureGatewayProbed(): Promise<GatewayCapabilities> {
   const isStale = Date.now() - lastProbeAt > effectiveProbeTtl(capabilities)
-  if (!capabilities.probed || isStale) {
-    return probeGateway({ force: isStale })
+  if (!capabilities.probed) {
+    return probeGateway({ force: false })
+  }
+  if (isStale) {
+    // Non-blocking background reprobe: return current capabilities immediately
+    // so API requests (like /api/sessions and /api/dashboard) don't stall.
+    void probeGateway({ force: true }).catch(() => undefined)
   }
   return capabilities
 }

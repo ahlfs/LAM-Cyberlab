@@ -246,9 +246,14 @@ const DEFAULT_OPTIONS = {
 async function safeJson<T>(
   fetcher: DashboardFetcher,
   path: string,
+  timeoutMs = 1500,
 ): Promise<T | null> {
   try {
-    const res = await fetcher(path)
+    const fetchPromise = fetcher(path)
+    const timeoutPromise = new Promise<Response>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), timeoutMs),
+    )
+    const res = await Promise.race([fetchPromise, timeoutPromise])
     if (!res.ok) return null
     return (await res.json()) as T
   } catch {
