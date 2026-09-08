@@ -35,6 +35,7 @@ export type SelectionCardContent = {
   mode?: 'single' | 'multi' | 'confirm'
   options?: Array<{
     id?: string
+    badge?: string
     label: string
     value?: string
     description?: string

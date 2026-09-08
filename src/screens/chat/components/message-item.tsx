@@ -169,13 +169,22 @@ function dispatchSelectionCardReply(text: string) {
   )
 }
 
-function InteractiveSelectionCard({ card }: { card: SelectionCardContent }) {
+function InteractiveSelectionCard({
+  card,
+  disabled = false,
+}: {
+  card: SelectionCardContent
+  disabled?: boolean
+}) {
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
+  const [hasSubmitted, setHasSubmitted] = useState(false)
   const mode = card.mode ?? 'single'
   const options = Array.isArray(card.options) ? card.options : []
   const isMulti = mode === 'multi'
+  const isCardDisabled = disabled || hasSubmitted
 
   function toggle(value: string) {
+    if (isCardDisabled) return
     setSelected((prev) => {
       const next = new Set(isMulti ? prev : [])
       if (next.has(value)) next.delete(value)
@@ -185,8 +194,10 @@ function InteractiveSelectionCard({ card }: { card: SelectionCardContent }) {
   }
 
   function submit(value?: string) {
+    if (isCardDisabled) return
     const values = value ? [value] : [...selected]
     if (values.length === 0) return
+    setHasSubmitted(true)
     dispatchSelectionCardReply(values.join(', '))
   }
 
@@ -207,20 +218,24 @@ function InteractiveSelectionCard({ card }: { card: SelectionCardContent }) {
           const value = option.value || option.label
           const id = option.id || value || String(index)
           const isSelected = selected.has(value)
+          const badgeText = option.badge || (isMulti ? '' : String(index + 1))
           return (
             <button
               key={id}
               type="button"
+              disabled={isCardDisabled}
               onClick={() => (isMulti ? toggle(value) : submit(value))}
               className={cn(
                 'flex w-full items-start gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors',
                 isSelected
                   ? 'border-[var(--theme-accent)] bg-[var(--theme-accent-soft)] text-[var(--theme-text)]'
                   : 'border-[var(--theme-border)] bg-[var(--theme-bg)] text-[var(--theme-text)] hover:bg-[var(--theme-card2)]',
+                isCardDisabled && !isSelected && 'opacity-60 cursor-default hover:bg-[var(--theme-bg)]',
+                isCardDisabled && isSelected && 'cursor-default',
               )}
             >
-              <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border border-current text-[10px]">
-                {isSelected ? '✓' : isMulti ? '' : index + 1}
+              <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded border border-current text-[11px] font-semibold">
+                {isSelected ? '✓' : badgeText}
               </span>
               <span className="min-w-0">
                 <span className="block font-medium">{option.label}</span>
@@ -234,13 +249,13 @@ function InteractiveSelectionCard({ card }: { card: SelectionCardContent }) {
           )
         })}
       </div>
-      {isMulti || mode === 'confirm' ? (
+      {(isMulti || mode === 'confirm') && !isCardDisabled ? (
         <div className="flex items-center justify-between border-t border-[var(--theme-border)] px-3 py-2 text-xs text-[var(--theme-muted)]">
           <span>{selected.size} selected</span>
           <button
             type="button"
             onClick={() => submit()}
-            disabled={selected.size === 0}
+            disabled={selected.size === 0 || isCardDisabled}
             className="rounded-full bg-[var(--theme-accent)] px-3 py-1.5 font-semibold text-primary-950 disabled:opacity-50"
           >
             {card.submitLabel || 'Send choice'}
@@ -1510,6 +1525,181 @@ function parseArtifactAttributes(
   return attributes
 }
 
+function simpleHash(str: string): string {
+  let hash = 5381
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0
+  }
+  return (hash >>> 0).toString(36)
+}
+
+function stripMarkdownInline(str: string): string {
+  return str
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/_(.*?)_/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .trim()
+}
+
+export function extractDynamicSelectionCards(
+  text: string,
+): { cards: Array<SelectionCardContent>; cleanedText?: string } {
+  if (!text || text.length > 5000) return { cards: [] }
+
+  // 1. Skip messages that are predominantly code blocks or if the choices are inside code blocks
+  if (text.includes('```')) {
+    // If text starts with or contains code fences, ignore options inside code blocks
+    const codeBlockCount = (text.match(/```/g) || []).length
+    if (codeBlockCount % 2 !== 0 || text.trim().startsWith('```')) {
+      return { cards: [] }
+    }
+  }
+
+  const rawLines = text.trim().split('\n').map((l) => l.trim())
+  if (rawLines.length < 2) return { cards: [] }
+
+  // Exclude lines inside triple backtick blocks
+  let insideCode = false
+  const lines: Array<string> = []
+  for (const l of rawLines) {
+    if (l.startsWith('```')) {
+      insideCode = !insideCode
+      continue
+    }
+    if (!insideCode) {
+      lines.push(l)
+    }
+  }
+
+  if (lines.length < 2) return { cards: [] }
+
+  // 2. A genuine choice prompt MUST ask the user to pick/choose an option.
+  // Exclude step-by-step guides / instructions / tutorials in English, Indonesian, etc.
+  const isTutorialGuide =
+    /\b(langkah[- ]langkah|steps|how to|instructions|guide|tutorial|checklist|prerequisites|requirements|cara (install|setup|menggunakan|membuat))\b/i.test(
+      text,
+    )
+  if (isTutorialGuide) return { cards: [] }
+
+  // Must have explicit question or choice prompt words in English or Indonesian
+  const hasPromptIntent =
+    (text.includes('?') &&
+      /\b(pilih|pilihan|opsi|mana|choose|choice|choices|options|option|select|which|pick|decide|prefer)\b/i.test(
+        text,
+      )) ||
+    /\b(pilih salah satu|silakan pilih|kamu mau yang mana|mana yang kamu|which one do you|choose one of|kamu mau pilih|which would you|pick one|select an option|let me know which)\b/i.test(
+      text,
+    )
+
+  if (!hasPromptIntent) return { cards: [] }
+
+  const options: Array<{ label: string; value: string; description?: string; badge?: string }> = []
+  let introLines: Array<string> = []
+  let outroLines: Array<string> = []
+  const choiceLineIndices = new Set<number>()
+
+  // Regex matches: "1. Foo", "1) Foo", "[1] Foo", "(1) Foo", "A. Foo", "A) Foo", "[A] Foo", "(A) Foo",
+  // and explicit prefix words: "Pilihan A: Foo", "Opsi 1: Foo", "Option A - Foo", "A: Foo"
+  const choicePattern =
+    /^(?:(?:pilihan|opsi|option)\s+)?(?:(?<badge>\d+|[A-Da-d])[\.\)]|\((?<badge2>\d+|[A-Da-d])\)|\*|\-|•|\[(?<badge3>\d+|[A-Da-d])\]|(?<badge4>\b[A-Da-d]\b|\b\d+\b)\s*[:\-])\s*(.+)$/i
+
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    if (!line) {
+      i++
+      continue
+    }
+
+    const choiceMatch = line.match(choicePattern)
+    if (choiceMatch) {
+      const fullLabel = (choiceMatch[choiceMatch.length - 1] || '').trim()
+      if (fullLabel.startsWith('#') || fullLabel.length > 500) {
+        i++
+        continue
+      }
+
+      const rawBadge =
+        choiceMatch.groups?.badge ||
+        choiceMatch.groups?.badge2 ||
+        choiceMatch.groups?.badge3 ||
+        choiceMatch.groups?.badge4
+      const badge = rawBadge ? rawBadge.toUpperCase() : undefined
+
+      const parts = fullLabel.split(/\s*[-–—:]\s*(.+)/)
+      const label = stripMarkdownInline(parts[0]?.trim() || fullLabel)
+      let description = parts[1]?.trim() ? stripMarkdownInline(parts[1].trim()) : undefined
+
+      choiceLineIndices.add(i)
+
+      // If next line is a non-choice descriptive paragraph belonging to this option
+      if (
+        i + 1 < lines.length &&
+        lines[i + 1] &&
+        !choicePattern.test(lines[i + 1]) &&
+        !lines[i + 1].includes('?')
+      ) {
+        if (!description) {
+          description = stripMarkdownInline(lines[i + 1].trim())
+        }
+        choiceLineIndices.add(i + 1)
+        i++
+      }
+
+      options.push({
+        badge,
+        label,
+        value: badge ? `${badge}. ${label}` : label,
+        description:
+          description && description.length <= 300 ? description : undefined,
+      })
+    } else if (choiceLineIndices.size === 0) {
+      introLines.push(line)
+    } else {
+      outroLines.push(line)
+    }
+    i++
+  }
+
+  // 3. If valid options found (2 to 6 options)
+  // Ensure the message actually asks a question or prompts for selection, rather than being an explanation
+  const questionLine =
+    outroLines.find(
+      (l) => l.includes('?') || /\b(pilih|mana|choose|option|opsi)\b/i.test(l),
+    ) ||
+    introLines.find(
+      (l) => l.includes('?') || /\b(pilih|mana|choose|option|opsi)\b/i.test(l),
+    )
+
+  if (options.length >= 2 && options.length <= 6 && questionLine) {
+    const question = stripMarkdownInline(questionLine.replace(/^[#\s*_-]+/, '').trim())
+
+    // Retain intro text before options in cleanedText so it reads naturally
+    const cleaned = introLines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+
+    return {
+      cards: [
+        {
+          type: 'selectionCard',
+          id: `choice-${simpleHash(text.slice(0, 100))}`,
+          title: question,
+          body:
+            outroLines.length > 0 && outroLines.join('\n') !== question
+              ? outroLines.filter((l) => l !== questionLine).join('\n')
+              : undefined,
+          mode: 'single',
+          options,
+        },
+      ],
+      cleanedText: cleaned,
+    }
+  }
+
+  return { cards: [] }
+}
+
 export function parseInlineArtifacts(text: string): InlineArtifactParseResult {
   const artifacts: Array<InlineArtifact> = []
   const cleanedText = text.replace(
@@ -2214,10 +2404,19 @@ function MessageItemComponent({
     () => detectAssistantCorruptionWarning(role, assistantDisplayText),
     [role, assistantDisplayText],
   )
-  const parsedInlineArtifacts = useMemo(
-    () => parseInlineArtifacts(assistantDisplayText),
-    [assistantDisplayText],
-  )
+  const dynamicSelectionResult = useMemo(() => {
+    if (role === 'assistant' && !effectiveIsStreaming && assistantDisplayText) {
+      return extractDynamicSelectionCards(assistantDisplayText)
+    }
+    return { cards: [] }
+  }, [role, effectiveIsStreaming, assistantDisplayText])
+
+  const parsedInlineArtifacts = useMemo(() => {
+    const textToParse = dynamicSelectionResult.cleanedText !== undefined
+      ? dynamicSelectionResult.cleanedText
+      : assistantDisplayText
+    return parseInlineArtifacts(textToParse)
+  }, [assistantDisplayText, dynamicSelectionResult.cleanedText])
   const standaloneMarkdownDocument = useMemo(
     () =>
       parsedInlineArtifacts.artifacts.length === 0
@@ -2340,13 +2539,19 @@ function MessageItemComponent({
       .filter((img) => img.src.length > 0)
   }, [message.content])
   const hasInlineImages = inlineImages.length > 0
-  const selectionCards = useMemo(
-    () =>
-      (Array.isArray(message.content) ? message.content : []).filter(
-        (part): part is SelectionCardContent => part.type === 'selectionCard',
-      ),
-    [message.content],
-  )
+  const selectionCards = useMemo(() => {
+    const explicit = (Array.isArray(message.content) ? message.content : []).filter(
+      (part): part is SelectionCardContent => part.type === 'selectionCard',
+    )
+    if (explicit.length > 0) return explicit
+
+    // Auto-detect dynamic choice options from assistant response when completed
+    if (dynamicSelectionResult.cards.length > 0) {
+      return dynamicSelectionResult.cards
+    }
+
+    return []
+  }, [message.content, dynamicSelectionResult.cards])
   const hasSelectionCards = selectionCards.length > 0
 
   const hasText = displayText.length > 0
@@ -2848,19 +3053,6 @@ function MessageItemComponent({
                 ))}
               </div>
             )}
-            {hasSelectionCards ? (
-              <div className="flex flex-col gap-2">
-                {selectionCards.map((card, index) => (
-                  <InteractiveSelectionCard
-                    key={
-                      card.id ||
-                      `${wrapperDataMessageId ?? 'selection'}-${index}`
-                    }
-                    card={card}
-                  />
-                ))}
-              </div>
-            ) : null}
             {hasText &&
               (isUser ? (
                 <span className="text-pretty">{displayText}</span>
@@ -2895,6 +3087,20 @@ function MessageItemComponent({
                     >
                       {parsedInlineArtifacts.cleanedText}
                     </MessageContent>
+                  ) : null}
+                  {hasSelectionCards ? (
+                    <div className="mt-3 flex flex-col gap-2">
+                      {selectionCards.map((card, index) => (
+                        <InteractiveSelectionCard
+                          key={
+                            card.id ||
+                            `${wrapperDataMessageId ?? 'selection'}-${index}`
+                          }
+                          card={card}
+                          disabled={!isLastAssistant}
+                        />
+                      ))}
+                    </div>
                   ) : null}
                   {parsedInlineArtifacts.artifacts.length > 0 ? (
                     <div className="mt-3 flex flex-col gap-3">

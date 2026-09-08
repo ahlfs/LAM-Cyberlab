@@ -1437,6 +1437,7 @@ function ChatMessageListComponent({
         simulateStreaming={simulateStreaming}
         streamingKey={signature}
         expandAllToolSections={expandAllToolSections}
+        isLastAssistant={forceActionsVisible}
       />
     )
   }
