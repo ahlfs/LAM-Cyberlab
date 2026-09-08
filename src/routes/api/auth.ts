@@ -101,7 +101,8 @@ export const Route = createFileRoute('/api/auth')({
           {
             status: 200,
             headers: {
-              'Set-Cookie': 'claude-auth=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0',
+              'Set-Cookie':
+                'claude-auth=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0',
             },
           },
         )

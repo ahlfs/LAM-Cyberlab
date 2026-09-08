@@ -29,10 +29,13 @@ describe('computeCpuPct', () => {
   it('returns null on core-count mismatch or empty input', () => {
     expect(computeCpuPct([], [])).toBeNull()
     expect(
-      computeCpuPct([[1, 0, 1, 1, 0]], [
-        [1, 0, 1, 1, 0],
-        [1, 0, 1, 1, 0],
-      ]),
+      computeCpuPct(
+        [[1, 0, 1, 1, 0]],
+        [
+          [1, 0, 1, 1, 0],
+          [1, 0, 1, 1, 0],
+        ],
+      ),
     ).toBeNull()
   })
 
@@ -136,7 +139,10 @@ describe('parseDiskStats', () => {
     ].join('\n')
     const stats = parseDiskStats(sample)
     expect([...stats.keys()]).toEqual(['sda', 'nvme0n1'])
-    expect(stats.get('sda')).toEqual({ sectorsRead: 5000, sectorsWritten: 8000 })
+    expect(stats.get('sda')).toEqual({
+      sectorsRead: 5000,
+      sectorsWritten: 8000,
+    })
     expect(stats.get('nvme0n1')).toEqual({
       sectorsRead: 20000,
       sectorsWritten: 15000,

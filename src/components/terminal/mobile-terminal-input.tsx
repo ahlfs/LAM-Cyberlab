@@ -30,7 +30,21 @@ async function sendToActiveTab(data: string) {
   }).catch(() => undefined)
 }
 
-const QUICK_SYMBOLS = ['~', '/', '-', '_', '|', ':', '$', '&', '>', '<', ';', '"', "'"]
+const QUICK_SYMBOLS = [
+  '~',
+  '/',
+  '-',
+  '_',
+  '|',
+  ':',
+  '$',
+  '&',
+  '>',
+  '<',
+  ';',
+  '"',
+  "'",
+]
 
 const STORAGE_KEY_SHOW_BAR = 'lam.terminal.extra_keys_visible'
 
@@ -217,7 +231,11 @@ export function MobileTerminalInput() {
             title="Right Arrow"
             aria-label="Right"
           >
-            <HugeiconsIcon icon={ArrowRight01Icon} size={20} strokeWidth={2.2} />
+            <HugeiconsIcon
+              icon={ArrowRight01Icon}
+              size={20}
+              strokeWidth={2.2}
+            />
           </button>
 
           {/* Shortcuts: Ctrl+C, Ctrl+D, Ctrl+Z */}
@@ -289,7 +307,11 @@ export function MobileTerminalInput() {
           type="button"
           onClick={() => void paste()}
           className="flex items-center justify-center h-10 w-10 rounded-lg shrink-0 active:opacity-60 transition-colors touch-manipulation"
-          style={{ background: '#252525', color: '#aaa', border: '1px solid #333' }}
+          style={{
+            background: '#252525',
+            color: '#aaa',
+            border: '1px solid #333',
+          }}
           title="Paste from clipboard"
           aria-label="Paste"
         >
@@ -340,7 +362,10 @@ export function MobileTerminalInput() {
           style={{
             background: '#1f1f1f',
             color: '#f0f0f0',
-            border: ctrlActive || altActive ? '1px solid #ea580c' : '1px solid #383838',
+            border:
+              ctrlActive || altActive
+                ? '1px solid #ea580c'
+                : '1px solid #383838',
             fontFamily: 'JetBrains Mono, Menlo, monospace',
           }}
         />

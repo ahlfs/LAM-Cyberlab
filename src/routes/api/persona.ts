@@ -32,7 +32,9 @@ export const Route = createFileRoute('/api/persona')({
           if (nameMatch) {
             const characterName = nameMatch[1].trim()
             const activePersona = personas.find(
-              (p) => p.name.includes(characterName) || p.id.toLowerCase() === characterName.toLowerCase()
+              (p) =>
+                p.name.includes(characterName) ||
+                p.id.toLowerCase() === characterName.toLowerCase(),
             )
             if (activePersona) activePersonaId = activePersona.id
           }
@@ -75,7 +77,7 @@ export const Route = createFileRoute('/api/persona')({
               return Response.json(
                 { ok: false, error: 'Persona not found' },
                 { status: 404 },
-            )
+              )
             }
           }
 
@@ -92,7 +94,12 @@ export const Route = createFileRoute('/api/persona')({
             }
           } else {
             // Call the python script
-            const scriptPath = path.join(hermesHome, 'hermes-agent', 'scripts', 'swap-persona.py')
+            const scriptPath = path.join(
+              hermesHome,
+              'hermes-agent',
+              'scripts',
+              'swap-persona.py',
+            )
             await execPromise(`python3 "${scriptPath}" --preset "${personaId}"`)
           }
 

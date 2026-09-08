@@ -18,7 +18,10 @@ function escapeAttribute(value: string): string {
 export function buildWorkspaceDirective(workspace: WorkspaceScope): string {
   const path = workspace.path?.trim() ?? ''
   if (!path || workspace.isValid === false) return ''
-  const name = workspace.folderName?.trim() || path.split('/').filter(Boolean).at(-1) || 'workspace'
+  const name =
+    workspace.folderName?.trim() ||
+    path.split('/').filter(Boolean).at(-1) ||
+    'workspace'
   return `<workspace_context active="true" name="${escapeAttribute(name)}" path="${escapeAttribute(path)}" />`
 }
 
@@ -40,12 +43,21 @@ export function buildWorkspaceScopedMultimodalContent(
     return buildWorkspaceScopedTextMessage(content, workspace)
   }
   if (!Array.isArray(content)) return content
-  const firstTextIndex = content.findIndex((part) => part && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string')
+  const firstTextIndex = content.findIndex(
+    (part) =>
+      part &&
+      typeof part === 'object' &&
+      part.type === 'text' &&
+      typeof part.text === 'string',
+  )
   if (firstTextIndex >= 0) {
     const next = [...content]
     next[firstTextIndex] = {
       ...next[firstTextIndex],
-      text: buildWorkspaceScopedTextMessage(next[firstTextIndex].text, workspace),
+      text: buildWorkspaceScopedTextMessage(
+        next[firstTextIndex].text,
+        workspace,
+      ),
     }
     return next
   }

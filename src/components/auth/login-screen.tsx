@@ -42,10 +42,11 @@ export function LoginScreen() {
   // A geometric dot pattern for the background
   const DotGrid = () => (
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center opacity-30">
-      <div 
+      <div
         className="w-[200vw] h-[200vh] absolute"
         style={{
-          backgroundImage: 'radial-gradient(var(--theme-primary-400) 1.5px, transparent 1.5px)',
+          backgroundImage:
+            'radial-gradient(var(--theme-primary-400) 1.5px, transparent 1.5px)',
           backgroundSize: '24px 24px',
           backgroundPosition: '0 0',
         }}
@@ -59,7 +60,7 @@ export function LoginScreen() {
         transition={{
           duration: 40,
           repeat: Infinity,
-          ease: "linear"
+          ease: 'linear',
         }}
       />
     </div>
@@ -71,30 +72,38 @@ export function LoginScreen() {
     <div className="relative flex min-h-screen items-center justify-center bg-primary-50 px-4 overflow-hidden selection:bg-accent-500 selection:text-white">
       <DotGrid />
 
-      <motion.div 
+      <motion.div
         className="relative z-10 w-full max-w-md"
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ 
-          type: 'spring', 
-          stiffness: 300, 
+        transition={{
+          type: 'spring',
+          stiffness: 300,
           damping: 24,
-          delay: 0.1 
+          delay: 0.1,
         }}
       >
         <div className="overflow-hidden rounded-2xl bg-primary-100 p-10 border-2 border-primary-200/50 shadow-2xl shadow-primary-900/10 ring-1 ring-primary-300/30 backdrop-blur-sm">
-          
           {/* Logo & Header */}
           <div className="mb-10 flex flex-col items-center justify-center text-center">
-            <motion.div 
+            <motion.div
               className="flex items-center justify-center mb-6 h-16 w-16 rounded-2xl overflow-hidden shadow-[0_0_24px_-4px_var(--theme-accent-500)]"
               initial={{ scale: 0.8, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
+              transition={{
+                type: 'spring',
+                stiffness: 200,
+                damping: 15,
+                delay: 0.2,
+              }}
             >
-              <img src="/claude-logo.png" alt="LAM Cyberlab Logo" className="w-full h-full object-cover" />
+              <img
+                src="/claude-logo.png"
+                alt="LAM Cyberlab Logo"
+                className="w-full h-full object-cover"
+              />
             </motion.div>
-            <motion.h1 
+            <motion.h1
               className="text-3xl font-extrabold tracking-tight text-primary-900"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -102,7 +111,7 @@ export function LoginScreen() {
             >
               LAM Cyberlab
             </motion.h1>
-            <motion.p 
+            <motion.p
               className="mt-2 text-sm font-medium text-primary-600"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -113,8 +122,8 @@ export function LoginScreen() {
           </div>
 
           {/* Form */}
-          <motion.form 
-            onSubmit={handleSubmit} 
+          <motion.form
+            onSubmit={handleSubmit}
             className="space-y-6"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -134,7 +143,7 @@ export function LoginScreen() {
 
             <AnimatePresence mode="wait">
               {error && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, height: 0, y: -10 }}
                   animate={{ opacity: 1, height: 'auto', y: 0 }}
                   exit={{ opacity: 0, height: 0, y: -10 }}
@@ -150,20 +159,46 @@ export function LoginScreen() {
             <motion.button
               type="submit"
               disabled={loading || !password}
-              whileHover={(!loading && password) ? { scale: 1.02 } : {}}
-              whileTap={(!loading && password) ? { scale: 0.98 } : {}}
+              whileHover={!loading && password ? { scale: 1.02 } : {}}
+              whileTap={!loading && password ? { scale: 0.98 } : {}}
               className="w-full relative overflow-hidden rounded-xl bg-accent-500 px-4 py-3.5 font-bold text-white shadow-[0_4px_14px_0_var(--theme-accent-500)] transition-all hover:bg-accent-600 focus:outline-none focus:ring-4 focus:ring-accent-500/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-accent-500"
             >
               <span className={loading ? 'opacity-0' : 'opacity-100'}>
                 Authenticate Access
               </span>
-              
+
               {loading && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex gap-1.5">
-                    <motion.div className="h-2 w-2 rounded-full bg-white" animate={{ y: [-3, 3, -3] }} transition={{ repeat: Infinity, duration: 0.6, ease: 'easeInOut' }} />
-                    <motion.div className="h-2 w-2 rounded-full bg-white" animate={{ y: [-3, 3, -3] }} transition={{ repeat: Infinity, duration: 0.6, ease: 'easeInOut', delay: 0.1 }} />
-                    <motion.div className="h-2 w-2 rounded-full bg-white" animate={{ y: [-3, 3, -3] }} transition={{ repeat: Infinity, duration: 0.6, ease: 'easeInOut', delay: 0.2 }} />
+                    <motion.div
+                      className="h-2 w-2 rounded-full bg-white"
+                      animate={{ y: [-3, 3, -3] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 0.6,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                    <motion.div
+                      className="h-2 w-2 rounded-full bg-white"
+                      animate={{ y: [-3, 3, -3] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 0.6,
+                        ease: 'easeInOut',
+                        delay: 0.1,
+                      }}
+                    />
+                    <motion.div
+                      className="h-2 w-2 rounded-full bg-white"
+                      animate={{ y: [-3, 3, -3] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 0.6,
+                        ease: 'easeInOut',
+                        delay: 0.2,
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -172,7 +207,7 @@ export function LoginScreen() {
         </div>
 
         {/* Footer */}
-        <motion.p 
+        <motion.p
           className="mt-8 text-center text-xs font-semibold text-primary-500"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

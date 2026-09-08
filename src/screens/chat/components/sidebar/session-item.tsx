@@ -159,7 +159,9 @@ function SessionItemComponent({
         <div
           className={cn(
             'mt-0.5 text-[11px] truncate',
-            isError ? 'text-red-600 dark:text-red-400' : 'text-[var(--theme-text)] opacity-60',
+            isError
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-[var(--theme-text)] opacity-60',
           )}
         >
           {subtitle}

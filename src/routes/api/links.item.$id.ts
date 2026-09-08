@@ -58,7 +58,8 @@ export const Route = createFileRoute('/api/links/item/$id')({
                   ? body.folderId
                   : undefined,
             url: typeof body.url === 'string' ? body.url.trim() : undefined,
-            title: typeof body.title === 'string' ? body.title.trim() : undefined,
+            title:
+              typeof body.title === 'string' ? body.title.trim() : undefined,
             faviconUrl:
               body.faviconUrl === null || typeof body.faviconUrl === 'string'
                 ? (body.faviconUrl as string | null)
@@ -74,7 +75,10 @@ export const Route = createFileRoute('/api/links/item/$id')({
             return json({ error: err.message }, { status: 404 })
           }
           return json(
-            { error: err instanceof Error ? err.message : 'failed to update link' },
+            {
+              error:
+                err instanceof Error ? err.message : 'failed to update link',
+            },
             { status: 500 },
           )
         }
@@ -99,7 +103,10 @@ export const Route = createFileRoute('/api/links/item/$id')({
             return json({ error: err.message }, { status: 404 })
           }
           return json(
-            { error: err instanceof Error ? err.message : 'failed to delete link' },
+            {
+              error:
+                err instanceof Error ? err.message : 'failed to delete link',
+            },
             { status: 500 },
           )
         }

@@ -618,7 +618,12 @@ export function ChatScreen({
     activeExists,
     sessionsReady: sessionsQuery.isSuccess,
     queryClient,
-    historyRefetchInterval: sseConnectionState === 'connected' ? 30_000 : 5_000,
+    historyRefetchInterval:
+      sending
+        ? false
+        : sseConnectionState === 'connected'
+          ? 30_000
+          : 10_000,
     portableMode: isPortableMode,
   })
 
@@ -997,7 +1002,7 @@ export function ChatScreen({
         if (!res.ok) return
         const data = await res.json()
         if (!data.ok) return
-        
+
         // If run completed, error, or no active run remains, finish waiting and refresh history
         if (!data.run || isTerminalActiveRunStatus(data.run.status)) {
           streamFinish()
@@ -1131,9 +1136,14 @@ export function ChatScreen({
   })
 
   const gatewayModel = currentModelQuery.data || ''
-  const [localSessionModel, setLocalSessionModel] = useState<string | null>(null)
+  const [localSessionModel, setLocalSessionModel] = useState<string | null>(
+    null,
+  )
   const currentModel =
-    localSessionModel || persistedSessionModel || _localModelOverride || gatewayModel
+    localSessionModel ||
+    persistedSessionModel ||
+    _localModelOverride ||
+    gatewayModel
 
   useEffect(() => {
     setLocalSessionModel(null)
@@ -2651,7 +2661,6 @@ export function ChatScreen({
       // Session registration is handled by send-stream.ts directly on the
       // Gateway API — no need to pre-create from the frontend.
 
-
       sendMessage(
         sessionKeyForSend,
         friendlyIdForSend,
@@ -2681,7 +2690,10 @@ export function ChatScreen({
   const handleAbortStreaming = useCallback(() => {
     const activeSend = activeSendRef.current
     const sessionKeyToStop =
-      resolvedSessionKey || activeCanonicalKey || activeSessionKey || activeFriendlyId
+      resolvedSessionKey ||
+      activeCanonicalKey ||
+      activeSessionKey ||
+      activeFriendlyId
     if (activeSend?.clientId) {
       updateHistoryMessageByClientIdEverywhere(
         queryClient,
@@ -2713,7 +2725,15 @@ export function ChatScreen({
       store.clearSessionWaiting(sessionKeyToStop)
     }
     toast('Chat interrupted', { type: 'info' })
-  }, [cancelStreaming, queryClient, resolvedSessionKey, activeCanonicalKey, activeSessionKey, activeFriendlyId, setWaitingForResponse])
+  }, [
+    cancelStreaming,
+    queryClient,
+    resolvedSessionKey,
+    activeCanonicalKey,
+    activeSessionKey,
+    activeFriendlyId,
+    setWaitingForResponse,
+  ])
 
   const runPaletteSlashCommand = useCallback(
     (command: string) => {

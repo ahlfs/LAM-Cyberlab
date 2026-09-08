@@ -142,15 +142,29 @@ function NetworkTrafficChart({
           className="flex items-center gap-1.5 font-mono text-[11px] tabular-nums"
           style={{ color: 'var(--theme-text)' }}
         >
-          <i aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: DOWNLOAD_COLOR }} />
-          Download <span style={{ color: 'var(--theme-muted)' }}>{formatRate(currentRx)}</span>
+          <i
+            aria-hidden
+            className="size-2 shrink-0 rounded-full"
+            style={{ background: DOWNLOAD_COLOR }}
+          />
+          Download{' '}
+          <span style={{ color: 'var(--theme-muted)' }}>
+            {formatRate(currentRx)}
+          </span>
         </span>
         <span
           className="flex items-center gap-1.5 font-mono text-[11px] tabular-nums"
           style={{ color: 'var(--theme-text)' }}
         >
-          <i aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: UPLOAD_COLOR }} />
-          Upload <span style={{ color: 'var(--theme-muted)' }}>{formatRate(currentTx)}</span>
+          <i
+            aria-hidden
+            className="size-2 shrink-0 rounded-full"
+            style={{ background: UPLOAD_COLOR }}
+          />
+          Upload{' '}
+          <span style={{ color: 'var(--theme-muted)' }}>
+            {formatRate(currentTx)}
+          </span>
         </span>
       </div>
 
@@ -161,7 +175,9 @@ function NetworkTrafficChart({
           if (len < 2 || !boxRef.current) return
           const rect = boxRef.current.getBoundingClientRect()
           const ratio = (e.clientX - rect.left) / rect.width
-          setCursor(Math.min(len - 1, Math.max(0, Math.round(ratio * (len - 1)))))
+          setCursor(
+            Math.min(len - 1, Math.max(0, Math.round(ratio * (len - 1)))),
+          )
         }}
         onPointerLeave={() => setCursor(null)}
       >
@@ -173,11 +189,31 @@ function NetworkTrafficChart({
             preserveAspectRatio="none"
           >
             <defs>
-              <linearGradient id={`${gradientId}-rx`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={DOWNLOAD_COLOR} stopOpacity="0.28" />
-                <stop offset="100%" stopColor={DOWNLOAD_COLOR} stopOpacity="0" />
+              <linearGradient
+                id={`${gradientId}-rx`}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop
+                  offset="0%"
+                  stopColor={DOWNLOAD_COLOR}
+                  stopOpacity="0.28"
+                />
+                <stop
+                  offset="100%"
+                  stopColor={DOWNLOAD_COLOR}
+                  stopOpacity="0"
+                />
               </linearGradient>
-              <linearGradient id={`${gradientId}-tx`} x1="0" y1="0" x2="0" y2="1">
+              <linearGradient
+                id={`${gradientId}-tx`}
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
                 <stop offset="0%" stopColor={UPLOAD_COLOR} stopOpacity="0.22" />
                 <stop offset="100%" stopColor={UPLOAD_COLOR} stopOpacity="0" />
               </linearGradient>
@@ -208,8 +244,16 @@ function NetworkTrafficChart({
               vectorEffect="non-scaling-stroke"
             />
 
-            <path d={toPath(rxPoints, true)} fill={`url(#${gradientId}-rx)`} stroke="none" />
-            <path d={toPath(txPoints, true)} fill={`url(#${gradientId}-tx)`} stroke="none" />
+            <path
+              d={toPath(rxPoints, true)}
+              fill={`url(#${gradientId}-rx)`}
+              stroke="none"
+            />
+            <path
+              d={toPath(txPoints, true)}
+              fill={`url(#${gradientId}-tx)`}
+              stroke="none"
+            />
             <path
               d={toPath(rxPoints, false)}
               fill="none"
@@ -243,7 +287,10 @@ function NetworkTrafficChart({
           <div
             aria-hidden
             className="h-full w-full rounded"
-            style={{ background: 'color-mix(in srgb, var(--theme-border) 25%, transparent)' }}
+            style={{
+              background:
+                'color-mix(in srgb, var(--theme-border) 25%, transparent)',
+            }}
           />
         )}
 
@@ -660,9 +707,7 @@ function ServicesPanel() {
                 downCount > 0 ? 'var(--theme-danger)' : 'var(--theme-muted)',
             }}
           >
-            {downCount > 0
-              ? `${downCount} down`
-              : `${services.length} up`}
+            {downCount > 0 ? `${downCount} down` : `${services.length} up`}
           </span>
         ) : null
       }
@@ -682,7 +727,10 @@ function ServicesPanel() {
             const up = s.status === 'up'
             const dotColor = up ? 'var(--theme-success)' : 'var(--theme-danger)'
             return (
-              <li key={s.name} className="flex items-center justify-between gap-2">
+              <li
+                key={s.name}
+                className="flex items-center justify-between gap-2"
+              >
                 <span
                   className="flex min-w-0 items-center gap-2 text-[11px]"
                   style={{ color: 'var(--theme-text)' }}
@@ -699,7 +747,9 @@ function ServicesPanel() {
                 </span>
                 <span
                   className="shrink-0 font-mono text-[10px] uppercase tabular-nums tracking-[0.06em]"
-                  style={{ color: up ? 'var(--theme-muted)' : 'var(--theme-danger)' }}
+                  style={{
+                    color: up ? 'var(--theme-muted)' : 'var(--theme-danger)',
+                  }}
                 >
                   {up
                     ? s.latencyMs != null && s.latencyMs > 0
@@ -865,7 +915,10 @@ function GpuPanel() {
       ) : (
         <ul className="flex flex-col gap-3">
           {(gpus ?? []).map((g) => (
-            <li key={`${g.vendor}-${g.index}`} className="flex items-center gap-3">
+            <li
+              key={`${g.vendor}-${g.index}`}
+              className="flex items-center gap-3"
+            >
               {g.utilizationPct !== null ? (
                 <CircularGauge
                   pct={g.utilizationPct}
@@ -1150,7 +1203,8 @@ function NetworkPanel({
                 {i.name}
               </span>
               <span style={{ color: 'var(--theme-muted)' }}>
-                ↓ {formatRate(i.rxBytesPerSec)} · ↑ {formatRate(i.txBytesPerSec)}
+                ↓ {formatRate(i.rxBytesPerSec)} · ↑{' '}
+                {formatRate(i.txBytesPerSec)}
               </span>
             </li>
           ))}
@@ -1277,8 +1331,8 @@ export function SystemScreen() {
               className="font-mono text-[10px]"
               style={{ color: 'var(--theme-muted)' }}
             >
-              retrying every {POLL_MS / 1000}s — check that the workspace
-              server is running
+              retrying every {POLL_MS / 1000}s — check that the workspace server
+              is running
             </span>
           </div>
         ) : (

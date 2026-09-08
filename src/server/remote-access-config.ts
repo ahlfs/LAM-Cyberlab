@@ -115,7 +115,9 @@ export function getRemoteAccessStatus(): RemoteAccessStatus {
   const liveHost = process.env.HOST || '127.0.0.1'
   const diskHost = readEnvFileValue('HOST') || '127.0.0.1'
   const port = parseInt(process.env.PORT || '3000', 10)
-  const cookieSecureOverride = (process.env.COOKIE_SECURE || '').trim().toLowerCase()
+  const cookieSecureOverride = (process.env.COOKIE_SECURE || '')
+    .trim()
+    .toLowerCase()
   const trustProxyValue = (process.env.TRUST_PROXY || '').trim().toLowerCase()
 
   return {
@@ -127,16 +129,17 @@ export function getRemoteAccessStatus(): RemoteAccessStatus {
       diskHost.trim() !== liveHost.trim(),
     port: Number.isFinite(port) ? port : 3000,
     passwordConfigured: isPasswordProtectionEnabled(),
-    cookieSecureExplicit: cookieSecureOverride === '1' || cookieSecureOverride === '0',
+    cookieSecureExplicit:
+      cookieSecureOverride === '1' || cookieSecureOverride === '0',
     trustProxyEnabled: trustProxyValue === '1' || trustProxyValue === 'true',
     nodeEnv: process.env.NODE_ENV || 'development',
-    nineRouterExposed: isNonLoopbackHost(readEnvFileValue('NINE_ROUTER_HOST') || '127.0.0.1'),
+    nineRouterExposed: isNonLoopbackHost(
+      readEnvFileValue('NINE_ROUTER_HOST') || '127.0.0.1',
+    ),
   }
 }
 
-export type SetPasswordResult =
-  | { ok: true }
-  | { ok: false; error: string }
+export type SetPasswordResult = { ok: true } | { ok: false; error: string }
 
 /**
  * Set the workspace password. Persists to .env AND applies to the running
@@ -202,7 +205,10 @@ function restart9Router(): void {
     {
       cwd: process.cwd(),
       shell: '/bin/bash',
-      env: { ...process.env, PATH: `/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
+      env: {
+        ...process.env,
+        PATH: `/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}`,
+      },
     },
     (err, stdout, stderr) => {
       if (err) {
@@ -212,7 +218,7 @@ function restart9Router(): void {
       } else {
         console.log('[9router-restart] OK:', stdout.trim())
       }
-    }
+    },
   )
 }
 
@@ -244,7 +250,8 @@ export async function detectPublicIp(): Promise<PublicIpResult> {
     const res = await fetch('https://api.ipify.org?format=json', {
       signal: controller.signal,
     })
-    if (!res.ok) return { ok: false, error: `Lookup failed (HTTP ${res.status})` }
+    if (!res.ok)
+      return { ok: false, error: `Lookup failed (HTTP ${res.status})` }
     const data = (await res.json()) as { ip?: string }
     if (!data.ip) return { ok: false, error: 'Lookup returned no IP' }
     return { ok: true, ip: data.ip }
@@ -265,12 +272,16 @@ export async function detectPublicIp(): Promise<PublicIpResult> {
 export function isValidDomain(input: string): boolean {
   const domain = input.trim().toLowerCase()
   if (!domain || domain.length > 253) return false
-  if (domain === 'localhost' || /^\d{1,3}(\.\d{1,3}){3}$/.test(domain)) return false
+  if (domain === 'localhost' || /^\d{1,3}(\.\d{1,3}){3}$/.test(domain))
+    return false
   if (domain.includes(':')) return false // no IPv6 literals, no port suffixes
   const labelPattern = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/
   const labels = domain.split('.')
   if (labels.length < 2) return false
-  return labels.every((label) => label.length > 0 && label.length <= 63 && labelPattern.test(label))
+  return labels.every(
+    (label) =>
+      label.length > 0 && label.length <= 63 && labelPattern.test(label),
+  )
 }
 
 export type DomainDnsResult =

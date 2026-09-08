@@ -24,10 +24,18 @@ const ExternalMemoryBrowserScreen = lazy(async () => {
 export const Route = createFileRoute('/memory')({
   ssr: false,
   component: function MemoryRoute() {
-    const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-    const initialTab = searchParams.get('tab') as 'memory' | 'knowledge' | 'external' | null
+    const searchParams = new URLSearchParams(
+      typeof window !== 'undefined' ? window.location.search : '',
+    )
+    const initialTab = searchParams.get('tab') as
+      | 'memory'
+      | 'knowledge'
+      | 'external'
+      | null
     const [tab, setTab] = useState<'memory' | 'knowledge' | 'external'>(
-      ['memory', 'knowledge', 'external'].includes(initialTab!) ? initialTab! : 'memory',
+      ['memory', 'knowledge', 'external'].includes(initialTab!)
+        ? initialTab!
+        : 'memory',
     )
     const memoryAvailable = useFeatureAvailable('memory')
 

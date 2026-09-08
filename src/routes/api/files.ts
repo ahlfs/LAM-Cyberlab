@@ -119,13 +119,7 @@ const IGNORED_DIRS = new Set([
 ])
 
 /** Directories that are blocked from browsing in browse mode (virtual/system fs) */
-const BROWSE_BLOCKED_DIRS = new Set([
-  '/proc',
-  '/sys',
-  '/dev',
-  '/run',
-  '/snap',
-])
+const BROWSE_BLOCKED_DIRS = new Set(['/proc', '/sys', '/dev', '/run', '/snap'])
 
 function isBrowseBlocked(targetPath: string): boolean {
   const resolved = path.resolve(targetPath)
@@ -382,7 +376,10 @@ function getTextPreview(buffer: Buffer): string {
   // Truncate at 1MB to prevent browser freeze
   const MAX_SIZE = 1000000
   if (buffer.length > MAX_SIZE) {
-    return buffer.subarray(0, MAX_SIZE).toString('utf8') + '\n\n[... File truncated due to size ...]'
+    return (
+      buffer.subarray(0, MAX_SIZE).toString('utf8') +
+      '\n\n[... File truncated due to size ...]'
+    )
   }
   return buffer.toString('utf8')
 }
@@ -404,7 +401,10 @@ async function addDirectoryToZip(zip: JSZip, dirPath: string, rootDir: string) {
   }
 }
 
-async function extractZipBuffer(zipBuffer: Buffer, targetDir: string): Promise<number> {
+async function extractZipBuffer(
+  zipBuffer: Buffer,
+  targetDir: string,
+): Promise<number> {
   const zip = await JSZip.loadAsync(zipBuffer)
   let count = 0
   for (const [relPath, zipEntry] of Object.entries(zip.files)) {
@@ -480,7 +480,10 @@ export const Route = createFileRoute('/api/files')({
                 browsePath.toLowerCase().endsWith('.tar')
               ) {
                 try {
-                  const { stdout } = await execFileAsync('tar', ['-tf', browsePath])
+                  const { stdout } = await execFileAsync('tar', [
+                    '-tf',
+                    browsePath,
+                  ])
                   const files = stdout.split('\n').filter(Boolean)
                   return json({
                     type: 'text',
@@ -497,12 +500,19 @@ export const Route = createFileRoute('/api/files')({
               }
               if (browsePath.toLowerCase().endsWith('.7z')) {
                 try {
-                  const { stdout } = await execFileAsync('7z', ['l', '-ba', browsePath])
+                  const { stdout } = await execFileAsync('7z', [
+                    'l',
+                    '-ba',
+                    browsePath,
+                  ])
                   // Basic parsing of 7z list output
-                  const files = stdout.split('\n').map(l => {
-                    const match = l.match(/\s+([^\s]+)$/)
-                    return match ? match[1] : ''
-                  }).filter(Boolean)
+                  const files = stdout
+                    .split('\n')
+                    .map((l) => {
+                      const match = l.match(/\s+([^\s]+)$/)
+                      return match ? match[1] : ''
+                    })
+                    .filter(Boolean)
                   return json({
                     type: 'text',
                     path: browsePath,
@@ -525,17 +535,20 @@ export const Route = createFileRoute('/api/files')({
 
             if (action === 'download' || action === 'view') {
               const stat = await fs.stat(browsePath)
-              
+
               if (stat.isDirectory() && action === 'download') {
                 const zip = new JSZip()
                 await addDirectoryToZip(zip, browsePath, browsePath)
-                const nodeStream = zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true })
+                const nodeStream = zip.generateNodeStream({
+                  type: 'nodebuffer',
+                  streamFiles: true,
+                })
                 const webStream = Readable.toWeb(nodeStream as any)
                 return new Response(webStream as any, {
                   headers: {
                     'Content-Type': 'application/zip',
-                    'Content-Disposition': `attachment; filename="${path.basename(browsePath)}.zip"`
-                  }
+                    'Content-Disposition': `attachment; filename="${path.basename(browsePath)}.zip"`,
+                  },
                 })
               }
 
@@ -619,7 +632,10 @@ export const Route = createFileRoute('/api/files')({
               resolvedPath.toLowerCase().endsWith('.tar')
             ) {
               try {
-                const { stdout } = await execFileAsync('tar', ['-tf', resolvedPath])
+                const { stdout } = await execFileAsync('tar', [
+                  '-tf',
+                  resolvedPath,
+                ])
                 const files = stdout.split('\n').filter(Boolean)
                 return json({
                   type: 'text',
@@ -636,11 +652,18 @@ export const Route = createFileRoute('/api/files')({
             }
             if (resolvedPath.toLowerCase().endsWith('.7z')) {
               try {
-                const { stdout } = await execFileAsync('7z', ['l', '-ba', resolvedPath])
-                const files = stdout.split('\n').map(l => {
-                  const match = l.match(/\s+([^\s]+)$/)
-                  return match ? match[1] : ''
-                }).filter(Boolean)
+                const { stdout } = await execFileAsync('7z', [
+                  'l',
+                  '-ba',
+                  resolvedPath,
+                ])
+                const files = stdout
+                  .split('\n')
+                  .map((l) => {
+                    const match = l.match(/\s+([^\s]+)$/)
+                    return match ? match[1] : ''
+                  })
+                  .filter(Boolean)
                 return json({
                   type: 'text',
                   path: toRelative(resolvedPath, workspaceRoot),
@@ -663,17 +686,20 @@ export const Route = createFileRoute('/api/files')({
 
           if (action === 'download' || action === 'view') {
             const stat = await fs.stat(resolvedPath)
-            
+
             if (stat.isDirectory() && action === 'download') {
               const zip = new JSZip()
               await addDirectoryToZip(zip, resolvedPath, resolvedPath)
-              const nodeStream = zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true })
+              const nodeStream = zip.generateNodeStream({
+                type: 'nodebuffer',
+                streamFiles: true,
+              })
               const webStream = Readable.toWeb(nodeStream as any)
               return new Response(webStream as any, {
                 headers: {
                   'Content-Type': 'application/zip',
-                  'Content-Disposition': `attachment; filename="${path.basename(resolvedPath)}.zip"`
-                }
+                  'Content-Disposition': `attachment; filename="${path.basename(resolvedPath)}.zip"`,
+                },
               })
             }
 
@@ -732,7 +758,10 @@ export const Route = createFileRoute('/api/files')({
               return json({ error: 'Invalid upload request' }, { status: 400 })
             }
             // Support multiple files from formData (getAll('files') or getAll('file'))
-            const rawFiles = form.getAll('files').length > 0 ? form.getAll('files') : form.getAll('file')
+            const rawFiles =
+              form.getAll('files').length > 0
+                ? form.getAll('files')
+                : form.getAll('file')
             const files = rawFiles.filter((f): f is File => f instanceof File)
             const targetPath = String(form.get('path') || '')
             if (files.length === 0) {
@@ -742,7 +771,7 @@ export const Route = createFileRoute('/api/files')({
               ? ensureBrowsePath(targetPath)
               : ensureWorkspacePath(targetPath, workspaceRoot)
             const isDir = (await fs.stat(resolvedTarget)).isDirectory()
-            
+
             const uploadedPaths: string[] = []
             for (const file of files) {
               const destination = isDir
@@ -756,7 +785,11 @@ export const Route = createFileRoute('/api/files')({
               await fs.mkdir(path.dirname(destination), { recursive: true })
               const buffer = Buffer.from(await file.arrayBuffer())
               await fs.writeFile(destination, buffer)
-              uploadedPaths.push(browseMode ? destination : toRelative(destination, workspaceRoot))
+              uploadedPaths.push(
+                browseMode
+                  ? destination
+                  : toRelative(destination, workspaceRoot),
+              )
             }
 
             return json({
@@ -779,7 +812,10 @@ export const Route = createFileRoute('/api/files')({
               ? ensureBrowsePath(String(body.path || ''))
               : ensureWorkspacePath(String(body.path || ''), workspaceRoot)
             await fs.mkdir(dirPath, { recursive: true })
-            return json({ ok: true, path: browseMode ? dirPath : toRelative(dirPath, workspaceRoot) })
+            return json({
+              ok: true,
+              path: browseMode ? dirPath : toRelative(dirPath, workspaceRoot),
+            })
           }
 
           if (action === 'rename') {
@@ -791,7 +827,10 @@ export const Route = createFileRoute('/api/files')({
               : ensureWorkspacePath(String(body.to || ''), workspaceRoot)
             await fs.mkdir(path.dirname(toPath), { recursive: true })
             await fs.rename(fromPath, toPath)
-            return json({ ok: true, path: browseMode ? toPath : toRelative(toPath, workspaceRoot) })
+            return json({
+              ok: true,
+              path: browseMode ? toPath : toRelative(toPath, workspaceRoot),
+            })
           }
 
           if (action === 'copy') {
@@ -803,7 +842,10 @@ export const Route = createFileRoute('/api/files')({
               : ensureWorkspacePath(String(body.to || ''), workspaceRoot)
             await fs.mkdir(path.dirname(toPath), { recursive: true })
             await fs.cp(fromPath, toPath, { recursive: true })
-            return json({ ok: true, path: browseMode ? toPath : toRelative(toPath, workspaceRoot) })
+            return json({
+              ok: true,
+              path: browseMode ? toPath : toRelative(toPath, workspaceRoot),
+            })
           }
 
           if (action === 'delete') {
@@ -843,7 +885,11 @@ export const Route = createFileRoute('/api/files')({
                 : ensureWorkspacePath(src, workspaceRoot)
               const stat = await fs.stat(resolvedSrc)
               if (stat.isDirectory()) {
-                await addDirectoryToZip(zip, resolvedSrc, path.dirname(resolvedSrc))
+                await addDirectoryToZip(
+                  zip,
+                  resolvedSrc,
+                  path.dirname(resolvedSrc),
+                )
               } else {
                 const buffer = await fs.readFile(resolvedSrc)
                 zip.file(path.basename(resolvedSrc), buffer)
@@ -859,7 +905,9 @@ export const Route = createFileRoute('/api/files')({
             await fs.writeFile(resolvedZipPath, zipContent)
             return json({
               ok: true,
-              path: browseMode ? resolvedZipPath : toRelative(resolvedZipPath, workspaceRoot),
+              path: browseMode
+                ? resolvedZipPath
+                : toRelative(resolvedZipPath, workspaceRoot),
             })
           }
 
@@ -868,12 +916,23 @@ export const Route = createFileRoute('/api/files')({
               ? ensureBrowsePath(String(body.path || ''))
               : ensureWorkspacePath(String(body.path || ''), workspaceRoot)
             const destDir = browseMode
-              ? ensureBrowsePath(String(body.destination || path.dirname(zipPath)))
-              : ensureWorkspacePath(String(body.destination || path.dirname(zipPath)), workspaceRoot)
+              ? ensureBrowsePath(
+                  String(body.destination || path.dirname(zipPath)),
+                )
+              : ensureWorkspacePath(
+                  String(body.destination || path.dirname(zipPath)),
+                  workspaceRoot,
+                )
 
             const zipBuffer = await fs.readFile(zipPath)
             const extractedCount = await extractZipBuffer(zipBuffer, destDir)
-            return json({ ok: true, count: extractedCount, destination: browseMode ? destDir : toRelative(destDir, workspaceRoot) })
+            return json({
+              ok: true,
+              count: extractedCount,
+              destination: browseMode
+                ? destDir
+                : toRelative(destDir, workspaceRoot),
+            })
           }
 
           const filePath = browseMode
@@ -882,7 +941,10 @@ export const Route = createFileRoute('/api/files')({
           const content = typeof body.content === 'string' ? body.content : ''
           await fs.mkdir(path.dirname(filePath), { recursive: true })
           await fs.writeFile(filePath, content, 'utf8')
-          return json({ ok: true, path: browseMode ? filePath : toRelative(filePath, workspaceRoot) })
+          return json({
+            ok: true,
+            path: browseMode ? filePath : toRelative(filePath, workspaceRoot),
+          })
         } catch (err) {
           return json({ error: safeErrorMessage(err) }, { status: 500 })
         }

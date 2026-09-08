@@ -105,7 +105,7 @@ function ThemeToggleMini() {
     'claude-classic-light': 'claude-classic',
     'claude-slate': 'claude-slate-light',
     'claude-slate-light': 'claude-slate',
-    'dracula': 'dracula-light',
+    dracula: 'dracula-light',
     'dracula-light': 'dracula',
   }
 
@@ -245,7 +245,8 @@ function NavItem({
               style={
                 item.badge === 'NEW'
                   ? {
-                      background: 'linear-gradient(180deg, #fde68a 0%, #fbbf24 50%, #d4a017 100%)',
+                      background:
+                        'linear-gradient(180deg, #fde68a 0%, #fbbf24 50%, #d4a017 100%)',
                       color: '#0b1320',
                       boxShadow: '0 0 8px rgba(250,204,21,0.4)',
                       letterSpacing: '0.08em',
@@ -536,7 +537,9 @@ function usePersistedBool(key: string, defaultValue: boolean) {
 
 // ── Main component ──────────────────────────────────────────────────────
 
-export function ChatSidebarComponent(props: ChatSidebarProps & { className?: string }) {
+export function ChatSidebarComponent(
+  props: ChatSidebarProps & { className?: string },
+) {
   const {
     sessions,
     activeFriendlyId,
@@ -568,7 +571,9 @@ export function ChatSidebarComponent(props: ChatSidebarProps & { className?: str
   useEffect(() => {
     function handleOpenSettingsEvent(event: Event) {
       const detail = (event as CustomEvent<ChatOpenSettingsDetail>).detail
-      handleOpenSettings(detail.section === 'appearance' ? 'appearance' : 'claude')
+      handleOpenSettings(
+        detail.section === 'appearance' ? 'appearance' : 'claude',
+      )
     }
 
     window.addEventListener(CHAT_OPEN_SETTINGS_EVENT, handleOpenSettingsEvent)
@@ -932,7 +937,6 @@ export function ChatSidebarComponent(props: ChatSidebarProps & { className?: str
           },
         ]
       : []),
-
   ]
 
   const knowledgeItems: Array<NavItemDef> = [
@@ -1303,7 +1307,8 @@ export function ChatSidebarComponent(props: ChatSidebarProps & { className?: str
                   <AlertDialogContent className="p-5">
                     <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to log out of the workspace? You will need to enter the password to access it again.
+                      Are you sure you want to log out of the workspace? You
+                      will need to enter the password to access it again.
                     </AlertDialogDescription>
                     <div className="mt-6 flex justify-end gap-3">
                       <AlertDialogCancel>Cancel</AlertDialogCancel>

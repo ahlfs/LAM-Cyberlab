@@ -17,7 +17,14 @@ const path = require('path')
 const fs = require('fs')
 
 const homeDir = os.homedir()
-const hermesPath = path.join(homeDir, '.hermes', 'hermes-agent', 'venv', 'bin', 'hermes')
+const hermesPath = path.join(
+  homeDir,
+  '.hermes',
+  'hermes-agent',
+  'venv',
+  'bin',
+  'hermes',
+)
 
 // Read .env files for dynamic config
 function readEnvFile(filePath) {
@@ -32,8 +39,10 @@ function readEnvFile(filePath) {
       const key = trimmed.slice(0, eq).trim()
       let val = trimmed.slice(eq + 1).trim()
       // Strip surrounding quotes
-      if ((val.startsWith('"') && val.endsWith('"')) ||
-          (val.startsWith("'") && val.endsWith("'"))) {
+      if (
+        (val.startsWith('"') && val.endsWith('"')) ||
+        (val.startsWith("'") && val.endsWith("'"))
+      ) {
         val = val.slice(1, -1)
       }
       vars[key] = val

@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Add01Icon, Chat01Icon, Delete02Icon, Edit02Icon } from '@hugeicons/core-free-icons'
+import {
+  Add01Icon,
+  Chat01Icon,
+  Delete02Icon,
+  Edit02Icon,
+} from '@hugeicons/core-free-icons'
 import type { SessionMeta } from '@/screens/chat/types'
 import { cn } from '@/lib/utils'
 import { SessionRenameDialog } from '@/screens/chat/components/sidebar/session-rename-dialog'
@@ -13,8 +18,16 @@ type Props = {
   activeFriendlyId: string
   onSelectSession: (key: string) => void
   onNewChat: () => void
-  onDeleteSession?: (key: string, friendlyId: string, isActive: boolean) => Promise<void> | void
-  onRenameSession?: (key: string, friendlyId: string | null | undefined, title: string) => Promise<void> | void
+  onDeleteSession?: (
+    key: string,
+    friendlyId: string,
+    isActive: boolean,
+  ) => Promise<void> | void
+  onRenameSession?: (
+    key: string,
+    friendlyId: string | null | undefined,
+    title: string,
+  ) => Promise<void> | void
 }
 
 function normalizeLabel(value: string | undefined): string {
@@ -99,7 +112,9 @@ export function MobileSessionsPanel({
   onDeleteSession,
   onRenameSession,
 }: Props) {
-  const [selectedSession, setSelectedSession] = useState<SessionMeta | null>(null)
+  const [selectedSession, setSelectedSession] = useState<SessionMeta | null>(
+    null,
+  )
   const [isActionsOpen, setIsActionsOpen] = useState(false)
   const [renameDialogOpen, setRenameDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -160,7 +175,11 @@ export function MobileSessionsPanel({
 
   const handleConfirmRename = (newTitle: string) => {
     if (selectedSession && onRenameSession) {
-      void onRenameSession(selectedSession.key, selectedSession.friendlyId, newTitle)
+      void onRenameSession(
+        selectedSession.key,
+        selectedSession.friendlyId,
+        newTitle,
+      )
     }
     setRenameDialogOpen(false)
   }
@@ -168,7 +187,11 @@ export function MobileSessionsPanel({
   const handleConfirmDelete = () => {
     if (selectedSession && onDeleteSession) {
       const isActive = selectedSession.friendlyId === activeFriendlyId
-      void onDeleteSession(selectedSession.key, selectedSession.friendlyId, isActive)
+      void onDeleteSession(
+        selectedSession.key,
+        selectedSession.friendlyId,
+        isActive,
+      )
     }
     setDeleteDialogOpen(false)
   }
@@ -277,7 +300,11 @@ export function MobileSessionsPanel({
                 className="flex flex-col items-start gap-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3.5 text-left transition-colors active:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-800/80 dark:active:bg-neutral-800 cursor-pointer"
               >
                 <span className="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
-                  <HugeiconsIcon icon={Edit02Icon} size={20} strokeWidth={1.8} />
+                  <HugeiconsIcon
+                    icon={Edit02Icon}
+                    size={20}
+                    strokeWidth={1.8}
+                  />
                 </span>
                 <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                   Rename
@@ -290,7 +317,11 @@ export function MobileSessionsPanel({
                 className="flex flex-col items-start gap-2 rounded-xl border border-red-100 bg-red-50/50 p-3.5 text-left transition-colors active:bg-red-100 dark:border-red-900/30 dark:bg-red-950/20 dark:active:bg-red-950/40 cursor-pointer"
               >
                 <span className="rounded-lg bg-red-100 p-2 text-red-600 dark:bg-red-900/40 dark:text-red-400">
-                  <HugeiconsIcon icon={Delete02Icon} size={20} strokeWidth={1.8} />
+                  <HugeiconsIcon
+                    icon={Delete02Icon}
+                    size={20}
+                    strokeWidth={1.8}
+                  />
                 </span>
                 <span className="text-sm font-medium text-red-600 dark:text-red-400">
                   Delete

@@ -28,7 +28,8 @@ import viteTsConfigPaths from 'vite-tsconfig-paths'
 function resolveClaudeAgentDir(env: Record<string, string>): string | null {
   const candidates: string[] = []
 
-  const explicitAgentPath = env.HERMES_AGENT_PATH?.trim() || env.CLAUDE_AGENT_PATH?.trim()
+  const explicitAgentPath =
+    env.HERMES_AGENT_PATH?.trim() || env.CLAUDE_AGENT_PATH?.trim()
   if (explicitAgentPath) {
     candidates.push(explicitAgentPath)
   }
@@ -611,7 +612,9 @@ const config = defineConfig(({ mode, command }) => {
           // for production.
           // Dev-only allowance so impeccable live mode can load. Guarded by NODE_ENV.
           const __impeccableLiveDev =
-            process.env.NODE_ENV === 'development' ? ' http://localhost:8400' : ''
+            process.env.NODE_ENV === 'development'
+              ? ' http://localhost:8400'
+              : ''
           server.middlewares.use((_req, res, next) => {
             // KEEP IN SYNC with src/lib/csp.ts and server-entry.js
             res.setHeader(

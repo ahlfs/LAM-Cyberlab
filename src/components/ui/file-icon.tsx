@@ -14,7 +14,7 @@ import {
   AudioWave01Icon,
   TextIcon,
   HtmlFiveIcon,
-  DocumentCodeIcon
+  DocumentCodeIcon,
 } from '@hugeicons/core-free-icons'
 import { getFileIconClass } from '@/lib/file-icons'
 import { cn } from '@/lib/utils'
@@ -26,7 +26,12 @@ interface FileIconProps {
   className?: string
 }
 
-export function FileIcon({ name, type = 'file', size = 20, className }: FileIconProps) {
+export function FileIcon({
+  name,
+  type = 'file',
+  size = 20,
+  className,
+}: FileIconProps) {
   if (type === 'folder') {
     return (
       <HugeiconsIcon
@@ -44,8 +49,10 @@ export function FileIcon({ name, type = 'file', size = 20, className }: FileIcon
   // 1. Check for specific document/media types in Hugeicons first
   let HugeIconType = null
   let iconColorClass = 'text-primary-400 dark:text-neutral-500'
-  
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp'].includes(ext)) {
+
+  if (
+    ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp'].includes(ext)
+  ) {
     HugeIconType = Image01Icon
     iconColorClass = 'text-indigo-500'
   } else if (['pdf'].includes(ext)) {
@@ -93,7 +100,12 @@ export function FileIcon({ name, type = 'file', size = 20, className }: FileIcon
 
   if (devIconClass) {
     // Some devicons might need a slightly adjusted size/margin to match Hugeicons visually
-    return <i className={cn(`${devIconClass} shrink-0 mt-[1px]`, className)} style={{ fontSize: size - 2 }} />
+    return (
+      <i
+        className={cn(`${devIconClass} shrink-0 mt-[1px]`, className)}
+        style={{ fontSize: size - 2 }}
+      />
+    )
   }
 
   // 3. Ultimate fallback

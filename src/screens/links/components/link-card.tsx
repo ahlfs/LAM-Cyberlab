@@ -9,7 +9,12 @@ import {
   StarIcon,
   Undo02Icon,
 } from '@hugeicons/core-free-icons'
-import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from '@/components/ui/menu'
+import {
+  MenuContent,
+  MenuItem,
+  MenuRoot,
+  MenuTrigger,
+} from '@/components/ui/menu'
 import { toast } from '@/components/ui/toast'
 import type { LinkuLink } from '@/server/linku-db'
 import {
@@ -64,7 +69,10 @@ export function LinkCard({
         target="_blank"
         rel="noopener noreferrer"
         className="flex w-full flex-col gap-2.5 rounded-xl border p-3.5 text-left transition-transform motion-safe:duration-150 motion-safe:hover:-translate-y-0.5"
-        style={{ background: 'var(--theme-card)', borderColor: 'var(--theme-border)' }}
+        style={{
+          background: 'var(--theme-card)',
+          borderColor: 'var(--theme-border)',
+        }}
       >
         <div className="flex items-start gap-2.5 pr-6">
           {link.faviconUrl && !faviconFailed ? (
@@ -79,16 +87,25 @@ export function LinkCard({
           ) : (
             <span
               className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-sm"
-              style={{ background: 'var(--theme-card2)', color: 'var(--theme-muted)' }}
+              style={{
+                background: 'var(--theme-card2)',
+                color: 'var(--theme-muted)',
+              }}
             >
               <HugeiconsIcon icon={GlobalIcon} size={12} />
             </span>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+            <p
+              className="truncate text-sm font-medium"
+              style={{ color: 'var(--theme-text)' }}
+            >
               {link.title}
             </p>
-            <p className="truncate font-mono text-[11px]" style={{ color: 'var(--theme-muted)' }}>
+            <p
+              className="truncate font-mono text-[11px]"
+              style={{ color: 'var(--theme-muted)' }}
+            >
               {hostnameOf(link.url)}
             </p>
           </div>
@@ -103,8 +120,12 @@ export function LinkCard({
           ) : null}
         </div>
 
-        <span className="font-mono text-[10px] tabular-nums" style={{ color: 'var(--theme-muted)' }}>
-          {formatCount(link.visitedCount, 'visit')} · {formatCount(link.openedCount, 'open')}
+        <span
+          className="font-mono text-[10px] tabular-nums"
+          style={{ color: 'var(--theme-muted)' }}
+        >
+          {formatCount(link.visitedCount, 'visit')} ·{' '}
+          {formatCount(link.openedCount, 'open')}
         </span>
       </a>
 
@@ -112,7 +133,10 @@ export function LinkCard({
         <MenuRoot>
           <MenuTrigger
             className="inline-flex size-6 items-center justify-center rounded-md"
-            style={{ color: 'var(--theme-muted)', background: 'var(--theme-card)' }}
+            style={{
+              color: 'var(--theme-muted)',
+              background: 'var(--theme-card)',
+            }}
             onClick={(e) => e.stopPropagation()}
             aria-label={`${link.title} options`}
           >
@@ -126,7 +150,11 @@ export function LinkCard({
                     restoreLink.mutate(link.id, {
                       onSuccess: () => toast(`Restored "${link.title}"`),
                       onError: (err) =>
-                        toast(err instanceof Error ? err.message : 'Failed to restore'),
+                        toast(
+                          err instanceof Error
+                            ? err.message
+                            : 'Failed to restore',
+                        ),
                     })
                   }
                 >
@@ -136,9 +164,14 @@ export function LinkCard({
                 <MenuItem
                   onClick={() =>
                     permanentlyDelete.mutate(link.id, {
-                      onSuccess: () => toast(`Permanently deleted "${link.title}"`),
+                      onSuccess: () =>
+                        toast(`Permanently deleted "${link.title}"`),
                       onError: (err) =>
-                        toast(err instanceof Error ? err.message : 'Failed to delete'),
+                        toast(
+                          err instanceof Error
+                            ? err.message
+                            : 'Failed to delete',
+                        ),
                     })
                   }
                   style={{ color: 'var(--theme-danger)' }}
@@ -157,7 +190,11 @@ export function LinkCard({
                   onClick={() =>
                     toggleFavorite.mutate(link.id, {
                       onError: (err) =>
-                        toast(err instanceof Error ? err.message : 'Failed to update'),
+                        toast(
+                          err instanceof Error
+                            ? err.message
+                            : 'Failed to update',
+                        ),
                     })
                   }
                 >
@@ -170,7 +207,11 @@ export function LinkCard({
                       onSuccess: (updated) =>
                         toast(updated.isArchived ? 'Archived' : 'Unarchived'),
                       onError: (err) =>
-                        toast(err instanceof Error ? err.message : 'Failed to update'),
+                        toast(
+                          err instanceof Error
+                            ? err.message
+                            : 'Failed to update',
+                        ),
                     })
                   }
                 >
@@ -182,7 +223,11 @@ export function LinkCard({
                     trashLink.mutate(link.id, {
                       onSuccess: () => toast(`Moved "${link.title}" to Trash`),
                       onError: (err) =>
-                        toast(err instanceof Error ? err.message : 'Failed to trash'),
+                        toast(
+                          err instanceof Error
+                            ? err.message
+                            : 'Failed to trash',
+                        ),
                     })
                   }
                   style={{ color: 'var(--theme-danger)' }}

@@ -4,7 +4,10 @@ import {
   getAttachmentFileStreamOrBuffer,
   saveAttachment,
 } from '../../server/attachment-store'
-import { isAuthenticated, requireLocalOrAuth } from '../../server/auth-middleware'
+import {
+  isAuthenticated,
+  requireLocalOrAuth,
+} from '../../server/auth-middleware'
 
 export const Route = createFileRoute('/api/attachments')({
   server: {
@@ -29,7 +32,8 @@ export const Route = createFileRoute('/api/attachments')({
           return new Response(new Uint8Array(fileData.buffer), {
             status: 200,
             headers: {
-              'Content-Type': fileData.meta.contentType || 'application/octet-stream',
+              'Content-Type':
+                fileData.meta.contentType || 'application/octet-stream',
               'Content-Length': String(fileData.meta.size),
               'Cache-Control': 'public, max-age=31536000, immutable',
             },
@@ -57,7 +61,10 @@ export const Route = createFileRoute('/api/attachments')({
           }
 
           if (!body.data) {
-            return json({ ok: false, error: 'Attachment data is required' }, { status: 400 })
+            return json(
+              { ok: false, error: 'Attachment data is required' },
+              { status: 400 },
+            )
           }
 
           const stored = saveAttachment(body.data, {
@@ -75,7 +82,10 @@ export const Route = createFileRoute('/api/attachments')({
           return json(
             {
               ok: false,
-              error: err instanceof Error ? err.message : 'Failed to save attachment',
+              error:
+                err instanceof Error
+                  ? err.message
+                  : 'Failed to save attachment',
             },
             { status: 500 },
           )

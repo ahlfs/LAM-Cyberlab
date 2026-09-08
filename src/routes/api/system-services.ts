@@ -19,7 +19,10 @@ export const Route = createFileRoute('/api/system-services')({
           return Response.json({ services: await checkAllServices() })
         } catch (err) {
           return json(
-            { error: err instanceof Error ? err.message : 'service check failed' },
+            {
+              error:
+                err instanceof Error ? err.message : 'service check failed',
+            },
             { status: 500 },
           )
         }

@@ -446,7 +446,6 @@ export function useStreamingMessage(options: UseStreamingMessageOptions = {}) {
         typeof window !== 'undefined' &&
         window.localStorage?.getItem('hermes:debug:sse') === '1'
       ) {
-         
         console.log(
           '[hermes-sse]',
           event,
@@ -458,7 +457,12 @@ export function useStreamingMessage(options: UseStreamingMessageOptions = {}) {
 
       // hb_signal/keepalive events from server: just mark activity, never let them
       // surface as user-visible thinking or tool rows.
-      if (event === 'hb_signal' || event === 'heartbeat' || event === 'keepalive' || event === 'ping') {
+      if (
+        event === 'hb_signal' ||
+        event === 'heartbeat' ||
+        event === 'keepalive' ||
+        event === 'ping'
+      ) {
         markActivity()
         return
       }
@@ -756,7 +760,8 @@ export function useStreamingMessage(options: UseStreamingMessageOptions = {}) {
         }
         case 'heartbeat': {
           markActivity()
-          const activity = (payload as { activity?: string | null }).activity ?? null
+          const activity =
+            (payload as { activity?: string | null }).activity ?? null
           useChatStore.getState().setHeartbeatActivity(activity)
           break
         }
@@ -1041,36 +1046,46 @@ export function useStreamingMessage(options: UseStreamingMessageOptions = {}) {
     ],
   )
 
-  const cancelStreaming = useCallback((isExplicitUserAbort = false) => {
-    if (!isExplicitUserAbort && (
-      lifecyclePhaseRef.current === 'accepted' ||
-      lifecyclePhaseRef.current === 'active' ||
-      lifecyclePhaseRef.current === 'handoff'
-    )) {
-      transitionToHandoff()
-    } else if (isExplicitUserAbort) {
-      lifecyclePhaseRef.current = 'idle'
-      clearSendStreamRun()
-      clearHandoffTimer()
-      stopFrame()
-    }
-    if (eventSourceRef.current) {
-      eventSourceRef.current.abort()
-      eventSourceRef.current = null
-    }
-    finishedRef.current = lifecyclePhaseRef.current !== 'handoff'
-    if (lifecyclePhaseRef.current !== 'handoff') {
-      resetActiveStreamState()
-    }
-    if (isExplicitUserAbort) {
-      setState({
-        isStreaming: false,
-        streamingMessageId: null,
-        streamingText: '',
-        error: null,
-      })
-    }
-  }, [clearHandoffTimer, clearSendStreamRun, resetActiveStreamState, stopFrame, transitionToHandoff])
+  const cancelStreaming = useCallback(
+    (isExplicitUserAbort = false) => {
+      if (
+        !isExplicitUserAbort &&
+        (lifecyclePhaseRef.current === 'accepted' ||
+          lifecyclePhaseRef.current === 'active' ||
+          lifecyclePhaseRef.current === 'handoff')
+      ) {
+        transitionToHandoff()
+      } else if (isExplicitUserAbort) {
+        lifecyclePhaseRef.current = 'idle'
+        clearSendStreamRun()
+        clearHandoffTimer()
+        stopFrame()
+      }
+      if (eventSourceRef.current) {
+        eventSourceRef.current.abort()
+        eventSourceRef.current = null
+      }
+      finishedRef.current = lifecyclePhaseRef.current !== 'handoff'
+      if (lifecyclePhaseRef.current !== 'handoff') {
+        resetActiveStreamState()
+      }
+      if (isExplicitUserAbort) {
+        setState({
+          isStreaming: false,
+          streamingMessageId: null,
+          streamingText: '',
+          error: null,
+        })
+      }
+    },
+    [
+      clearHandoffTimer,
+      clearSendStreamRun,
+      resetActiveStreamState,
+      stopFrame,
+      transitionToHandoff,
+    ],
+  )
 
   const resetStreaming = useCallback(() => {
     cancelStreaming()

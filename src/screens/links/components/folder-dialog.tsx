@@ -35,7 +35,10 @@ export function FolderDialog({
     const onError = (err: unknown) =>
       toast(err instanceof Error ? err.message : 'Something went wrong')
     if (isEdit) {
-      updateFolder.mutate({ id: folder.id, name: trimmed, color }, { onSuccess, onError })
+      updateFolder.mutate(
+        { id: folder.id, name: trimmed, color },
+        { onSuccess, onError },
+      )
     } else {
       createFolder.mutate({ name: trimmed, color }, { onSuccess, onError })
     }
@@ -53,7 +56,10 @@ export function FolderDialog({
           <DialogTitle>{isEdit ? 'Edit folder' : 'New folder'}</DialogTitle>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium" style={{ color: 'var(--theme-text)' }}>
+            <span
+              className="text-[13px] font-medium"
+              style={{ color: 'var(--theme-text)' }}
+            >
               Name
             </span>
             <input
@@ -76,7 +82,10 @@ export function FolderDialog({
           </label>
 
           <fieldset className="flex flex-col gap-1.5">
-            <legend className="text-[13px] font-medium" style={{ color: 'var(--theme-text)' }}>
+            <legend
+              className="text-[13px] font-medium"
+              style={{ color: 'var(--theme-text)' }}
+            >
               Color
             </legend>
             <div className="grid grid-cols-8 gap-2">
@@ -90,7 +99,8 @@ export function FolderDialog({
                   className="size-7 rounded-full transition-transform motion-safe:duration-150"
                   style={{
                     background: c.hex,
-                    outline: color === c.hex ? '2px solid var(--theme-text)' : 'none',
+                    outline:
+                      color === c.hex ? '2px solid var(--theme-text)' : 'none',
                     outlineOffset: 2,
                     transform: color === c.hex ? 'scale(1.08)' : 'scale(1)',
                   }}
@@ -105,7 +115,10 @@ export function FolderDialog({
               type="submit"
               disabled={pending || !name.trim()}
               className="rounded-lg px-3 py-1.5 text-sm font-medium disabled:pointer-events-none disabled:opacity-50"
-              style={{ background: 'var(--theme-accent)', color: 'var(--theme-bg)' }}
+              style={{
+                background: 'var(--theme-accent)',
+                color: 'var(--theme-bg)',
+              }}
             >
               {pending ? 'Saving…' : isEdit ? 'Save' : 'Create'}
             </button>

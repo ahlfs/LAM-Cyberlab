@@ -184,9 +184,7 @@ async function buildInodeToPidMap(): Promise<
         if (!m) continue
         if (name === null) {
           try {
-            name = (
-              await fs.readFile(`/proc/${pidStr}/comm`, 'utf-8')
-            ).trim()
+            name = (await fs.readFile(`/proc/${pidStr}/comm`, 'utf-8')).trim()
           } catch {
             name = 'unknown'
           }

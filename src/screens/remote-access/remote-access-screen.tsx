@@ -60,7 +60,11 @@ function Panel({
     >
       <div className="flex items-baseline justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <HugeiconsIcon icon={icon} size={13} style={{ color: 'var(--theme-muted)' }} />
+          <HugeiconsIcon
+            icon={icon}
+            size={13}
+            style={{ color: 'var(--theme-muted)' }}
+          />
           <h2
             className="text-[10px] font-semibold uppercase tracking-[0.18em]"
             style={{ color: 'var(--theme-text)' }}
@@ -149,21 +153,23 @@ export function RemoteAccessScreen() {
         body: JSON.stringify({ enabled }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to update 9router expose status')
+      if (!res.ok)
+        throw new Error(
+          data.error || 'Failed to update LAM-Router expose status',
+        )
       return data
     },
     onSuccess: (_data, enabled) => {
       toast(
         enabled
-          ? '9router exposed to 0.0.0.0 — restarting automatically…'
-          : '9router bound to 127.0.0.1 — restarting automatically…',
+          ? 'LAM-Router exposed to 0.0.0.0 — restarting automatically…'
+          : 'LAM-Router bound to 127.0.0.1 — restarting automatically…',
         { type: 'success' },
       )
       void queryClient.invalidateQueries({ queryKey: ['remote-access-status'] })
     },
     onError: (err: Error) => toast(err.message, { type: 'error' }),
   })
-
   async function handleSavePassword() {
     if (password.length < 8) {
       toast('Password must be at least 8 characters.', { type: 'error' })
@@ -225,7 +231,9 @@ export function RemoteAccessScreen() {
       if (!res.ok) throw new Error(data.error || 'Check failed')
       setDnsResult(data)
     } catch (err) {
-      setDnsResult({ error: err instanceof Error ? err.message : 'Check failed' })
+      setDnsResult({
+        error: err instanceof Error ? err.message : 'Check failed',
+      })
     } finally {
       setCheckingDns(false)
     }
@@ -242,8 +250,11 @@ export function RemoteAccessScreen() {
   const isExposedLive = status?.isExposedLive ?? false
   const requiresRestart = status?.requiresRestart ?? false
   const diskExposed = status ? status.diskHost.trim() !== '127.0.0.1' : false
-  const bindColor = isExposedLive ? 'var(--theme-warning)' : 'var(--theme-success)'
-  const testUrl = publicIp && status ? `http://${publicIp}:${status.port}` : null
+  const bindColor = isExposedLive
+    ? 'var(--theme-warning)'
+    : 'var(--theme-success)'
+  const testUrl =
+    publicIp && status ? `http://${publicIp}:${status.port}` : null
 
   return (
     <div className="min-h-full overflow-y-auto bg-surface text-ink">
@@ -252,19 +263,27 @@ export function RemoteAccessScreen() {
           className="rounded-2xl border p-4"
           style={{
             borderColor: 'var(--theme-border)',
-            background: 'color-mix(in srgb, var(--theme-panel) 85%, transparent)',
+            background:
+              'color-mix(in srgb, var(--theme-panel) 85%, transparent)',
           }}
         >
           <div className="flex items-center gap-2">
-            <HugeiconsIcon icon={GlobeIcon} size={18} className="text-[var(--theme-accent)]" />
-            <h1 className="text-base font-semibold" style={{ color: 'var(--theme-text)' }}>
+            <HugeiconsIcon
+              icon={GlobeIcon}
+              size={18}
+              className="text-[var(--theme-accent)]"
+            />
+            <h1
+              className="text-base font-semibold"
+              style={{ color: 'var(--theme-text)' }}
+            >
               Remote Access
             </h1>
           </div>
           <p className="mt-1 text-sm" style={{ color: 'var(--theme-muted)' }}>
-            Reach this workspace from the internet — a public VPS IP, or your own domain
-            later. Off by default; nothing here changes how <code>pnpm dev</code> behaves
-            locally.
+            Reach this workspace from the internet — a public VPS IP, or your
+            own domain later. Off by default; nothing here changes how{' '}
+            <code>pnpm dev</code> behaves locally.
           </p>
         </header>
 
@@ -292,7 +311,10 @@ export function RemoteAccessScreen() {
             <>
               <div className="flex items-center gap-2">
                 <StatusDot color={bindColor} />
-                <span className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: 'var(--theme-text)' }}
+                >
                   {isExposedLive
                     ? 'Exposed — reachable beyond this machine'
                     : 'Local only — reachable from this machine only'}
@@ -309,7 +331,8 @@ export function RemoteAccessScreen() {
                   className="flex items-start gap-2 rounded-lg border p-2.5 text-xs"
                   style={{
                     borderColor: 'var(--theme-warning)',
-                    background: 'color-mix(in srgb, var(--theme-warning) 12%, transparent)',
+                    background:
+                      'color-mix(in srgb, var(--theme-warning) 12%, transparent)',
                     color: 'var(--theme-text)',
                   }}
                 >
@@ -321,9 +344,13 @@ export function RemoteAccessScreen() {
                   />
                   <span>
                     Pending change: this will become{' '}
-                    <strong>{diskExposed ? 'exposed (0.0.0.0)' : 'local only (127.0.0.1)'}</strong>{' '}
-                    on the next restart. Stop and re-run <code>pnpm start</code> (or restart
-                    your systemd/Docker service) to apply it.
+                    <strong>
+                      {diskExposed
+                        ? 'exposed (0.0.0.0)'
+                        : 'local only (127.0.0.1)'}
+                    </strong>{' '}
+                    on the next restart. Stop and re-run <code>pnpm start</code>{' '}
+                    (or restart your systemd/Docker service) to apply it.
                   </span>
                 </div>
               ) : null}
@@ -338,7 +365,13 @@ export function RemoteAccessScreen() {
         {/* ── Password ────────────────────────────────────────────────── */}
         <Panel title="Password" icon={LockIcon}>
           <div className="flex items-center gap-2">
-            <StatusDot color={passwordConfigured ? 'var(--theme-success)' : 'var(--theme-muted)'} />
+            <StatusDot
+              color={
+                passwordConfigured
+                  ? 'var(--theme-success)'
+                  : 'var(--theme-muted)'
+              }
+            />
             <span className="text-sm" style={{ color: 'var(--theme-text)' }}>
               {passwordConfigured ? 'Password is set' : 'No password set yet'}
             </span>
@@ -378,7 +411,10 @@ export function RemoteAccessScreen() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+                <p
+                  className="text-sm font-medium"
+                  style={{ color: 'var(--theme-text)' }}
+                >
                   Workspace (Bind to 0.0.0.0)
                 </p>
                 <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
@@ -395,23 +431,36 @@ export function RemoteAccessScreen() {
               />
             </div>
 
-            <div className="border-t pt-4" style={{ borderColor: 'var(--theme-border)' }}>
+            <div
+              className="border-t pt-4"
+              style={{ borderColor: 'var(--theme-border)' }}
+            >
               <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
-                    9router (Bind to 0.0.0.0)
+                  <p
+                    className="text-sm font-medium"
+                    style={{ color: 'var(--theme-text)' }}
+                  >
+                    LAM-Router (Bind to 0.0.0.0)
                   </p>
-                  <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
+                  <p
+                    className="text-xs"
+                    style={{ color: 'var(--theme-muted)' }}
+                  >
                     {passwordConfigured
-                      ? 'Allows 9router to be reachable publicly on port 20128.'
+                      ? 'Allows LAM-Router to be reachable publicly on port 9898.'
                       : 'Set a password above first — this stays off until you do.'}
                   </p>
                 </div>
                 <Switch
                   checked={status?.nineRouterExposed ?? false}
-                  disabled={!passwordConfigured || expose9RouterMutation.isPending}
-                  onCheckedChange={(checked) => expose9RouterMutation.mutate(checked)}
-                  aria-label="Expose 9router to internet"
+                  disabled={
+                    !passwordConfigured || expose9RouterMutation.isPending
+                  }
+                  onCheckedChange={(checked) =>
+                    expose9RouterMutation.mutate(checked)
+                  }
+                  aria-label="Expose LAM-Router to internet"
                 />
               </div>
             </div>
@@ -442,7 +491,10 @@ export function RemoteAccessScreen() {
                 {publicIp}
               </span>
             ) : ipError ? (
-              <span className="text-xs" style={{ color: 'var(--theme-danger)' }}>
+              <span
+                className="text-xs"
+                style={{ color: 'var(--theme-danger)' }}
+              >
                 {ipError}
               </span>
             ) : null}
@@ -453,7 +505,10 @@ export function RemoteAccessScreen() {
               className="flex items-center gap-2 rounded-lg border px-2.5 py-1.5"
               style={{ borderColor: 'var(--theme-border)' }}
             >
-              <code className="min-w-0 flex-1 truncate text-xs" style={{ color: 'var(--theme-text)' }}>
+              <code
+                className="min-w-0 flex-1 truncate text-xs"
+                style={{ color: 'var(--theme-text)' }}
+              >
                 {testUrl}
               </code>
               <button
@@ -462,32 +517,50 @@ export function RemoteAccessScreen() {
                 className="shrink-0 rounded p-1 hover:bg-[var(--theme-card2)]"
                 aria-label="Copy test URL"
               >
-                <HugeiconsIcon icon={Copy01Icon} size={13} style={{ color: 'var(--theme-muted)' }} />
+                <HugeiconsIcon
+                  icon={Copy01Icon}
+                  size={13}
+                  style={{ color: 'var(--theme-muted)' }}
+                />
               </button>
             </div>
           ) : null}
 
-          <ol className="flex flex-col gap-1.5 text-xs" style={{ color: 'var(--theme-muted)' }}>
+          <ol
+            className="flex flex-col gap-1.5 text-xs"
+            style={{ color: 'var(--theme-muted)' }}
+          >
             <li>1. Set a password above, then turn on "Expose to internet".</li>
-            <li>2. Restart the workspace process so the new bind address takes effect.</li>
             <li>
-              3. Open port {status?.port ?? 3000} in your VPS firewall or cloud security group
-              (e.g. <code>ufw allow {status?.port ?? 3000}</code>).
+              2. Restart the workspace process so the new bind address takes
+              effect.
             </li>
-            <li>4. Check your public IP above, then test the URL from another network.</li>
+            <li>
+              3. Open port {status?.port ?? 3000} in your VPS firewall or cloud
+              security group (e.g. <code>ufw allow {status?.port ?? 3000}</code>
+              ).
+            </li>
+            <li>
+              4. Check your public IP above, then test the URL from another
+              network.
+            </li>
           </ol>
         </Panel>
 
         {/* ── Custom domain (Caddy) ───────────────────────────────────── */}
         <Panel title="Custom Domain" icon={Globe02Icon}>
           <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-            Puts Caddy in front of the workspace for a real domain with automatic
-            HTTPS. The workspace itself can stay on <code>127.0.0.1</code> — only
-            Caddy needs to face the internet, so you don't need "Expose to
-            internet" above for this path.
+            Puts Caddy in front of the workspace for a real domain with
+            automatic HTTPS. The workspace itself can stay on{' '}
+            <code>127.0.0.1</code> — only Caddy needs to face the internet, so
+            you don't need "Expose to internet" above for this path.
             <br />
             <br />
-            <strong style={{ color: 'var(--theme-warning)' }}>Note:</strong> This automation script requires a Linux (Debian/Ubuntu) environment and is designed exclusively for VPS deployments, not local laptops.
+            <strong style={{ color: 'var(--theme-warning)' }}>
+              Note:
+            </strong>{' '}
+            This automation script requires a Linux (Debian/Ubuntu) environment
+            and is designed exclusively for VPS deployments, not local laptops.
           </p>
 
           <div className="min-w-0 flex-1">
@@ -500,7 +573,10 @@ export function RemoteAccessScreen() {
 
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[250px]">
-              <label className="mb-1.5 block text-xs font-medium" style={{ color: 'var(--theme-text)' }}>
+              <label
+                className="mb-1.5 block text-xs font-medium"
+                style={{ color: 'var(--theme-text)' }}
+              >
                 Workspace Domain
               </label>
               <div className="flex flex-wrap items-center gap-2">
@@ -520,7 +596,9 @@ export function RemoteAccessScreen() {
                   size="sm"
                   variant="outline"
                   onClick={handleCheckDns}
-                  disabled={!passwordConfigured || !domain.trim() || checkingDns}
+                  disabled={
+                    !passwordConfigured || !domain.trim() || checkingDns
+                  }
                 >
                   <HugeiconsIcon
                     icon={Refresh01Icon}
@@ -533,7 +611,10 @@ export function RemoteAccessScreen() {
 
               {dnsResult ? (
                 dnsResult.error ? (
-                  <span className="mt-2 block text-xs" style={{ color: 'var(--theme-danger)' }}>
+                  <span
+                    className="mt-2 block text-xs"
+                    style={{ color: 'var(--theme-danger)' }}
+                  >
                     {dnsResult.error}
                   </span>
                 ) : (
@@ -563,8 +644,8 @@ export function RemoteAccessScreen() {
                     className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-xs"
                     style={{ color: 'var(--theme-text)' }}
                   >
-                    sudo ./scripts/setup-remote-access.sh --domain {domain.trim()} --port{' '}
-                    {status?.port ?? 3000}
+                    sudo ./scripts/setup-remote-access.sh --domain{' '}
+                    {domain.trim()} --port {status?.port ?? 3000}
                   </code>
                   <button
                     type="button"
@@ -576,15 +657,22 @@ export function RemoteAccessScreen() {
                     className="shrink-0 rounded p-1 hover:bg-[var(--theme-card2)]"
                     aria-label="Copy setup command"
                   >
-                    <HugeiconsIcon icon={Copy01Icon} size={13} style={{ color: 'var(--theme-muted)' }} />
+                    <HugeiconsIcon
+                      icon={Copy01Icon}
+                      size={13}
+                      style={{ color: 'var(--theme-muted)' }}
+                    />
                   </button>
                 </div>
               ) : null}
             </div>
 
             <div className="flex-1 min-w-[250px]">
-              <label className="mb-1.5 block text-xs font-medium" style={{ color: 'var(--theme-text)' }}>
-                9router Domain
+              <label
+                className="mb-1.5 block text-xs font-medium"
+                style={{ color: 'var(--theme-text)' }}
+              >
+                LAM-Router Domain
               </label>
               <Input
                 type="text"
@@ -592,7 +680,7 @@ export function RemoteAccessScreen() {
                 value={domain9Router}
                 onChange={(e) => setDomain9Router(e.target.value)}
                 disabled={!passwordConfigured}
-                aria-label="9router custom domain"
+                aria-label="LAM-Router custom domain"
                 className="w-full"
               />
 
@@ -605,19 +693,24 @@ export function RemoteAccessScreen() {
                     className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-xs"
                     style={{ color: 'var(--theme-text)' }}
                   >
-                    sudo ./scripts/setup-remote-access.sh --domain {domain9Router.trim()} --port 20128
+                    sudo ./scripts/setup-remote-access.sh --domain{' '}
+                    {domain9Router.trim()} --port 9898
                   </code>
                   <button
                     type="button"
                     onClick={() =>
                       copyText(
-                        `sudo ./scripts/setup-remote-access.sh --domain ${domain9Router.trim()} --port 20128`,
+                        `sudo ./scripts/setup-remote-access.sh --domain ${domain9Router.trim()} --port 9898`,
                       )
                     }
                     className="shrink-0 rounded p-1 hover:bg-[var(--theme-card2)]"
                     aria-label="Copy setup command"
                   >
-                    <HugeiconsIcon icon={Copy01Icon} size={13} style={{ color: 'var(--theme-muted)' }} />
+                    <HugeiconsIcon
+                      icon={Copy01Icon}
+                      size={13}
+                      style={{ color: 'var(--theme-muted)' }}
+                    />
                   </button>
                 </div>
               ) : null}
@@ -625,9 +718,9 @@ export function RemoteAccessScreen() {
           </div>
 
           <p className="mt-2 text-xs" style={{ color: 'var(--theme-muted)' }}>
-            Run these commands yourself in a terminal on the server — it installs Caddy if
-            needed and needs root. The workspace never runs system setup
-            commands on its own.
+            Run these commands yourself in a terminal on the server — it
+            installs Caddy if needed and needs root. The workspace never runs
+            system setup commands on its own.
           </p>
         </Panel>
       </div>

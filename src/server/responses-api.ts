@@ -48,7 +48,10 @@ export type ResponsesStreamEvent =
 
 export type ResponsesChatRequest = {
   input: string | Array<OpenAICompatContentPart>
-  conversationHistory?: Array<{ role: string; content: string | Array<OpenAICompatContentPart> }>
+  conversationHistory?: Array<{
+    role: string
+    content: string | Array<OpenAICompatContentPart>
+  }>
   instructions?: string
   model?: string
   provider?: string
@@ -119,7 +122,8 @@ export async function* streamResponses(
     stream: true,
     store: false,
   }
-  if (req.conversationHistory) body.conversation_history = req.conversationHistory
+  if (req.conversationHistory)
+    body.conversation_history = req.conversationHistory
   if (req.instructions) body.instructions = req.instructions
   if (req.model) body.model = req.model
   if (req.provider) body.provider = req.provider
@@ -187,8 +191,7 @@ export async function* streamResponses(
           const itemType = typeof item.type === 'string' ? item.type : ''
 
           if (itemType === 'function_call') {
-            const callId =
-              typeof item.call_id === 'string' ? item.call_id : ''
+            const callId = typeof item.call_id === 'string' ? item.call_id : ''
             const itemId = typeof item.id === 'string' ? item.id : ''
             if (callId && itemId) itemIdToCallId.set(itemId, callId)
             const argsRaw =
@@ -204,8 +207,7 @@ export async function* streamResponses(
           }
 
           if (itemType === 'function_call_output') {
-            const callId =
-              typeof item.call_id === 'string' ? item.call_id : ''
+            const callId = typeof item.call_id === 'string' ? item.call_id : ''
             const output = extractOutputText(item.output)
             if (callId) yield { kind: 'tool.output', callId, output }
             continue

@@ -23,12 +23,18 @@ export interface HierarchicalModelPickerProps {
   isPinned: (id: string) => boolean
   togglePin: (id: string) => void
   onSelectModel: (id: string, provider?: string) => void
-  isCurrentModel: (activeModel: string, entryId: string, entryProvider: string) => boolean
+  isCurrentModel: (
+    activeModel: string,
+    entryId: string,
+    entryProvider: string,
+  ) => boolean
   isMobile?: boolean
   searchPlaceholder?: string
 }
 
-export const HierarchicalModelPicker: React.FC<HierarchicalModelPickerProps> = ({
+export const HierarchicalModelPicker: React.FC<
+  HierarchicalModelPickerProps
+> = ({
   models,
   activeModel = '',
   isPinned,
@@ -212,7 +218,9 @@ export const HierarchicalModelPicker: React.FC<HierarchicalModelPickerProps> = (
             size={14}
             className="shrink-0 text-primary-500/80 dark:text-primary-400/80"
           />
-          <span className="flex-1 truncate font-semibold lowercase font-mono">{group.name}</span>
+          <span className="flex-1 truncate font-semibold lowercase font-mono">
+            {group.name}
+          </span>
           <span className="text-[10px] text-neutral-400 font-normal px-1.5 py-0.2 rounded bg-neutral-200/50 dark:bg-neutral-800">
             {group.totalModels}
           </span>

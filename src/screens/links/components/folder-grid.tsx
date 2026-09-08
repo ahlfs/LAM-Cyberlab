@@ -1,6 +1,11 @@
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Folder01Icon, MoreHorizontalIcon } from '@hugeicons/core-free-icons'
-import { MenuContent, MenuItem, MenuRoot, MenuTrigger } from '@/components/ui/menu'
+import {
+  MenuContent,
+  MenuItem,
+  MenuRoot,
+  MenuTrigger,
+} from '@/components/ui/menu'
 import type { LinkuFolder } from '@/server/linku-db'
 
 function FolderSkeleton() {
@@ -8,7 +13,10 @@ function FolderSkeleton() {
     <div
       aria-hidden
       className="h-[86px] rounded-xl rounded-tl-sm border motion-safe:animate-pulse"
-      style={{ background: 'var(--theme-card)', borderColor: 'var(--theme-border)' }}
+      style={{
+        background: 'var(--theme-card)',
+        borderColor: 'var(--theme-border)',
+      }}
     />
   )
 }
@@ -35,7 +43,10 @@ function FolderTabCard({
         type="button"
         onClick={onOpen}
         className="relative flex w-full flex-col gap-2.5 rounded-xl rounded-tl-sm border p-3.5 text-left transition-transform motion-safe:duration-150 motion-safe:hover:-translate-y-0.5"
-        style={{ background: 'var(--theme-card)', borderColor: 'var(--theme-border)' }}
+        style={{
+          background: 'var(--theme-card)',
+          borderColor: 'var(--theme-border)',
+        }}
       >
         <div className="flex items-center gap-2 pr-6">
           <HugeiconsIcon
@@ -52,7 +63,10 @@ function FolderTabCard({
             {folder.name}
           </span>
         </div>
-        <span className="font-mono text-[11px] tabular-nums" style={{ color: 'var(--theme-muted)' }}>
+        <span
+          className="font-mono text-[11px] tabular-nums"
+          style={{ color: 'var(--theme-muted)' }}
+        >
           {folder.linkCount} {folder.linkCount === 1 ? 'link' : 'links'}
         </span>
       </button>
@@ -69,7 +83,10 @@ function FolderTabCard({
           </MenuTrigger>
           <MenuContent>
             <MenuItem onClick={onEdit}>Edit folder</MenuItem>
-            <MenuItem onClick={onDelete} style={{ color: 'var(--theme-danger)' }}>
+            <MenuItem
+              onClick={onDelete}
+              style={{ color: 'var(--theme-danger)' }}
+            >
               Delete folder
             </MenuItem>
           </MenuContent>
@@ -113,9 +130,16 @@ export function FolderGrid({
         className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-center"
         style={{ borderColor: 'var(--theme-border)' }}
       >
-        <HugeiconsIcon icon={Folder01Icon} size={28} style={{ color: 'var(--theme-muted)' }} />
+        <HugeiconsIcon
+          icon={Folder01Icon}
+          size={28}
+          style={{ color: 'var(--theme-muted)' }}
+        />
         <div className="flex flex-col gap-1">
-          <p className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+          <p
+            className="text-sm font-medium"
+            style={{ color: 'var(--theme-text)' }}
+          >
             No folders yet
           </p>
           <p className="text-[13px]" style={{ color: 'var(--theme-muted)' }}>
@@ -126,7 +150,10 @@ export function FolderGrid({
           type="button"
           onClick={onCreateFolder}
           className="mt-1 rounded-lg px-3 py-1.5 text-sm font-medium"
-          style={{ background: 'var(--theme-accent)', color: 'var(--theme-bg)' }}
+          style={{
+            background: 'var(--theme-accent)',
+            color: 'var(--theme-bg)',
+          }}
         >
           New folder
         </button>

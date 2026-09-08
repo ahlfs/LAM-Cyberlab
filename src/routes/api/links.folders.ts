@@ -30,7 +30,10 @@ export const Route = createFileRoute('/api/links/folders')({
           return json({ folder }, { status: 201 })
         } catch (err) {
           return json(
-            { error: err instanceof Error ? err.message : 'failed to create folder' },
+            {
+              error:
+                err instanceof Error ? err.message : 'failed to create folder',
+            },
             { status: 500 },
           )
         }

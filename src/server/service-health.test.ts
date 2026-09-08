@@ -24,7 +24,9 @@ afterEach(() => {
 
 describe('checkAllServices', () => {
   it('reports every HTTP service up when fetch succeeds, and Caddy up when the process is found', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }))
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response('ok', { status: 200 }))
     isProcessRunningMock.mockResolvedValue(true)
 
     const { checkAllServices } = await import('./service-health')
@@ -39,7 +41,9 @@ describe('checkAllServices', () => {
   })
 
   it('treats a non-2xx HTTP response as reachable (something is answering)', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(new Response('nope', { status: 401 }))
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response('nope', { status: 401 }))
     isProcessRunningMock.mockResolvedValue(false)
 
     const { checkAllServices } = await import('./service-health')
@@ -63,7 +67,9 @@ describe('checkAllServices', () => {
   })
 
   it('reports Caddy down when no matching process is found', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }))
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response('ok', { status: 200 }))
     isProcessRunningMock.mockResolvedValue(false)
 
     const { checkAllServices } = await import('./service-health')
@@ -74,7 +80,9 @@ describe('checkAllServices', () => {
 
   it('honors NINE_ROUTER_URL override', async () => {
     process.env.NINE_ROUTER_URL = 'http://127.0.0.1:9999'
-    const fetchMock = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }))
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response('ok', { status: 200 }))
     globalThis.fetch = fetchMock
     isProcessRunningMock.mockResolvedValue(true)
 
@@ -82,7 +90,9 @@ describe('checkAllServices', () => {
     await checkAllServices()
 
     const calledUrls = fetchMock.mock.calls.map((c) => String(c[0]))
-    expect(calledUrls.some((u) => u.startsWith('http://127.0.0.1:9999'))).toBe(true)
+    expect(calledUrls.some((u) => u.startsWith('http://127.0.0.1:9999'))).toBe(
+      true,
+    )
   })
 
   it('falls back to 3035 if 20128 fails', async () => {

@@ -10,8 +10,20 @@
  * - Integrated terminal panel (xterm.js)
  * - Devicon file icons
  */
-import { Suspense, lazy, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from 'react-resizable-panels'
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
+import {
+  Group as PanelGroup,
+  Panel,
+  Separator as PanelResizeHandle,
+} from 'react-resizable-panels'
 import Editor, { type OnMount } from '@monaco-editor/react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
@@ -146,28 +158,37 @@ export function EditorScreen() {
     return () => media.removeEventListener('change', update)
   }, [])
 
-  const { sessions } = useChatSessions({ activeFriendlyId: chatSessionId, isNewChat: false })
+  const { sessions } = useChatSessions({
+    activeFriendlyId: chatSessionId,
+    isNewChat: false,
+  })
   const editorRef = useRef<any>(null)
 
   const [projects, setProjects] = useState<ProjectInfo[]>([])
   const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath)
-  const setActiveWorkspacePath = useWorkspaceStore((s) => s.setActiveWorkspacePath)
+  const setActiveWorkspacePath = useWorkspaceStore(
+    (s) => s.setActiveWorkspacePath,
+  )
   const selectedFolder = activeWorkspacePath || ''
-  const setSelectedFolder = (path: string) => setActiveWorkspacePath(path || null)
-  
+  const setSelectedFolder = (path: string) =>
+    setActiveWorkspacePath(path || null)
+
   const [folderModalOpen, setFolderModalOpen] = useState(false)
   const [fileTreeVersion, setFileTreeVersion] = useState(0)
 
   // New File/Folder
   const [promptState, setPromptState] = useState<PromptState | null>(null)
   const [promptValue, setPromptValue] = useState('')
-  const [clipboard, setClipboard] = useState<{ type: 'copy' | 'cut'; entry: FileEntry } | null>(null)
+  const [clipboard, setClipboard] = useState<{
+    type: 'copy' | 'cut'
+    entry: FileEntry
+  } | null>(null)
 
   const activeFile = tabs.find((t) => t.path === activeTab) ?? null
 
   /* ── Sync active file path to global store (breadcrumb injection) ── */
   const setActiveEditorFile = useWorkspaceStore((s) => s.setActiveEditorFile)
-  
+
   useEffect(() => {
     setActiveEditorFile(activeFile?.path ?? null)
     return () => setActiveEditorFile(null) // clear on unmount
@@ -242,7 +263,6 @@ export function EditorScreen() {
     [tabs],
   )
 
-
   /* ── Context Menu Actions ─────────────────────────────────────────── */
 
   const handleCopy = useCallback((entry: FileEntry) => {
@@ -255,45 +275,72 @@ export function EditorScreen() {
     toast(`Cut ${entry.name}`, { type: 'success' })
   }, [])
 
-  const handlePaste = useCallback(async (targetFolder: FileEntry | null) => {
-    if (!clipboard) return
-    const folderPath = targetFolder ? (targetFolder.type === 'folder' ? targetFolder.path : targetFolder.path.split('/').slice(0, -1).join('/')) : (selectedFolder || '')
-    const destPath = `${folderPath ? folderPath + '/' : ''}${clipboard.entry.name}`
+  const handlePaste = useCallback(
+    async (targetFolder: FileEntry | null) => {
+      if (!clipboard) return
+      const folderPath = targetFolder
+        ? targetFolder.type === 'folder'
+          ? targetFolder.path
+          : targetFolder.path.split('/').slice(0, -1).join('/')
+        : selectedFolder || ''
+      const destPath = `${folderPath ? folderPath + '/' : ''}${clipboard.entry.name}`
 
-    if (destPath === clipboard.entry.path) {
-      toast('Cannot paste into the same location', { type: 'warning' })
-      return
-    }
-
-    try {
-      if (clipboard.type === 'cut') {
-        const res = await fetch('/api/files', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'rename', from: clipboard.entry.path, to: destPath }),
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        
-        setTabs(prev => prev.map(t => t.path === clipboard.entry.path ? { ...t, path: destPath, name: clipboard.entry.name } : t))
-        if (activeTab === clipboard.entry.path) setActiveTab(destPath)
-        setClipboard(null) // clear clipboard after cut
-      } else {
-        const res = await fetch('/api/files', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'copy', from: clipboard.entry.path, to: destPath }),
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (destPath === clipboard.entry.path) {
+        toast('Cannot paste into the same location', { type: 'warning' })
+        return
       }
-      toast(`Pasted ${clipboard.entry.name}`, { type: 'success' })
-      setFileTreeVersion((v) => v + 1)
-    } catch (err: any) {
-      toast(`Failed to paste: ${err?.message ?? 'Unknown error'}`, { type: 'error' })
-    }
-  }, [clipboard, selectedFolder, activeTab])
+
+      try {
+        if (clipboard.type === 'cut') {
+          const res = await fetch('/api/files', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'rename',
+              from: clipboard.entry.path,
+              to: destPath,
+            }),
+          })
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+          setTabs((prev) =>
+            prev.map((t) =>
+              t.path === clipboard.entry.path
+                ? { ...t, path: destPath, name: clipboard.entry.name }
+                : t,
+            ),
+          )
+          if (activeTab === clipboard.entry.path) setActiveTab(destPath)
+          setClipboard(null) // clear clipboard after cut
+        } else {
+          const res = await fetch('/api/files', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'copy',
+              from: clipboard.entry.path,
+              to: destPath,
+            }),
+          })
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        }
+        toast(`Pasted ${clipboard.entry.name}`, { type: 'success' })
+        setFileTreeVersion((v) => v + 1)
+      } catch (err: any) {
+        toast(`Failed to paste: ${err?.message ?? 'Unknown error'}`, {
+          type: 'error',
+        })
+      }
+    },
+    [clipboard, selectedFolder, activeTab],
+  )
 
   const handleRename = useCallback((entry: FileEntry) => {
-    setPromptState({ type: 'rename', targetPath: entry.path, oldName: entry.name })
+    setPromptState({
+      type: 'rename',
+      targetPath: entry.path,
+      oldName: entry.name,
+    })
     setPromptValue(entry.name)
   }, [])
 
@@ -348,14 +395,19 @@ export function EditorScreen() {
         const res = await fetch('/api/files', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'delete', path: promptState.entry.path }),
+          body: JSON.stringify({
+            action: 'delete',
+            path: promptState.entry.path,
+          }),
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         toast(`Deleted ${promptState.entry.name}`, { type: 'success' })
-        
+
         setFileTreeVersion((v) => v + 1)
         setTabs((prev) => {
-          const newTabs = prev.filter((t) => !t.path.startsWith(promptState.entry.path))
+          const newTabs = prev.filter(
+            (t) => !t.path.startsWith(promptState.entry.path),
+          )
           return newTabs
         })
         setActiveTab((current) => {
@@ -377,14 +429,23 @@ export function EditorScreen() {
         const res = await fetch('/api/files', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ action: 'rename', from: promptState.targetPath, to: nextPath }),
+          body: JSON.stringify({
+            action: 'rename',
+            from: promptState.targetPath,
+            to: nextPath,
+          }),
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
         // Update active tab if we renamed the currently opened file
-        setTabs((prev) => prev.map(t => t.path === promptState.targetPath ? { ...t, path: nextPath, name: value } : t))
+        setTabs((prev) =>
+          prev.map((t) =>
+            t.path === promptState.targetPath
+              ? { ...t, path: nextPath, name: value }
+              : t,
+          ),
+        )
         if (activeTab === promptState.targetPath) setActiveTab(nextPath)
-
       } else {
         const nextPath = promptState.targetPath
           ? `${promptState.targetPath}/${value}`
@@ -401,10 +462,14 @@ export function EditorScreen() {
           const res = await fetch('/api/files', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ action: 'write', path: nextPath, content: '' }),
+            body: JSON.stringify({
+              action: 'write',
+              path: nextPath,
+              content: '',
+            }),
           })
           if (!res.ok) throw new Error(`HTTP ${res.status}`)
-          
+
           setTabs((prev) => [
             ...prev,
             {
@@ -521,109 +586,164 @@ export function EditorScreen() {
 
   const sidebarElement = (
     <div
-      className={cn("flex h-full w-full flex-col border-r", isMobile ? "absolute inset-0 z-40" : "")}
-      style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card)' }}
+      className={cn(
+        'flex h-full w-full flex-col border-r',
+        isMobile ? 'absolute inset-0 z-40' : '',
+      )}
+      style={{
+        borderColor: 'var(--theme-border)',
+        background: 'var(--theme-card)',
+      }}
     >
-        {/* Sidebar header */}
-        <div
-          className="flex h-10 shrink-0 items-center justify-between border-b px-3"
-          style={{ borderColor: 'var(--theme-border)' }}
+      {/* Sidebar header */}
+      <div
+        className="flex h-10 shrink-0 items-center justify-between border-b px-3"
+        style={{ borderColor: 'var(--theme-border)' }}
+      >
+        <span
+          className="text-[11px] font-bold uppercase tracking-wider"
+          style={{ color: 'var(--theme-muted)' }}
         >
-          <span
-            className="text-[11px] font-bold uppercase tracking-wider"
-            style={{ color: 'var(--theme-muted)' }}
-          >
-            Explorer
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setFileTreeVersion((v) => v + 1)}
-              className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)]"
-              title="Refresh"
-            >
-              <HugeiconsIcon icon={ReloadIcon} size={14} style={{ color: 'var(--theme-muted)' }} />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPromptState({ mode: 'new-file', targetPath: selectedFolder })
-                setPromptValue('')
-              }}
-              className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)]"
-              title="New File"
-            >
-              <HugeiconsIcon icon={PlusSignIcon} size={14} style={{ color: 'var(--theme-muted)' }} />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPromptState({ mode: 'new-folder', targetPath: selectedFolder })
-                setPromptValue('')
-              }}
-              className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)]"
-              title="New Folder"
-            >
-              <HugeiconsIcon icon={Folder01Icon} size={14} style={{ color: 'var(--theme-muted)' }} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(false)}
-              className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)] ml-1"
-              title="Close Sidebar"
-            >
-              <HugeiconsIcon
-                icon={SidebarLeft01Icon}
-                size={14}
-                style={{ color: 'var(--theme-muted)' }}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* ── Open Folder Button ───────────────────────────── */}
-        <div className="border-b px-2 py-2" style={{ borderColor: 'var(--theme-border)' }}>
+          Explorer
+        </span>
+        <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => setFolderModalOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors hover:bg-[var(--theme-card2)]"
-            style={{
-              borderColor: 'var(--theme-border)',
-              color: 'var(--theme-text)',
+            onClick={() => setFileTreeVersion((v) => v + 1)}
+            className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)]"
+            title="Refresh"
+          >
+            <HugeiconsIcon
+              icon={ReloadIcon}
+              size={14}
+              style={{ color: 'var(--theme-muted)' }}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPromptState({ mode: 'new-file', targetPath: selectedFolder })
+              setPromptValue('')
             }}
+            className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)]"
+            title="New File"
+          >
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              size={14}
+              style={{ color: 'var(--theme-muted)' }}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPromptState({ mode: 'new-folder', targetPath: selectedFolder })
+              setPromptValue('')
+            }}
+            className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)]"
+            title="New Folder"
           >
             <HugeiconsIcon
               icon={Folder01Icon}
               size={14}
-              style={{ color: 'var(--theme-warning, #f59e0b)' }}
+              style={{ color: 'var(--theme-muted)' }}
             />
-            <span>Open Folder</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="rounded p-0.5 transition-colors hover:bg-[var(--theme-card2)] ml-1"
+            title="Close Sidebar"
+          >
+            <HugeiconsIcon
+              icon={SidebarLeft01Icon}
+              size={14}
+              style={{ color: 'var(--theme-muted)' }}
+            />
           </button>
         </div>
+      </div>
 
-        {/* Folder Selection Modal */}
-        <DialogRoot
-          open={folderModalOpen}
-          onOpenChange={setFolderModalOpen}
+      {/* ── Open Folder Button ───────────────────────────── */}
+      <div
+        className="border-b px-2 py-2"
+        style={{ borderColor: 'var(--theme-border)' }}
+      >
+        <button
+          type="button"
+          onClick={() => setFolderModalOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors hover:bg-[var(--theme-card2)]"
+          style={{
+            borderColor: 'var(--theme-border)',
+            color: 'var(--theme-text)',
+          }}
         >
-          <DialogContent>
-            <div className="p-5 flex flex-col max-h-[80vh]">
-              <DialogTitle className="mb-1">Open Folder</DialogTitle>
-              <DialogDescription className="mb-4">
-                Select a workspace or project folder to open in the editor.
-              </DialogDescription>
-              
-              <div className="flex-1 overflow-y-auto rounded-lg border bg-primary-50/50 p-1" style={{ borderColor: 'var(--theme-border)' }}>
-                {/* Root workspace option */}
+          <HugeiconsIcon
+            icon={Folder01Icon}
+            size={14}
+            style={{ color: 'var(--theme-warning, #f59e0b)' }}
+          />
+          <span>Open Folder</span>
+        </button>
+      </div>
+
+      {/* Folder Selection Modal */}
+      <DialogRoot open={folderModalOpen} onOpenChange={setFolderModalOpen}>
+        <DialogContent>
+          <div className="p-5 flex flex-col max-h-[80vh]">
+            <DialogTitle className="mb-1">Open Folder</DialogTitle>
+            <DialogDescription className="mb-4">
+              Select a workspace or project folder to open in the editor.
+            </DialogDescription>
+
+            <div
+              className="flex-1 overflow-y-auto rounded-lg border bg-primary-50/50 p-1"
+              style={{ borderColor: 'var(--theme-border)' }}
+            >
+              {/* Root workspace option */}
+              <button
+                type="button"
+                onClick={() => handleSelectFolder('')}
+                className={cn(
+                  'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary-100',
+                  selectedFolder === '' && 'bg-primary-100/80 font-medium',
+                )}
+                style={{
+                  color:
+                    selectedFolder === ''
+                      ? 'var(--theme-accent)'
+                      : 'var(--theme-text)',
+                }}
+              >
+                <HugeiconsIcon
+                  icon={Folder01Icon}
+                  size={16}
+                  style={{ color: 'var(--theme-warning, #f59e0b)' }}
+                />
+                Root Workspace
+              </button>
+
+              {/* Divider */}
+              {projects.length > 0 && (
+                <div className="mx-2 my-1 border-t border-primary-200" />
+              )}
+
+              {/* Projects */}
+              {projects.map((project) => (
                 <button
+                  key={project.path}
                   type="button"
-                  onClick={() => handleSelectFolder('')}
+                  onClick={() => handleSelectFolder(project.path)}
                   className={cn(
                     'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary-100',
-                    selectedFolder === '' && 'bg-primary-100/80 font-medium',
+                    selectedFolder === project.path &&
+                      'bg-primary-100/80 font-medium',
                   )}
                   style={{
-                    color: selectedFolder === '' ? 'var(--theme-accent)' : 'var(--theme-text)',
+                    color:
+                      selectedFolder === project.path
+                        ? 'var(--theme-accent)'
+                        : 'var(--theme-text)',
                   }}
                 >
                   <HugeiconsIcon
@@ -631,72 +751,43 @@ export function EditorScreen() {
                     size={16}
                     style={{ color: 'var(--theme-warning, #f59e0b)' }}
                   />
-                  Root Workspace
-                </button>
-
-                {/* Divider */}
-                {projects.length > 0 && (
-                  <div className="mx-2 my-1 border-t border-primary-200" />
-                )}
-
-                {/* Projects */}
-                {projects.map((project) => (
-                  <button
-                    key={project.path}
-                    type="button"
-                    onClick={() => handleSelectFolder(project.path)}
-                    className={cn(
-                      'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary-100',
-                      selectedFolder === project.path && 'bg-primary-100/80 font-medium',
-                    )}
-                    style={{
-                      color: selectedFolder === project.path ? 'var(--theme-accent)' : 'var(--theme-text)',
-                    }}
-                  >
-                    <HugeiconsIcon
-                      icon={Folder01Icon}
-                      size={16}
-                      style={{ color: 'var(--theme-warning, #f59e0b)' }}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate">{project.name}</div>
-                      <div className="truncate font-mono text-[10px] text-primary-500">
-                        {project.path}
-                      </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate">{project.name}</div>
+                    <div className="truncate font-mono text-[10px] text-primary-500">
+                      {project.path}
                     </div>
-                    <span
-                      className="shrink-0 rounded-md border border-primary-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-primary-600"
-                    >
-                      {project.frameworkLabel}
-                    </span>
-                  </button>
-                ))}
-
-                {projects.length === 0 && (
-                  <div className="px-3 py-4 text-center text-sm text-primary-500">
-                    No projects detected.
                   </div>
-                )}
-              </div>
-            </div>
-          </DialogContent>
-        </DialogRoot>
+                  <span className="shrink-0 rounded-md border border-primary-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-primary-600">
+                    {project.frameworkLabel}
+                  </span>
+                </button>
+              ))}
 
-        {/* File tree */}
-        <div className="flex-1 overflow-y-auto">
-          <FileTree
-            selectedPath={activeTab}
-            onSelect={openFile}
-            rootPath={selectedFolder || undefined}
-            refreshVersion={fileTreeVersion}
-            onDelete={handleDeleteFile}
-            clipboard={clipboard}
-            onCopy={handleCopy}
-            onCut={handleCut}
-            onPaste={handlePaste}
-            onRename={handleRename}
-          />
-        </div>
+              {projects.length === 0 && (
+                <div className="px-3 py-4 text-center text-sm text-primary-500">
+                  No projects detected.
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </DialogRoot>
+
+      {/* File tree */}
+      <div className="flex-1 overflow-y-auto">
+        <FileTree
+          selectedPath={activeTab}
+          onSelect={openFile}
+          rootPath={selectedFolder || undefined}
+          refreshVersion={fileTreeVersion}
+          onDelete={handleDeleteFile}
+          clipboard={clipboard}
+          onCopy={handleCopy}
+          onCut={handleCut}
+          onPaste={handlePaste}
+          onRename={handleRename}
+        />
+      </div>
     </div>
   )
 
@@ -809,7 +900,11 @@ export function EditorScreen() {
               }}
             >
               {saving ? (
-                <HugeiconsIcon icon={Loading03Icon} size={12} className="animate-spin" />
+                <HugeiconsIcon
+                  icon={Loading03Icon}
+                  size={12}
+                  className="animate-spin"
+                />
               ) : (
                 <HugeiconsIcon icon={FloppyDiskIcon} size={12} />
               )}
@@ -824,7 +919,11 @@ export function EditorScreen() {
           <div className="relative flex-1 min-h-0">
             {loadingFile && (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--theme-bg)]/80 backdrop-blur-sm">
-                <HugeiconsIcon icon={Loading03Icon} size={24} className="animate-spin text-[var(--theme-accent)]" />
+                <HugeiconsIcon
+                  icon={Loading03Icon}
+                  size={24}
+                  className="animate-spin text-[var(--theme-accent)]"
+                />
               </div>
             )}
 
@@ -839,7 +938,8 @@ export function EditorScreen() {
                 onMount={handleEditorMount}
                 options={{
                   fontSize: 14,
-                  fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, monospace",
+                  fontFamily:
+                    "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, monospace",
                   fontLigatures: true,
                   minimap: { enabled: true, side: 'right' },
                   scrollBeyondLastLine: false,
@@ -881,9 +981,16 @@ export function EditorScreen() {
                     Select a file from the Explorer to start editing.
                     <br />
                     <span className="text-xs opacity-70">
-                      Press <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">Ctrl+S</kbd> to save
+                      Press{' '}
+                      <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">
+                        Ctrl+S
+                      </kbd>{' '}
+                      to save
                       {' · '}
-                      <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">Ctrl+`</kbd> to toggle terminal
+                      <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">
+                        Ctrl+`
+                      </kbd>{' '}
+                      to toggle terminal
                     </span>
                   </p>
                 </div>
@@ -972,21 +1079,34 @@ export function EditorScreen() {
         <DialogContent>
           <div className="p-5 space-y-3">
             <DialogTitle>
-              {promptState && 'type' in promptState && promptState.type === 'delete'
+              {promptState &&
+              'type' in promptState &&
+              promptState.type === 'delete'
                 ? 'Confirm Delete'
-                : promptState && 'type' in promptState && promptState.type === 'rename'
-                ? 'Rename'
-                : promptState && 'mode' in promptState && promptState.mode === 'new-folder'
-                ? 'New Folder'
-                : 'New File'}
+                : promptState &&
+                    'type' in promptState &&
+                    promptState.type === 'rename'
+                  ? 'Rename'
+                  : promptState &&
+                      'mode' in promptState &&
+                      promptState.mode === 'new-folder'
+                    ? 'New Folder'
+                    : 'New File'}
             </DialogTitle>
             <DialogDescription>
-              {promptState && 'type' in promptState && promptState.type === 'delete' ? (
+              {promptState &&
+              'type' in promptState &&
+              promptState.type === 'delete' ? (
                 <>
-                  Are you sure you want to delete <span className="font-mono bg-primary-100 px-1 py-0.5 rounded text-xs text-primary-800">{promptState.entry.name}</span>?
-                  This action cannot be undone.
+                  Are you sure you want to delete{' '}
+                  <span className="font-mono bg-primary-100 px-1 py-0.5 rounded text-xs text-primary-800">
+                    {promptState.entry.name}
+                  </span>
+                  ? This action cannot be undone.
                 </>
-              ) : promptState && 'type' in promptState && promptState.type === 'rename' ? (
+              ) : promptState &&
+                'type' in promptState &&
+                promptState.type === 'rename' ? (
                 <>
                   Enter a new name for{' '}
                   <span className="font-mono bg-primary-100 px-1 py-0.5 rounded text-xs text-primary-800">
@@ -1002,7 +1122,9 @@ export function EditorScreen() {
                 </>
               )}
             </DialogDescription>
-            {(!promptState || !('type' in promptState) || promptState.type !== 'delete') && (
+            {(!promptState ||
+              !('type' in promptState) ||
+              promptState.type !== 'delete') && (
               <input
                 value={promptValue}
                 onChange={(event) => setPromptValue(event.target.value)}
@@ -1015,13 +1137,25 @@ export function EditorScreen() {
             )}
             <div className="flex justify-end gap-2 pt-2">
               <DialogClose render={<Button variant="outline">Cancel</Button>} />
-              <Button 
+              <Button
                 onClick={handlePromptSubmit}
-                variant={promptState && 'type' in promptState && promptState.type === 'delete' ? 'destructive' : 'default'}
+                variant={
+                  promptState &&
+                  'type' in promptState &&
+                  promptState.type === 'delete'
+                    ? 'destructive'
+                    : 'default'
+                }
               >
-                {promptState && 'type' in promptState && promptState.type === 'delete' ? 'Delete'
-                 : promptState && 'type' in promptState && promptState.type === 'rename' ? 'Rename' 
-                 : 'Create'}
+                {promptState &&
+                'type' in promptState &&
+                promptState.type === 'delete'
+                  ? 'Delete'
+                  : promptState &&
+                      'type' in promptState &&
+                      promptState.type === 'rename'
+                    ? 'Rename'
+                    : 'Create'}
               </Button>
             </div>
           </div>
@@ -1031,84 +1165,113 @@ export function EditorScreen() {
   )
 
   const chatElement = (
-    <div 
-      className={cn("flex h-full w-full flex-col border-l", isMobile ? "absolute inset-0 z-40" : "")}
-      style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-bg)' }}
+    <div
+      className={cn(
+        'flex h-full w-full flex-col border-l',
+        isMobile ? 'absolute inset-0 z-40' : '',
+      )}
+      style={{
+        borderColor: 'var(--theme-border)',
+        background: 'var(--theme-bg)',
+      }}
     >
-          {/* Agent Session Header */}
-          <div 
-            className="flex h-10 shrink-0 items-center justify-between border-b px-3"
-            style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card)' }}
+      {/* Agent Session Header */}
+      <div
+        className="flex h-10 shrink-0 items-center justify-between border-b px-3"
+        style={{
+          borderColor: 'var(--theme-border)',
+          background: 'var(--theme-card)',
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setChatOpen(false)}
+            className="md:hidden flex items-center justify-center p-1 -ml-1 rounded hover:bg-white/10"
           >
-            <div className="flex items-center gap-2">
-              <button 
-                type="button" 
-                onClick={() => setChatOpen(false)} 
-                className="md:hidden flex items-center justify-center p-1 -ml-1 rounded hover:bg-white/10"
-              >
-                <HugeiconsIcon icon={Cancel01Icon} size={14} style={{ color: 'var(--theme-muted)' }} />
-              </button>
-              <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
-                Agent
-              </span>
-            </div>
-            <select
-              value={chatSessionId}
-              onChange={(e) => {
-                if (e.target.value === '_new') {
-                  setChatSessionId('new')
-                } else {
-                  setChatSessionId(e.target.value)
-                }
-              }}
-              className="max-w-[200px] truncate rounded border px-2 py-1 text-[11px] outline-none transition-colors"
+            <HugeiconsIcon
+              icon={Cancel01Icon}
+              size={14}
+              style={{ color: 'var(--theme-muted)' }}
+            />
+          </button>
+          <span
+            className="text-[11px] font-bold uppercase tracking-wider"
+            style={{ color: 'var(--theme-muted)' }}
+          >
+            Agent
+          </span>
+        </div>
+        <select
+          value={chatSessionId}
+          onChange={(e) => {
+            if (e.target.value === '_new') {
+              setChatSessionId('new')
+            } else {
+              setChatSessionId(e.target.value)
+            }
+          }}
+          className="max-w-[200px] truncate rounded border px-2 py-1 text-[11px] outline-none transition-colors"
+          style={{
+            borderColor: 'var(--theme-border)',
+            background: 'var(--theme-bg)',
+            color: 'var(--theme-text)',
+          }}
+        >
+          {chatSessionId !== 'new' && (
+            <option
+              value="_new"
               style={{
-                borderColor: 'var(--theme-border)',
-                background: 'var(--theme-bg)',
-                color: 'var(--theme-text)',
+                color: 'var(--theme-accent, #60a5fa)',
+                fontWeight: 'bold',
               }}
             >
-              {chatSessionId !== 'new' && (
-                <option value="_new" style={{ color: 'var(--theme-accent, #60a5fa)', fontWeight: 'bold' }}>
-                  + New Session
-                </option>
-              )}
-              {chatSessionId === 'new' && (
-                <option value="new">New Session</option>
-              )}
-              <option disabled>──────────</option>
-              <option value="main">Main Session</option>
-              <option disabled>──────────</option>
-              {sessions.filter((s) => s.key !== 'main').map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.title || 'Untitled Session'}
-                </option>
-              ))}
-            </select>
-          </div>
+              + New Session
+            </option>
+          )}
+          {chatSessionId === 'new' && <option value="new">New Session</option>}
+          <option disabled>──────────</option>
+          <option value="main">Main Session</option>
+          <option disabled>──────────</option>
+          {sessions
+            .filter((s) => s.key !== 'main')
+            .map((s) => (
+              <option key={s.key} value={s.key}>
+                {s.title || 'Untitled Session'}
+              </option>
+            ))}
+        </select>
+      </div>
 
-          <Suspense
-            fallback={
-              <div className="flex flex-1 items-center justify-center">
-                <HugeiconsIcon icon={Loading03Icon} size={24} className="animate-spin text-[var(--theme-muted)]" />
-              </div>
-            }
-          >
-            <EditorChatScreen
-              activeFriendlyId={chatSessionId}
-              activeSessionKey={chatSessionId}
-              onSessionResolved={({ sessionKey }) => {
-                setChatSessionId(sessionKey)
-              }}
-              compact
-              embedded
+      <Suspense
+        fallback={
+          <div className="flex flex-1 items-center justify-center">
+            <HugeiconsIcon
+              icon={Loading03Icon}
+              size={24}
+              className="animate-spin text-[var(--theme-muted)]"
             />
-          </Suspense>
+          </div>
+        }
+      >
+        <EditorChatScreen
+          activeFriendlyId={chatSessionId}
+          activeSessionKey={chatSessionId}
+          onSessionResolved={({ sessionKey }) => {
+            setChatSessionId(sessionKey)
+          }}
+          compact
+          embedded
+        />
+      </Suspense>
     </div>
   )
 
   return (
-    <div className="flex h-full w-full overflow-hidden relative" style={{ background: 'var(--theme-bg)' }}>
+    <div
+      className="flex h-full w-full overflow-hidden relative"
+      style={{ background: 'var(--theme-bg)' }}
+    >
       {isMobile ? (
         <>
           {sidebarOpen && sidebarElement}
@@ -1116,7 +1279,11 @@ export function EditorScreen() {
           {chatOpen && chatElement}
         </>
       ) : (
-        <PanelGroup direction="horizontal" autoSaveId="editor-panels-layout-v4" className="flex h-full w-full">
+        <PanelGroup
+          direction="horizontal"
+          autoSaveId="editor-panels-layout-v4"
+          className="flex h-full w-full"
+        >
           {sidebarOpen && (
             <>
               <Panel id="sidebar" order={1} defaultSize={25} minSize={15}>
@@ -1128,7 +1295,11 @@ export function EditorScreen() {
             </>
           )}
 
-          <Panel id="editor" order={2} defaultSize={sidebarOpen && chatOpen ? 40 : undefined}>
+          <Panel
+            id="editor"
+            order={2}
+            defaultSize={sidebarOpen && chatOpen ? 40 : undefined}
+          >
             {editorElement}
           </Panel>
 

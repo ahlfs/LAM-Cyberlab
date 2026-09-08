@@ -15,10 +15,19 @@ export interface HierarchicalModelGroup {
   totalModels: number
 }
 
-export type HierarchicalModelNode = HierarchicalModelItem | HierarchicalModelGroup
+export type HierarchicalModelNode =
+  | HierarchicalModelItem
+  | HierarchicalModelGroup
 
-export function isGroupNode(node: HierarchicalModelNode): node is HierarchicalModelGroup {
-  return Boolean(node && typeof node === 'object' && 'isGroup' in node && node.isGroup === true)
+export function isGroupNode(
+  node: HierarchicalModelNode,
+): node is HierarchicalModelGroup {
+  return Boolean(
+    node &&
+    typeof node === 'object' &&
+    'isGroup' in node &&
+    node.isGroup === true,
+  )
 }
 
 /**
@@ -27,7 +36,9 @@ export function isGroupNode(node: HierarchicalModelNode): node is HierarchicalMo
  * - "vps/ag/gemini-2.5-flash" -> Group "vps" -> Group "ag" -> Item "gemini-2.5-flash" (id: "vps/ag/gemini-2.5-flash")
  * - "gpt-4o" -> Item "gpt-4o" (id: "gpt-4o") at root
  */
-export function buildModelHierarchy(models: HierarchicalModelItem[]): HierarchicalModelNode[] {
+export function buildModelHierarchy(
+  models: HierarchicalModelItem[],
+): HierarchicalModelNode[] {
   interface InternalGroup {
     name: string
     fullPath: string
@@ -38,7 +49,11 @@ export function buildModelHierarchy(models: HierarchicalModelItem[]): Hierarchic
   const rootGroups = new Map<string, InternalGroup>()
   const rootItems: HierarchicalModelItem[] = []
 
-  function getOrCreateGroup(parentMap: Map<string, InternalGroup>, name: string, fullPath: string): InternalGroup {
+  function getOrCreateGroup(
+    parentMap: Map<string, InternalGroup>,
+    name: string,
+    fullPath: string,
+  ): InternalGroup {
     let group = parentMap.get(name)
     if (!group) {
       group = {
@@ -81,7 +96,8 @@ export function buildModelHierarchy(models: HierarchicalModelItem[]): Hierarchic
         group.items.push({
           ...model,
           isGroup: false,
-          name: model.name && model.name !== model.id ? model.name : modelLeafName,
+          name:
+            model.name && model.name !== model.id ? model.name : modelLeafName,
         })
       } else {
         currentParentMap = group.groups
@@ -99,7 +115,8 @@ export function buildModelHierarchy(models: HierarchicalModelItem[]): Hierarchic
       .map((item) => ({ ...item, isGroup: false as const }))
 
     const children: HierarchicalModelNode[] = [...subGroups, ...items]
-    const totalModels = items.length + subGroups.reduce((acc, g) => acc + g.totalModels, 0)
+    const totalModels =
+      items.length + subGroups.reduce((acc, g) => acc + g.totalModels, 0)
 
     return {
       name: group.name,
@@ -114,7 +131,9 @@ export function buildModelHierarchy(models: HierarchicalModelItem[]): Hierarchic
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(convertInternalGroup)
 
-  const sortedRootItems = [...rootItems].sort((a, b) => a.name.localeCompare(b.name))
+  const sortedRootItems = [...rootItems].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  )
 
   return [...sortedRootGroups, ...sortedRootItems]
 }
@@ -122,7 +141,10 @@ export function buildModelHierarchy(models: HierarchicalModelItem[]): Hierarchic
 /**
  * Filter tree nodes by a search query. Matches if query is in node name, id, fullPath, or matches any children.
  */
-export function filterModelHierarchy(nodes: HierarchicalModelNode[], query: string): HierarchicalModelNode[] {
+export function filterModelHierarchy(
+  nodes: HierarchicalModelNode[],
+  query: string,
+): HierarchicalModelNode[] {
   const q = query.trim().toLowerCase()
   if (!q) return nodes
 
@@ -130,7 +152,9 @@ export function filterModelHierarchy(nodes: HierarchicalModelNode[], query: stri
 
   for (const node of nodes) {
     if (isGroupNode(node)) {
-      const groupMatches = node.name.toLowerCase().includes(q) || node.fullPath.toLowerCase().includes(q)
+      const groupMatches =
+        node.name.toLowerCase().includes(q) ||
+        node.fullPath.toLowerCase().includes(q)
       if (groupMatches) {
         // Entire group matches name/path, keep all its children
         result.push(node)
@@ -138,7 +162,10 @@ export function filterModelHierarchy(nodes: HierarchicalModelNode[], query: stri
         // Check if any children match
         const filteredChildren = filterModelHierarchy(node.children, q)
         if (filteredChildren.length > 0) {
-          const totalModels = filteredChildren.reduce((acc, c) => acc + (isGroupNode(c) ? c.totalModels : 1), 0)
+          const totalModels = filteredChildren.reduce(
+            (acc, c) => acc + (isGroupNode(c) ? c.totalModels : 1),
+            0,
+          )
           result.push({
             ...node,
             children: filteredChildren,
@@ -150,7 +177,8 @@ export function filterModelHierarchy(nodes: HierarchicalModelNode[], query: stri
       const itemMatches =
         node.id.toLowerCase().includes(q) ||
         node.name.toLowerCase().includes(q) ||
-        (typeof node.provider === 'string' && node.provider.toLowerCase().includes(q))
+        (typeof node.provider === 'string' &&
+          node.provider.toLowerCase().includes(q))
 
       if (itemMatches) {
         result.push(node)

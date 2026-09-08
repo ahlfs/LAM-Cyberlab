@@ -18,7 +18,9 @@ export const Route = createFileRoute('/api/system-processes')({
           return Response.json({ processes: await getTopProcesses(8) })
         } catch (err) {
           return json(
-            { error: err instanceof Error ? err.message : 'process scan failed' },
+            {
+              error: err instanceof Error ? err.message : 'process scan failed',
+            },
             { status: 500 },
           )
         }

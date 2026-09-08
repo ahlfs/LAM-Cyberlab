@@ -28,7 +28,10 @@ import {
   type LocalMessageAttachment,
 } from '../../server/local-session-store'
 import { saveAttachment } from '../../server/attachment-store'
-import { getDiscoveredModels, getLocalProviderDef } from '../../server/local-provider-discovery'
+import {
+  getDiscoveredModels,
+  getLocalProviderDef,
+} from '../../server/local-provider-discovery'
 import { openaiChat } from '../../server/openai-compat-api'
 import { streamResponses } from '../../server/responses-api'
 import { selectPortableConversationHistory } from '../../server/portable-history'
@@ -44,12 +47,18 @@ import {
   streamChat,
 } from '../../server/claude-api'
 import { loadWorkspaceCatalog } from './workspace'
-import { readConfiguredLiveModelEndpoints, fetchConfiguredLiveModels } from './models'
+import {
+  readConfiguredLiveModelEndpoints,
+  fetchConfiguredLiveModels,
+} from './models'
 import {
   collectSyntheticLiveToolEvents,
   createSyntheticLiveToolTracker,
 } from './-send-stream-live-tools'
-import type {OpenAICompatContentPart, OpenAICompatMessage} from '../../server/openai-compat-api';
+import type {
+  OpenAICompatContentPart,
+  OpenAICompatMessage,
+} from '../../server/openai-compat-api'
 // Claude agent runs can take 5+ minutes with complex tool chains
 const SEND_STREAM_RUN_TIMEOUT_MS = 600_000
 const SESSION_BOOTSTRAP_KEYS = new Set(['main', 'new'])
@@ -376,64 +385,112 @@ export const Route = createFileRoute('/api/send-stream')({
         let chatMode = getChatMode()
         let localBaseUrl: string | undefined
         let localApiKey: string | undefined
-        let rawRequestModel = typeof body.model === 'string' ? body.model.trim() : ''
+        let rawRequestModel =
+          typeof body.model === 'string' ? body.model.trim() : ''
         // Strip non-slug provider prefixes (e.g. "Local (localhost:3035)/vps/ag/...")
         const nonSlugMatch = rawRequestModel.match(/^[^/]*[\s()][^/]*\/(.+)$/)
         const requestModel = nonSlugMatch ? nonSlugMatch[1] : rawRequestModel
-        console.log("[LAM-DEBUG] RECEIVED MODEL:", requestModel, "| bareModel:", requestModel.includes('/') ? requestModel.split('/').slice(1).join('/') : requestModel)
-        let bareModel = requestModel.includes('/') ? requestModel.split('/').slice(1).join('/') : requestModel
+        console.log(
+          '[LAM-DEBUG] RECEIVED MODEL:',
+          requestModel,
+          '| bareModel:',
+          requestModel.includes('/')
+            ? requestModel.split('/').slice(1).join('/')
+            : requestModel,
+        )
+        let bareModel = requestModel.includes('/')
+          ? requestModel.split('/').slice(1).join('/')
+          : requestModel
 
         // Resolve Gateway Provider if it's a custom model (fixes routing when Gateway uses default provider)
         let resolvedGatewayProvider: string | undefined
         let resolvedGatewayModel: string | undefined
         if (requestModel) {
-          const { fetchConfiguredLiveModels, readClaudeConfigCatalog } = await import('./models')
-          const configuredLiveModels = await fetchConfiguredLiveModels().catch(() => [])
+          const { fetchConfiguredLiveModels, readClaudeConfigCatalog } =
+            await import('./models')
+          const configuredLiveModels = await fetchConfiguredLiveModels().catch(
+            () => [],
+          )
           const catalogModels = readClaudeConfigCatalog()
           const allModels = [...configuredLiveModels, ...catalogModels]
-          
+
           let liveMatch = allModels.find((m) => {
             if (m.id === requestModel) return true
-            if (m.provider && requestModel === `${m.provider}/${m.id}`) return true
-            if (m.provider && requestModel.startsWith(`${m.provider}/`) && requestModel.slice(m.provider.length + 1) === m.id) return true
+            if (m.provider && requestModel === `${m.provider}/${m.id}`)
+              return true
+            if (
+              m.provider &&
+              requestModel.startsWith(`${m.provider}/`) &&
+              requestModel.slice(m.provider.length + 1) === m.id
+            )
+              return true
             return false
           })
           if (!liveMatch) {
             // Prioritize live-proxy models on bareModel fallback to preserve source: 'live-proxy'
             // so isLiveProxyModel check works correctly and resolvedGatewayProvider is not set
-            liveMatch = configuredLiveModels.find((m) => m.id === bareModel)
-              ?? allModels.find((m) => m.id === bareModel)
+            liveMatch =
+              configuredLiveModels.find((m) => m.id === bareModel) ??
+              allModels.find((m) => m.id === bareModel)
           }
           if (liveMatch) {
-             const prov = (liveMatch as any).endpointProvider || liveMatch.provider;
-             // If this model belongs to a configured live model endpoint (from custom_providers, etc.), 
-             // skip resolvedGatewayProvider to let the gateway routing by model prefix handle it
-             const isLiveProxyModel = Boolean((liveMatch as any).source === 'live-proxy' || (liveMatch as any).baseUrl);
-             const isMultiSegmentModel = requestModel.includes('/') || (liveMatch.id && liveMatch.id.includes('/'));
-             const isValidProviderSlug = prov && /^[a-z0-9_-]+$/i.test(prov);
-             if (prov && prov.toLowerCase() !== 'custom' && prov.toLowerCase() !== 'configured' && !isLiveProxyModel && !isMultiSegmentModel && isValidProviderSlug) {
-                resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
-             } else {
-                resolvedGatewayProvider = 'custom'
-             }
-             // Prefer the original requestModel over liveMatch.id to avoid stripping the
-             // routing prefix (e.g. vps/ag/) that 9router needs for correct upstream dispatch.
-             // Only fall back to liveMatch.id when requestModel is not a superset of it.
-             const matchId = liveMatch.id ?? ''
-             resolvedGatewayModel = (requestModel && matchId && requestModel.includes(matchId))
-               ? requestModel
-               : (liveMatch.id || requestModel)
-             console.log("[LAM-DEBUG] resolvedGatewayModel:", resolvedGatewayModel, "| resolvedGatewayProvider:", resolvedGatewayProvider, "| isLiveProxyModel:", isLiveProxyModel, "| liveMatch.id:", liveMatch.id)
+            const prov =
+              (liveMatch as any).endpointProvider || liveMatch.provider
+            // If this model belongs to a configured live model endpoint (from custom_providers, etc.),
+            // skip resolvedGatewayProvider to let the gateway routing by model prefix handle it
+            const isLiveProxyModel = Boolean(
+              (liveMatch as any).source === 'live-proxy' ||
+              (liveMatch as any).baseUrl,
+            )
+            const isMultiSegmentModel =
+              requestModel.includes('/') ||
+              (liveMatch.id && liveMatch.id.includes('/'))
+            const isValidProviderSlug = prov && /^[a-z0-9_-]+$/i.test(prov)
+            if (
+              prov &&
+              prov.toLowerCase() !== 'custom' &&
+              prov.toLowerCase() !== 'configured' &&
+              !isLiveProxyModel &&
+              !isMultiSegmentModel &&
+              isValidProviderSlug
+            ) {
+              resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
+            } else {
+              resolvedGatewayProvider = 'custom'
+            }
+            // Prefer the original requestModel over liveMatch.id to avoid stripping the
+            // routing prefix (e.g. vps/ag/) that 9router needs for correct upstream dispatch.
+            // Only fall back to liveMatch.id when requestModel is not a superset of it.
+            const matchId = liveMatch.id ?? ''
+            resolvedGatewayModel =
+              requestModel && matchId && requestModel.includes(matchId)
+                ? requestModel
+                : liveMatch.id || requestModel
+            console.log(
+              '[LAM-DEBUG] resolvedGatewayModel:',
+              resolvedGatewayModel,
+              '| resolvedGatewayProvider:',
+              resolvedGatewayProvider,
+              '| isLiveProxyModel:',
+              isLiveProxyModel,
+              '| liveMatch.id:',
+              liveMatch.id,
+            )
           }
         }
 
-        
-        // If the gateway supports the Responses API (tool-use), we let the gateway 
-        // handle the routing to custom providers. If we bypass the gateway, we lose 
+        // If the gateway supports the Responses API (tool-use), we let the gateway
+        // handle the routing to custom providers. If we bypass the gateway, we lose
         // tool-use capabilities and models will leak raw XML tool tags.
-        if (requestModel && chatMode !== 'responses' && chatMode !== 'enhanced-claude') {
+        if (
+          requestModel &&
+          chatMode !== 'responses' &&
+          chatMode !== 'enhanced-claude'
+        ) {
           const discoveredModels = getDiscoveredModels()
-          const localMatch = discoveredModels.find((m) => m.id === requestModel || m.id === bareModel)
+          const localMatch = discoveredModels.find(
+            (m) => m.id === requestModel || m.id === bareModel,
+          )
           if (localMatch) {
             const providerDef = getLocalProviderDef(localMatch.provider)
             if (providerDef) {
@@ -444,11 +501,18 @@ export const Route = createFileRoute('/api/send-stream')({
           }
 
           if (!localBaseUrl) {
-            const configuredLiveModels = await fetchConfiguredLiveModels().catch(() => [])
+            const configuredLiveModels =
+              await fetchConfiguredLiveModels().catch(() => [])
             let liveMatch = configuredLiveModels.find((m) => {
               if (m.id === requestModel) return true
-              if (m.provider && requestModel === `${m.provider}/${m.id}`) return true
-              if (m.provider && requestModel.startsWith(`${m.provider}/`) && requestModel.slice(m.provider.length + 1) === m.id) return true
+              if (m.provider && requestModel === `${m.provider}/${m.id}`)
+                return true
+              if (
+                m.provider &&
+                requestModel.startsWith(`${m.provider}/`) &&
+                requestModel.slice(m.provider.length + 1) === m.id
+              )
+                return true
               return false
             })
             if (!liveMatch) {
@@ -491,7 +555,8 @@ export const Route = createFileRoute('/api/send-stream')({
             }
           }
         }
-        const usesGatewaySessions = getGatewayCapabilities().sessions && !localBaseUrl
+        const usesGatewaySessions =
+          getGatewayCapabilities().sessions && !localBaseUrl
         if (usesGatewaySessions && SESSION_BOOTSTRAP_KEYS.has(sessionKey)) {
           let reused: string | null = null
           if (sessionKey === 'main') {
@@ -501,14 +566,24 @@ export const Route = createFileRoute('/api/send-stream')({
                 id.startsWith('cron_') ||
                 id.startsWith('cron:') ||
                 id.startsWith('agent:main:ops-')
-              const hasRealTitle = (s: { id: string; title?: string | null }) => {
+              const hasRealTitle = (s: {
+                id: string
+                title?: string | null
+              }) => {
                 const t = (s.title ?? '').trim()
                 return t.length > 0 && t !== s.id
               }
-              const titled = recent.find((s) => !isInternal(s.id) && hasRealTitle(s))
-              const fallback = titled ? null : recent.find(
-                (s) => !isInternal(s.id) && typeof s.message_count === 'number' && s.message_count > 0
+              const titled = recent.find(
+                (s) => !isInternal(s.id) && hasRealTitle(s),
               )
+              const fallback = titled
+                ? null
+                : recent.find(
+                    (s) =>
+                      !isInternal(s.id) &&
+                      typeof s.message_count === 'number' &&
+                      s.message_count > 0,
+                  )
               const candidate = titled ?? fallback
               if (candidate) reused = candidate.id
             } catch {
@@ -521,7 +596,7 @@ export const Route = createFileRoute('/api/send-stream')({
           } else {
             const sessionOpts = {
               model: resolvedGatewayModel || requestModel || undefined,
-              provider: resolvedGatewayProvider || undefined
+              provider: resolvedGatewayProvider || undefined,
             }
             const session = await createSession(sessionOpts).catch(() => null)
             if (session) {
@@ -551,7 +626,10 @@ export const Route = createFileRoute('/api/send-stream')({
               sessionKey = gatewayId
             }
           }
-        } else if ((chatMode === 'portable' || chatMode === 'responses') && sessionKey === 'new') {
+        } else if (
+          (chatMode === 'portable' || chatMode === 'responses') &&
+          sessionKey === 'new'
+        ) {
           sessionKey = crypto.randomUUID()
           resolvedFriendlyId = sessionKey
         }
@@ -566,7 +644,10 @@ export const Route = createFileRoute('/api/send-stream')({
         if (attachments && attachments.length > 0) {
           const imageTags = attachments
             .filter((a) => {
-              const mime = (a.contentType || a.mimeType || a.mediaType || '') as string
+              const mime = (a.contentType ||
+                a.mimeType ||
+                a.mediaType ||
+                '') as string
               return mime.toLowerCase().startsWith('image/')
             })
             .map((a) => {
@@ -648,7 +729,9 @@ export const Route = createFileRoute('/api/send-stream')({
           }
           closeStream(false)
         }
-        request.signal.addEventListener('abort', () => handleAbort(), { once: true })
+        request.signal.addEventListener('abort', () => handleAbort(), {
+          once: true,
+        })
 
         const persistRunStarted = (
           runId: string | undefined,
@@ -747,7 +830,10 @@ export const Route = createFileRoute('/api/send-stream')({
             // Every 10s we also forward the last known activity so the UI can
             // show meaningful progress instead of a static "Thinking…".
             heartbeatTimer = setInterval(() => {
-              sendEvent('heartbeat', { timestamp: Date.now(), activity: lastActivity })
+              sendEvent('heartbeat', {
+                timestamp: Date.now(),
+                activity: lastActivity,
+              })
             }, 10_000)
 
             try {
@@ -756,7 +842,10 @@ export const Route = createFileRoute('/api/send-stream')({
                 const portableSessionKey = sessionKey
 
                 // Ensure session exists (user message appended after building history)
-                ensureLocalSession(portableSessionKey, resolvedGatewayModel || requestModel || undefined)
+                ensureLocalSession(
+                  portableSessionKey,
+                  resolvedGatewayModel || requestModel || undefined,
+                )
                 const portableFriendlyId =
                   resolvedFriendlyId ||
                   requestedFriendlyId ||
@@ -765,7 +854,11 @@ export const Route = createFileRoute('/api/send-stream')({
                 let accumulated = ''
 
                 activeRunId = runId
-                registerActiveSendRun(runId, portableSessionKey, abortController)
+                registerActiveSendRun(
+                  runId,
+                  portableSessionKey,
+                  abortController,
+                )
                 persistRunStarted(runId, portableSessionKey, portableFriendlyId)
                 unregisterTimer = setTimeout(() => {
                   if (activeRunId) {
@@ -787,10 +880,17 @@ export const Route = createFileRoute('/api/send-stream')({
                     attachments,
                   )
                   // Inject locale preference so the agent responds in the user's language
-                  const locale = typeof body.locale === 'string' ? body.locale.trim() : ''
-                  const localeSystemMsg: Array<OpenAICompatMessage> = locale && locale !== 'en'
-                    ? [{ role: 'system', content: `Respond in ${locale === 'es' ? 'Spanish' : locale === 'fr' ? 'French' : locale === 'zh' ? 'Chinese' : locale === 'de' ? 'German' : locale === 'ja' ? 'Japanese' : locale === 'ko' ? 'Korean' : locale === 'pt' ? 'Portuguese' : locale === 'ru' ? 'Russian' : locale === 'ar' ? 'Arabic' : 'English'}. The user's interface is set to this language.` }]
-                    : []
+                  const locale =
+                    typeof body.locale === 'string' ? body.locale.trim() : ''
+                  const localeSystemMsg: Array<OpenAICompatMessage> =
+                    locale && locale !== 'en'
+                      ? [
+                          {
+                            role: 'system',
+                            content: `Respond in ${locale === 'es' ? 'Spanish' : locale === 'fr' ? 'French' : locale === 'zh' ? 'Chinese' : locale === 'de' ? 'German' : locale === 'ja' ? 'Japanese' : locale === 'ko' ? 'Korean' : locale === 'pt' ? 'Portuguese' : locale === 'ru' ? 'Russian' : locale === 'ar' ? 'Arabic' : 'English'}. The user's interface is set to this language.`,
+                          },
+                        ]
+                      : []
                   // Load persisted history for this session, then append user message.
                   // When the gateway can bind portable chat to a server-side session
                   // via X-Hermes-Session-Id, replaying the entire local transcript on
@@ -805,13 +905,27 @@ export const Route = createFileRoute('/api/send-stream')({
                   const savedAttachments: Array<LocalMessageAttachment> = []
                   if (attachments && attachments.length > 0) {
                     for (const att of attachments) {
-                      const dataOrBase64 = (att.data || att.base64 || att.dataUrl || att.content || '') as string
+                      const dataOrBase64 = (att.data ||
+                        att.base64 ||
+                        att.dataUrl ||
+                        att.content ||
+                        '') as string
                       if (dataOrBase64) {
                         try {
                           const stored = saveAttachment(dataOrBase64, {
                             id: typeof att.id === 'string' ? att.id : undefined,
-                            fileName: typeof att.name === 'string' ? att.name : typeof att.fileName === 'string' ? att.fileName : undefined,
-                            contentType: typeof att.contentType === 'string' ? att.contentType : typeof att.mimeType === 'string' ? att.mimeType : undefined,
+                            fileName:
+                              typeof att.name === 'string'
+                                ? att.name
+                                : typeof att.fileName === 'string'
+                                  ? att.fileName
+                                  : undefined,
+                            contentType:
+                              typeof att.contentType === 'string'
+                                ? att.contentType
+                                : typeof att.mimeType === 'string'
+                                  ? att.mimeType
+                                  : undefined,
                             sessionId: portableSessionKey,
                           })
                           savedAttachments.push({
@@ -832,9 +946,13 @@ export const Route = createFileRoute('/api/send-stream')({
                   appendLocalMessage(portableSessionKey, {
                     id: crypto.randomUUID(),
                     role: 'user',
-                    content: typeof body.message === 'string' ? body.message : '',
+                    content:
+                      typeof body.message === 'string' ? body.message : '',
                     timestamp: Date.now(),
-                    attachments: savedAttachments.length > 0 ? savedAttachments : undefined,
+                    attachments:
+                      savedAttachments.length > 0
+                        ? savedAttachments
+                        : undefined,
                   })
                   const effectiveHistory = selectPortableConversationHistory(
                     persistedHistory,
@@ -862,7 +980,9 @@ export const Route = createFileRoute('/api/send-stream')({
                   // Falls back automatically on any error to the existing
                   // openaiChat path.
                   const useResponsesApi =
-                    (chatMode === 'responses' || process.env.HERMES_USE_RESPONSES === '1') && !localBaseUrl
+                    (chatMode === 'responses' ||
+                      process.env.HERMES_USE_RESPONSES === '1') &&
+                    !localBaseUrl
                   if (useResponsesApi) {
                     const thinking = ''
                     // Track tool calls by callId so a `tool.completed`
@@ -911,7 +1031,7 @@ export const Route = createFileRoute('/api/send-stream')({
                           })
                           const argsForCard =
                             ev.args && typeof ev.args === 'object'
-                              ? (ev.args)
+                              ? ev.args
                               : undefined
                           persistActiveRun((runSessionKey, activeId) =>
                             upsertRunToolCall(runSessionKey, activeId, {
@@ -946,7 +1066,7 @@ export const Route = createFileRoute('/api/send-stream')({
                           const state = toolStateByCallId.get(ev.callId)
                           const argsForCard =
                             state?.args && typeof state.args === 'object'
-                              ? (state.args)
+                              ? state.args
                               : undefined
                           const name = state?.name || 'tool'
                           persistActiveRun((runSessionKey, activeId) =>
@@ -996,7 +1116,9 @@ export const Route = createFileRoute('/api/send-stream')({
                         message: {
                           role: 'assistant',
                           content: [
-                            ...(thinking ? [{ type: 'thinking', thinking }] : []),
+                            ...(thinking
+                              ? [{ type: 'thinking', thinking }]
+                              : []),
                             { type: 'text', text: accumulated },
                           ],
                         },
@@ -1004,7 +1126,10 @@ export const Route = createFileRoute('/api/send-stream')({
                       closeStream()
                       return
                     } catch (err) {
-                      if (abortController.signal.aborted || (err as Error)?.name === 'AbortError') {
+                      if (
+                        abortController.signal.aborted ||
+                        (err as Error)?.name === 'AbortError'
+                      ) {
                         closeStream()
                         return
                       }
@@ -1021,7 +1146,9 @@ export const Route = createFileRoute('/api/send-stream')({
                   }
 
                   const stream = await openaiChat(portableMessages, {
-                    model: localBaseUrl ? bareModel : (resolvedGatewayModel || requestModel || undefined),
+                    model: localBaseUrl
+                      ? bareModel
+                      : resolvedGatewayModel || requestModel || undefined,
                     temperature:
                       typeof body.temperature === 'number'
                         ? body.temperature
@@ -1126,7 +1253,12 @@ export const Route = createFileRoute('/api/send-stream')({
                   if (!streamClosed) {
                     const errorMessage = normalizeClaudeErrorMessage(err)
                     persistActiveRun((runSessionKey, activeId) =>
-                      markRunStatus(runSessionKey, activeId, 'error', errorMessage),
+                      markRunStatus(
+                        runSessionKey,
+                        activeId,
+                        'error',
+                        errorMessage,
+                      ),
                     )
                     sendEvent('error', {
                       message: errorMessage,
@@ -1218,9 +1350,7 @@ export const Route = createFileRoute('/api/send-stream')({
                   } catch {
                     // Best-effort polling; ignore transient errors.
                   }
-                  await new Promise((r) =>
-                    setTimeout(r, livePollIntervalMs),
-                  )
+                  await new Promise((r) => setTimeout(r, livePollIntervalMs))
                 }
               })()
 
@@ -1228,13 +1358,27 @@ export const Route = createFileRoute('/api/send-stream')({
                 // Save attachments to server storage for this session (for enhanced-claude mode)
                 if (attachments && attachments.length > 0) {
                   for (const att of attachments) {
-                    const dataOrBase64 = (att.data || att.base64 || att.dataUrl || att.content || '') as string
+                    const dataOrBase64 = (att.data ||
+                      att.base64 ||
+                      att.dataUrl ||
+                      att.content ||
+                      '') as string
                     if (dataOrBase64) {
                       try {
                         saveAttachment(dataOrBase64, {
                           id: typeof att.id === 'string' ? att.id : undefined,
-                          fileName: typeof att.name === 'string' ? att.name : typeof att.fileName === 'string' ? att.fileName : undefined,
-                          contentType: typeof att.contentType === 'string' ? att.contentType : typeof att.mimeType === 'string' ? att.mimeType : undefined,
+                          fileName:
+                            typeof att.name === 'string'
+                              ? att.name
+                              : typeof att.fileName === 'string'
+                                ? att.fileName
+                                : undefined,
+                          contentType:
+                            typeof att.contentType === 'string'
+                              ? att.contentType
+                              : typeof att.mimeType === 'string'
+                                ? att.mimeType
+                                : undefined,
                           sessionId: sessionKey,
                         })
                       } catch {
@@ -1245,528 +1389,537 @@ export const Route = createFileRoute('/api/send-stream')({
                 }
 
                 await streamChat(
-                sessionKey,
-                {
-                  message: scopedMultimodalContent,
-                  model:
-                    resolvedGatewayModel || requestModel || undefined,
-                  provider: resolvedGatewayProvider || undefined,
-                  system_message: thinking,
-                  attachments: attachments || undefined,
-                  require_model_lock: true,
-                },
-                {
-                  signal: abortController.signal,
-                  async onEvent({ event, data }) {
-                    // Capture the gateway's actual session ID if it differs
-                    // from what we sent (enhanced-claude mode only).
-                    const gwSid =
-                      typeof data.session_id === 'string' &&
-                      data.session_id.trim()
-                        ? data.session_id
-                        : null
-                    if (
-                      gwSid &&
-                      gwSid !== resolvedFriendlyId &&
-                      !SESSION_BOOTSTRAP_KEYS.has(resolvedFriendlyId)
-                    ) {
-                      gatewaySessionMap.set(resolvedFriendlyId, gwSid)
-                    }
-
-                    // On run completion, try to discover the actual gateway
-                    // session where messages landed (enhanced-claude fallback).
-                    if (
-                      (event === 'run.completed' || event === 'assistant.completed') &&
-                      !gatewaySessionMap.has(resolvedFriendlyId) &&
-                      !SESSION_BOOTSTRAP_KEYS.has(resolvedFriendlyId)
-                    ) {
-                      try {
-                        const recent = await listGatewaySessions(5)
-                        const actual = recent.find(
-                          (s) =>
-                            s.id !== resolvedFriendlyId &&
-                            s.id !== sessionKey &&
-                            typeof s.message_count === 'number' &&
-                            s.message_count > 0,
-                        )
-                        if (actual) {
-                          gatewaySessionMap.set(resolvedFriendlyId, actual.id)
-                        }
-                      } catch {
-                        // non-critical
-                      }
-                    }
-
-                    // Always send the frontend's key in events — NOT the
-                    // gateway's internal session ID.
-                    const sessionKeyFromEvent = resolvedFriendlyId
-                    const runId =
-                      typeof data.run_id === 'string' && data.run_id.trim()
-                        ? data.run_id
-                        : (activeRunId ?? undefined)
-
-                    if (runId && !activeRunId) {
-                      activeRunId = runId
-                      registerActiveSendRun(runId, sessionKey, abortController)
-                      persistRunStarted(
-                        runId,
-                        sessionKeyFromEvent,
-                        sessionKeyFromEvent,
-                      )
-                      unregisterTimer = setTimeout(() => {
-                        if (activeRunId) {
-                          unregisterActiveSendRun(activeRunId)
-                          activeRunId = null
-                        }
-                      }, SEND_STREAM_RUN_TIMEOUT_MS)
-                    }
-
-                    if (!startedSent && runId) {
-                      startedSent = true
-                      sendEvent('started', {
-                        runId,
-                        sessionKey: sessionKeyFromEvent,
-                        friendlyId: sessionKeyFromEvent,
-                      })
-                      lastActivity = 'Processing your message...'
-                    }
-
-                    if (event === 'run.started') {
-                      const userMessage =
-                        data.user_message &&
-                        typeof data.user_message === 'object'
-                          ? (data.user_message as Record<string, unknown>)
+                  sessionKey,
+                  {
+                    message: scopedMultimodalContent,
+                    model: resolvedGatewayModel || requestModel || undefined,
+                    provider: resolvedGatewayProvider || undefined,
+                    system_message: thinking,
+                    attachments: attachments || undefined,
+                    require_model_lock: true,
+                  },
+                  {
+                    signal: abortController.signal,
+                    async onEvent({ event, data }) {
+                      // Capture the gateway's actual session ID if it differs
+                      // from what we sent (enhanced-claude mode only).
+                      const gwSid =
+                        typeof data.session_id === 'string' &&
+                        data.session_id.trim()
+                          ? data.session_id
                           : null
-                      if (userMessage) {
-                        skipPublish ||
-                          publishChatEvent('user_message', {
-                            message: {
-                              id: userMessage.id,
-                              role: userMessage.role ?? 'user',
-                              content: [
-                                {
-                                  type: 'text',
-                                  text:
-                                    typeof userMessage.content === 'string'
-                                      ? userMessage.content
-                                      : '',
-                                },
-                              ],
-                            },
-                            sessionKey: sessionKeyFromEvent,
-                            source: 'claude',
-                            runId,
-                          })
+                      if (
+                        gwSid &&
+                        gwSid !== resolvedFriendlyId &&
+                        !SESSION_BOOTSTRAP_KEYS.has(resolvedFriendlyId)
+                      ) {
+                        gatewaySessionMap.set(resolvedFriendlyId, gwSid)
                       }
-                      return
-                    }
 
-                    if (event === 'message.started') {
-                      const message =
-                        data.message && typeof data.message === 'object'
-                          ? (data.message as Record<string, unknown>)
-                          : {}
-                      const translated = {
-                        message: {
-                          id: message.id,
-                          role: 'assistant',
-                          content: [],
-                        },
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
+                      // On run completion, try to discover the actual gateway
+                      // session where messages landed (enhanced-claude fallback).
+                      if (
+                        (event === 'run.completed' ||
+                          event === 'assistant.completed') &&
+                        !gatewaySessionMap.has(resolvedFriendlyId) &&
+                        !SESSION_BOOTSTRAP_KEYS.has(resolvedFriendlyId)
+                      ) {
+                        try {
+                          const recent = await listGatewaySessions(5)
+                          const actual = recent.find(
+                            (s) =>
+                              s.id !== resolvedFriendlyId &&
+                              s.id !== sessionKey &&
+                              typeof s.message_count === 'number' &&
+                              s.message_count > 0,
+                          )
+                          if (actual) {
+                            gatewaySessionMap.set(resolvedFriendlyId, actual.id)
+                          }
+                        } catch {
+                          // non-critical
+                        }
                       }
-                      sendEvent('message', translated)
-                      skipPublish || publishChatEvent('message', translated)
-                      return
-                    }
 
-                    if (event === 'assistant.completed') {
-                      // Send full content as a chunk — covers cases where
-                      // deltas were missed or response was too short for streaming
-                      const content =
-                        typeof data.content === 'string' ? data.content : ''
-                      if (content) {
-                        persistActiveRun((runSessionKey, activeId) =>
-                          appendRunText(runSessionKey, activeId, content, {
-                            replace: true,
-                          }),
+                      // Always send the frontend's key in events — NOT the
+                      // gateway's internal session ID.
+                      const sessionKeyFromEvent = resolvedFriendlyId
+                      const runId =
+                        typeof data.run_id === 'string' && data.run_id.trim()
+                          ? data.run_id
+                          : (activeRunId ?? undefined)
+
+                      if (runId && !activeRunId) {
+                        activeRunId = runId
+                        registerActiveSendRun(
+                          runId,
+                          sessionKey,
+                          abortController,
                         )
+                        persistRunStarted(
+                          runId,
+                          sessionKeyFromEvent,
+                          sessionKeyFromEvent,
+                        )
+                        unregisterTimer = setTimeout(() => {
+                          if (activeRunId) {
+                            unregisterActiveSendRun(activeRunId)
+                            activeRunId = null
+                          }
+                        }, SEND_STREAM_RUN_TIMEOUT_MS)
+                      }
+
+                      if (!startedSent && runId) {
+                        startedSent = true
+                        sendEvent('started', {
+                          runId,
+                          sessionKey: sessionKeyFromEvent,
+                          friendlyId: sessionKeyFromEvent,
+                        })
+                        lastActivity = 'Processing your message...'
+                      }
+
+                      if (event === 'run.started') {
+                        const userMessage =
+                          data.user_message &&
+                          typeof data.user_message === 'object'
+                            ? (data.user_message as Record<string, unknown>)
+                            : null
+                        if (userMessage) {
+                          skipPublish ||
+                            publishChatEvent('user_message', {
+                              message: {
+                                id: userMessage.id,
+                                role: userMessage.role ?? 'user',
+                                content: [
+                                  {
+                                    type: 'text',
+                                    text:
+                                      typeof userMessage.content === 'string'
+                                        ? userMessage.content
+                                        : '',
+                                  },
+                                ],
+                              },
+                              sessionKey: sessionKeyFromEvent,
+                              source: 'claude',
+                              runId,
+                            })
+                        }
+                        return
+                      }
+
+                      if (event === 'message.started') {
+                        const message =
+                          data.message && typeof data.message === 'object'
+                            ? (data.message as Record<string, unknown>)
+                            : {}
                         const translated = {
-                          text: content,
-                          fullReplace: true,
+                          message: {
+                            id: message.id,
+                            role: 'assistant',
+                            content: [],
+                          },
                           sessionKey: sessionKeyFromEvent,
                           runId,
                         }
-                        sendEvent('chunk', translated)
-                        skipPublish || publishChatEvent('chunk', translated)
+                        sendEvent('message', translated)
+                        skipPublish || publishChatEvent('message', translated)
+                        return
                       }
-                      return
-                    }
 
-                    if (event === 'assistant.delta') {
-                      const delta =
-                        typeof data.delta === 'string' ? data.delta : ''
-                      if (!delta) return
-                      persistActiveRun((runSessionKey, activeId) =>
-                        appendRunText(runSessionKey, activeId, delta),
-                      )
-                      const translated = {
-                        text: delta,
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
+                      if (event === 'assistant.completed') {
+                        // Send full content as a chunk — covers cases where
+                        // deltas were missed or response was too short for streaming
+                        const content =
+                          typeof data.content === 'string' ? data.content : ''
+                        if (content) {
+                          persistActiveRun((runSessionKey, activeId) =>
+                            appendRunText(runSessionKey, activeId, content, {
+                              replace: true,
+                            }),
+                          )
+                          const translated = {
+                            text: content,
+                            fullReplace: true,
+                            sessionKey: sessionKeyFromEvent,
+                            runId,
+                          }
+                          sendEvent('chunk', translated)
+                          skipPublish || publishChatEvent('chunk', translated)
+                        }
+                        return
                       }
-                      sendEvent('chunk', translated)
-                      skipPublish || publishChatEvent('chunk', translated)
-                      return
-                    }
 
-                    if (
-                      event === 'tool.pending' ||
-                      event === 'tool.started' ||
-                      event === 'tool.calling' ||
-                      event === 'tool.running'
-                    ) {
-                      const toolName = getToolName(data)
-                      const preview =
-                        typeof data.preview === 'string'
-                          ? data.preview
-                          : undefined
-                      const translated = {
-                        phase:
-                          event === 'tool.pending' || event === 'tool.started'
-                            ? 'start'
-                            : 'calling',
-                        name: toolName,
-                        toolCallId: getToolCallId(data, runId, toolName),
-                        args: getToolArgs(data),
-                        preview,
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
-                      }
-                      persistActiveRun((runSessionKey, activeId) =>
-                        upsertRunToolCall(runSessionKey, activeId, {
-                          id: translated.toolCallId,
-                          name: toolName,
-                          phase: translated.phase,
-                          args: translated.args,
-                          preview,
-                        }),
-                      )
-                      sendEvent('tool', translated)
-                      skipPublish || publishChatEvent('tool', translated)
-                      lastActivity = `Running: ${toolName.replace(/_/g, ' ')}`
-                      return
-                    }
-
-                    if (event === 'tool.progress') {
-                      const delta = readString(data.delta)
-                      const toolName = getToolName(data)
-                      if (toolName === '_thinking' || toolName === 'tool') {
+                      if (event === 'assistant.delta') {
+                        const delta =
+                          typeof data.delta === 'string' ? data.delta : ''
                         if (!delta) return
                         persistActiveRun((runSessionKey, activeId) =>
-                          setRunThinking(runSessionKey, activeId, delta),
+                          appendRunText(runSessionKey, activeId, delta),
                         )
                         const translated = {
                           text: delta,
                           sessionKey: sessionKeyFromEvent,
                           runId,
                         }
-                        sendEvent('thinking', translated)
-                        skipPublish || publishChatEvent('thinking', translated)
-                        lastActivity = delta.length > 60 ? delta.slice(0, 60) + '...' : delta
+                        sendEvent('chunk', translated)
+                        skipPublish || publishChatEvent('chunk', translated)
                         return
                       }
-                      const translated = {
-                        phase: 'calling',
-                        name: toolName,
-                        toolCallId: getToolCallId(data, runId, toolName),
-                        args: getToolArgs(data),
-                        result: delta || undefined,
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
-                      }
-                      persistActiveRun((runSessionKey, activeId) =>
-                        upsertRunToolCall(runSessionKey, activeId, {
-                          id: translated.toolCallId,
+
+                      if (
+                        event === 'tool.pending' ||
+                        event === 'tool.started' ||
+                        event === 'tool.calling' ||
+                        event === 'tool.running'
+                      ) {
+                        const toolName = getToolName(data)
+                        const preview =
+                          typeof data.preview === 'string'
+                            ? data.preview
+                            : undefined
+                        const translated = {
+                          phase:
+                            event === 'tool.pending' || event === 'tool.started'
+                              ? 'start'
+                              : 'calling',
                           name: toolName,
-                          phase: 'calling',
-                          args: translated.args,
-                          result: translated.result,
-                        }),
-                      )
-                      sendEvent('tool', translated)
-                      skipPublish || publishChatEvent('tool', translated)
-                      return
-                    }
-
-                    if (event === 'tool.completed') {
-                      const toolName = getToolName(data)
-                      const resultPreview = getToolResultPreview(data)
-                      const translated = {
-                        phase: 'complete',
-                        name: toolName,
-                        toolCallId: getToolCallId(data, runId, toolName),
-                        args: getToolArgs(data),
-                        result: resultPreview.slice(0, 4000),
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
-                      }
-                      persistActiveRun((runSessionKey, activeId) =>
-                        upsertRunToolCall(runSessionKey, activeId, {
-                          id: translated.toolCallId,
-                          name: toolName,
-                          phase: 'complete',
-                          args: translated.args,
-                          result: translated.result,
-                        }),
-                      )
-                      sendEvent('tool', translated)
-                      skipPublish || publishChatEvent('tool', translated)
-                      lastActivity = `Completed: ${toolName.replace(/_/g, ' ')}`
-                      return
-                    }
-
-                    if (event === 'artifact.created') {
-                      const artifact =
-                        data.artifact && typeof data.artifact === 'object'
-                          ? (data.artifact as Record<string, unknown>)
-                          : {}
-                      const translated = {
-                        name: readString(data.tool_name) || 'artifact',
-                        title:
-                          readString(artifact.title) ||
-                          readString(data.title) ||
-                          'Artifact created',
-                        kind:
-                          readString(artifact.kind) ||
-                          readString(data.kind) ||
-                          'artifact',
-                        path:
-                          readString(artifact.path) || readString(data.path) || '',
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
-                      }
-                      sendEvent('artifact', translated)
-                      skipPublish || publishChatEvent('artifact', translated)
-                      return
-                    }
-
-                    if (event === 'memory.updated') {
-                      const translated = {
-                        phase: 'complete',
-                        name: 'memory',
-                        toolCallId: readString(data.tool_call_id) || undefined,
-                        result:
-                          readString(data.message) ||
-                          `Updated ${readString(data.target) || 'memory'}`,
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
-                      }
-                      persistActiveRun((runSessionKey, activeId) =>
-                        upsertRunToolCall(runSessionKey, activeId, {
-                          id: translated.toolCallId || `${runId || 'run'}:memory`,
-                          name: 'memory',
-                          phase: 'complete',
-                          result: translated.result,
-                        }),
-                      )
-                      sendEvent('tool', translated)
-                      skipPublish || publishChatEvent('tool', translated)
-                      return
-                    }
-
-                    if (event === 'skill.loaded') {
-                      const skill =
-                        data.skill && typeof data.skill === 'object'
-                          ? (data.skill as Record<string, unknown>)
-                          : {}
-                      const translated = {
-                        phase: 'complete',
-                        name: 'skill',
-                        toolCallId: readString(data.tool_call_id) || undefined,
-                        result:
-                          readString(skill.name) ||
-                          readString(data.skill_name) ||
-                          'Skill loaded',
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
-                      }
-                      persistActiveRun((runSessionKey, activeId) =>
-                        upsertRunToolCall(runSessionKey, activeId, {
-                          id: translated.toolCallId || `${runId || 'run'}:skill`,
-                          name: 'skill',
-                          phase: 'complete',
-                          result: translated.result,
-                        }),
-                      )
-                      sendEvent('tool', translated)
-                      skipPublish || publishChatEvent('tool', translated)
-                      return
-                    }
-
-                    if (event === 'tool.failed') {
-                      const errorMessage =
-                        readString(
-                          (data.error as Record<string, unknown> | undefined)
-                            ?.message,
-                        ) || readString(data.message)
-                      const toolName = getToolName(data)
-                      const translated = {
-                        phase: 'error',
-                        name: toolName,
-                        toolCallId: getToolCallId(data, runId, toolName),
-                        result: errorMessage,
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
-                      }
-                      persistActiveRun((runSessionKey, activeId) =>
-                        upsertRunToolCall(runSessionKey, activeId, {
-                          id: translated.toolCallId,
-                          name: toolName,
-                          phase: 'error',
-                          result: translated.result,
-                        }),
-                      )
-                      sendEvent('tool', translated)
-                      skipPublish || publishChatEvent('tool', translated)
-                      return
-                    }
-
-                    if (event === 'error') {
-                      const errorMessage =
-                        readString(
-                          (data.error as Record<string, unknown> | undefined)
-                            ?.message,
-                        ) ||
-                        readString(data.message) ||
-                        'Hermes stream error'
-                      persistActiveRun((runSessionKey, activeId) =>
-                        markRunStatus(
-                          runSessionKey,
-                          activeId,
-                          'error',
-                          errorMessage,
-                        ),
-                      )
-                      sendEvent('error', {
-                        message: errorMessage,
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
-                      })
-                      closeStream()
-                      return
-                    }
-
-                    if (event === 'run.completed') {
-                      // Backfill tool calls from session history.
-                      // Hermes Agent currently does not stream tool.* events
-                      // reliably, but it persists tool calls on the assistant
-                      // message. Fetch the latest assistant message and emit
-                      // synthetic 'tool' events for each tool call so the
-                      // Workspace UI can render the Activity card.
-                      try {
-                        const sid =
-                          readString(data.session_id) ||
-                          sessionKeyFromEvent ||
-                          ''
-                        if (sid) {
-                          let persistedMessages: Array<
-                            Record<string, unknown>
-                          > = []
-                          try {
-                            persistedMessages =
-                              (await getSessionMessagesFromAgent(
-                                sid,
-                              )) as unknown as Array<Record<string, unknown>>
-                          } catch {
-                            persistedMessages = []
-                          }
-                          // Walk back to the most recent assistant message in
-                          // this run; tool_calls are siblings on it. Also
-                          // collect tool_result entries that immediately
-                          // follow it so we can pair input/output.
-                          // Use the per-run baseline so we never read tool
-                          // calls from a previous turn.
-                          const sliceFrom = Math.max(
-                            0,
-                            Math.min(
-                              liveBaselineCount,
-                              Math.max(0, persistedMessages.length - 1),
-                            ),
-                          )
-                          const recent = persistedMessages.slice(
-                            sliceFrom,
-                          )
-                          let lastAssistantIndex = -1
-                          for (let i = recent.length - 1; i >= 0; i--) {
-                            const m = recent[i]
-                            if (m && m.role === 'assistant') {
-                              lastAssistantIndex = i
-                              break
-                            }
-                          }
-                          if (lastAssistantIndex >= 0) {
-                            const lastAssistant = recent[
-                              lastAssistantIndex
-                            ]
-                            const rawToolCalls = (lastAssistant.tool_calls ??
-                              (lastAssistant as any).toolCalls) as
-                              | Array<Record<string, unknown>>
-                              | undefined
-                            const toolCalls =
-                              Array.isArray(rawToolCalls) && rawToolCalls.length
-                                ? rawToolCalls
-                                : []
-
-                            const syntheticEvents = collectSyntheticLiveToolEvents({
-                              messages: recent,
-                              tracker: syntheticLiveToolTracker,
-                              sessionKey: sessionKeyFromEvent,
-                              runId,
-                            })
-                            for (const synthetic of syntheticEvents) {
-                              persistActiveRun(
-                                (runSessionKey, activeId) =>
-                                  upsertRunToolCall(
-                                    runSessionKey,
-                                    activeId,
-                                    {
-                                      id: synthetic.toolCallId,
-                                      name: synthetic.name,
-                                      phase: synthetic.phase,
-                                      args: synthetic.args,
-                                      result: synthetic.result,
-                                    },
-                                  ),
-                              )
-                              sendEvent('tool', synthetic)
-                              skipPublish ||
-                                publishChatEvent('tool', synthetic)
-                            }
-                          }
+                          toolCallId: getToolCallId(data, runId, toolName),
+                          args: getToolArgs(data),
+                          preview,
+                          sessionKey: sessionKeyFromEvent,
+                          runId,
                         }
-                      } catch (err) {
-                        // Backfill is best-effort; don't fail the run.
-                        console.warn(
-                          '[send-stream] tool backfill failed:',
-                          err,
+                        persistActiveRun((runSessionKey, activeId) =>
+                          upsertRunToolCall(runSessionKey, activeId, {
+                            id: translated.toolCallId,
+                            name: toolName,
+                            phase: translated.phase,
+                            args: translated.args,
+                            preview,
+                          }),
                         )
+                        sendEvent('tool', translated)
+                        skipPublish || publishChatEvent('tool', translated)
+                        lastActivity = `Running: ${toolName.replace(/_/g, ' ')}`
+                        return
                       }
 
-                      const translated = {
-                        state: 'complete',
-                        sessionKey: sessionKeyFromEvent,
-                        runId,
+                      if (event === 'tool.progress') {
+                        const delta = readString(data.delta)
+                        const toolName = getToolName(data)
+                        if (toolName === '_thinking' || toolName === 'tool') {
+                          if (!delta) return
+                          persistActiveRun((runSessionKey, activeId) =>
+                            setRunThinking(runSessionKey, activeId, delta),
+                          )
+                          const translated = {
+                            text: delta,
+                            sessionKey: sessionKeyFromEvent,
+                            runId,
+                          }
+                          sendEvent('thinking', translated)
+                          skipPublish ||
+                            publishChatEvent('thinking', translated)
+                          lastActivity =
+                            delta.length > 60
+                              ? delta.slice(0, 60) + '...'
+                              : delta
+                          return
+                        }
+                        const translated = {
+                          phase: 'calling',
+                          name: toolName,
+                          toolCallId: getToolCallId(data, runId, toolName),
+                          args: getToolArgs(data),
+                          result: delta || undefined,
+                          sessionKey: sessionKeyFromEvent,
+                          runId,
+                        }
+                        persistActiveRun((runSessionKey, activeId) =>
+                          upsertRunToolCall(runSessionKey, activeId, {
+                            id: translated.toolCallId,
+                            name: toolName,
+                            phase: 'calling',
+                            args: translated.args,
+                            result: translated.result,
+                          }),
+                        )
+                        sendEvent('tool', translated)
+                        skipPublish || publishChatEvent('tool', translated)
+                        return
                       }
-                      persistActiveRun((runSessionKey, activeId) =>
-                        markRunStatus(runSessionKey, activeId, 'complete'),
-                      )
-                      sendEvent('done', translated)
-                      skipPublish || publishChatEvent('done', translated)
-                      closeStream()
-                    }
+
+                      if (event === 'tool.completed') {
+                        const toolName = getToolName(data)
+                        const resultPreview = getToolResultPreview(data)
+                        const translated = {
+                          phase: 'complete',
+                          name: toolName,
+                          toolCallId: getToolCallId(data, runId, toolName),
+                          args: getToolArgs(data),
+                          result: resultPreview.slice(0, 4000),
+                          sessionKey: sessionKeyFromEvent,
+                          runId,
+                        }
+                        persistActiveRun((runSessionKey, activeId) =>
+                          upsertRunToolCall(runSessionKey, activeId, {
+                            id: translated.toolCallId,
+                            name: toolName,
+                            phase: 'complete',
+                            args: translated.args,
+                            result: translated.result,
+                          }),
+                        )
+                        sendEvent('tool', translated)
+                        skipPublish || publishChatEvent('tool', translated)
+                        lastActivity = `Completed: ${toolName.replace(/_/g, ' ')}`
+                        return
+                      }
+
+                      if (event === 'artifact.created') {
+                        const artifact =
+                          data.artifact && typeof data.artifact === 'object'
+                            ? (data.artifact as Record<string, unknown>)
+                            : {}
+                        const translated = {
+                          name: readString(data.tool_name) || 'artifact',
+                          title:
+                            readString(artifact.title) ||
+                            readString(data.title) ||
+                            'Artifact created',
+                          kind:
+                            readString(artifact.kind) ||
+                            readString(data.kind) ||
+                            'artifact',
+                          path:
+                            readString(artifact.path) ||
+                            readString(data.path) ||
+                            '',
+                          sessionKey: sessionKeyFromEvent,
+                          runId,
+                        }
+                        sendEvent('artifact', translated)
+                        skipPublish || publishChatEvent('artifact', translated)
+                        return
+                      }
+
+                      if (event === 'memory.updated') {
+                        const translated = {
+                          phase: 'complete',
+                          name: 'memory',
+                          toolCallId:
+                            readString(data.tool_call_id) || undefined,
+                          result:
+                            readString(data.message) ||
+                            `Updated ${readString(data.target) || 'memory'}`,
+                          sessionKey: sessionKeyFromEvent,
+                          runId,
+                        }
+                        persistActiveRun((runSessionKey, activeId) =>
+                          upsertRunToolCall(runSessionKey, activeId, {
+                            id:
+                              translated.toolCallId ||
+                              `${runId || 'run'}:memory`,
+                            name: 'memory',
+                            phase: 'complete',
+                            result: translated.result,
+                          }),
+                        )
+                        sendEvent('tool', translated)
+                        skipPublish || publishChatEvent('tool', translated)
+                        return
+                      }
+
+                      if (event === 'skill.loaded') {
+                        const skill =
+                          data.skill && typeof data.skill === 'object'
+                            ? (data.skill as Record<string, unknown>)
+                            : {}
+                        const translated = {
+                          phase: 'complete',
+                          name: 'skill',
+                          toolCallId:
+                            readString(data.tool_call_id) || undefined,
+                          result:
+                            readString(skill.name) ||
+                            readString(data.skill_name) ||
+                            'Skill loaded',
+                          sessionKey: sessionKeyFromEvent,
+                          runId,
+                        }
+                        persistActiveRun((runSessionKey, activeId) =>
+                          upsertRunToolCall(runSessionKey, activeId, {
+                            id:
+                              translated.toolCallId ||
+                              `${runId || 'run'}:skill`,
+                            name: 'skill',
+                            phase: 'complete',
+                            result: translated.result,
+                          }),
+                        )
+                        sendEvent('tool', translated)
+                        skipPublish || publishChatEvent('tool', translated)
+                        return
+                      }
+
+                      if (event === 'tool.failed') {
+                        const errorMessage =
+                          readString(
+                            (data.error as Record<string, unknown> | undefined)
+                              ?.message,
+                          ) || readString(data.message)
+                        const toolName = getToolName(data)
+                        const translated = {
+                          phase: 'error',
+                          name: toolName,
+                          toolCallId: getToolCallId(data, runId, toolName),
+                          result: errorMessage,
+                          sessionKey: sessionKeyFromEvent,
+                          runId,
+                        }
+                        persistActiveRun((runSessionKey, activeId) =>
+                          upsertRunToolCall(runSessionKey, activeId, {
+                            id: translated.toolCallId,
+                            name: toolName,
+                            phase: 'error',
+                            result: translated.result,
+                          }),
+                        )
+                        sendEvent('tool', translated)
+                        skipPublish || publishChatEvent('tool', translated)
+                        return
+                      }
+
+                      if (event === 'error') {
+                        const errorMessage =
+                          readString(
+                            (data.error as Record<string, unknown> | undefined)
+                              ?.message,
+                          ) ||
+                          readString(data.message) ||
+                          'Hermes stream error'
+                        persistActiveRun((runSessionKey, activeId) =>
+                          markRunStatus(
+                            runSessionKey,
+                            activeId,
+                            'error',
+                            errorMessage,
+                          ),
+                        )
+                        sendEvent('error', {
+                          message: errorMessage,
+                          sessionKey: sessionKeyFromEvent,
+                          runId,
+                        })
+                        closeStream()
+                        return
+                      }
+
+                      if (event === 'run.completed') {
+                        // Backfill tool calls from session history.
+                        // Hermes Agent currently does not stream tool.* events
+                        // reliably, but it persists tool calls on the assistant
+                        // message. Fetch the latest assistant message and emit
+                        // synthetic 'tool' events for each tool call so the
+                        // Workspace UI can render the Activity card.
+                        try {
+                          const sid =
+                            readString(data.session_id) ||
+                            sessionKeyFromEvent ||
+                            ''
+                          if (sid) {
+                            let persistedMessages: Array<
+                              Record<string, unknown>
+                            > = []
+                            try {
+                              persistedMessages =
+                                (await getSessionMessagesFromAgent(
+                                  sid,
+                                )) as unknown as Array<Record<string, unknown>>
+                            } catch {
+                              persistedMessages = []
+                            }
+                            // Walk back to the most recent assistant message in
+                            // this run; tool_calls are siblings on it. Also
+                            // collect tool_result entries that immediately
+                            // follow it so we can pair input/output.
+                            // Use the per-run baseline so we never read tool
+                            // calls from a previous turn.
+                            const sliceFrom = Math.max(
+                              0,
+                              Math.min(
+                                liveBaselineCount,
+                                Math.max(0, persistedMessages.length - 1),
+                              ),
+                            )
+                            const recent = persistedMessages.slice(sliceFrom)
+                            let lastAssistantIndex = -1
+                            for (let i = recent.length - 1; i >= 0; i--) {
+                              const m = recent[i]
+                              if (m && m.role === 'assistant') {
+                                lastAssistantIndex = i
+                                break
+                              }
+                            }
+                            if (lastAssistantIndex >= 0) {
+                              const lastAssistant = recent[lastAssistantIndex]
+                              const rawToolCalls = (lastAssistant.tool_calls ??
+                                (lastAssistant as any).toolCalls) as
+                                | Array<Record<string, unknown>>
+                                | undefined
+                              const toolCalls =
+                                Array.isArray(rawToolCalls) &&
+                                rawToolCalls.length
+                                  ? rawToolCalls
+                                  : []
+
+                              const syntheticEvents =
+                                collectSyntheticLiveToolEvents({
+                                  messages: recent,
+                                  tracker: syntheticLiveToolTracker,
+                                  sessionKey: sessionKeyFromEvent,
+                                  runId,
+                                })
+                              for (const synthetic of syntheticEvents) {
+                                persistActiveRun((runSessionKey, activeId) =>
+                                  upsertRunToolCall(runSessionKey, activeId, {
+                                    id: synthetic.toolCallId,
+                                    name: synthetic.name,
+                                    phase: synthetic.phase,
+                                    args: synthetic.args,
+                                    result: synthetic.result,
+                                  }),
+                                )
+                                sendEvent('tool', synthetic)
+                                skipPublish ||
+                                  publishChatEvent('tool', synthetic)
+                              }
+                            }
+                          }
+                        } catch (err) {
+                          // Backfill is best-effort; don't fail the run.
+                          console.warn(
+                            '[send-stream] tool backfill failed:',
+                            err,
+                          )
+                        }
+
+                        const translated = {
+                          state: 'complete',
+                          sessionKey: sessionKeyFromEvent,
+                          runId,
+                        }
+                        persistActiveRun((runSessionKey, activeId) =>
+                          markRunStatus(runSessionKey, activeId, 'complete'),
+                        )
+                        sendEvent('done', translated)
+                        skipPublish || publishChatEvent('done', translated)
+                        closeStream()
+                      }
+                    },
                   },
-                },
                 )
               } finally {
                 // Stop the mid-run tool poller and let it drain.

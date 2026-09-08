@@ -138,7 +138,9 @@ function normalizeMessageText(message: ChatMessage): string {
       .join('')
       .trim()
     if (text.length > 0) {
-      return text.replace(/<attachment\s+name="[^"]*">[\s\S]*?<\/attachment>/gi, '').trim()
+      return text
+        .replace(/<attachment\s+name="[^"]*">[\s\S]*?<\/attachment>/gi, '')
+        .trim()
     }
   }
 
@@ -147,7 +149,9 @@ function normalizeMessageText(message: ChatMessage): string {
   for (const key of ['text', 'message', 'body']) {
     const val = raw[key]
     if (typeof val === 'string' && val.trim().length > 0) {
-      return val.replace(/<attachment\s+name="[^"]*">[\s\S]*?<\/attachment>/gi, '').trim()
+      return val
+        .replace(/<attachment\s+name="[^"]*">[\s\S]*?<\/attachment>/gi, '')
+        .trim()
     }
   }
 
@@ -204,7 +208,12 @@ function replaceMatchingOptimisticUserMessage(
     }
 
     // Fallback: strip [screenshot] placeholder for image-only or mixed prompts
-    if (incomingText.replace(/\[screenshot\]/gi, '').trim() === normalizeMessageText(message).replace(/\[screenshot\]/gi, '').trim()) {
+    if (
+      incomingText.replace(/\[screenshot\]/gi, '').trim() ===
+      normalizeMessageText(message)
+        .replace(/\[screenshot\]/gi, '')
+        .trim()
+    ) {
       return true
     }
 
@@ -237,9 +246,10 @@ function replaceMatchingOptimisticUserMessage(
 
   const existing = messages[matchIndex]
   const preservedAttachments =
-    (Array.isArray(incomingMessage.attachments) && incomingMessage.attachments.length > 0)
+    Array.isArray(incomingMessage.attachments) &&
+    incomingMessage.attachments.length > 0
       ? incomingMessage.attachments
-      : (Array.isArray(existing.attachments) && existing.attachments.length > 0)
+      : Array.isArray(existing.attachments) && existing.attachments.length > 0
         ? existing.attachments
         : undefined
 
@@ -487,7 +497,9 @@ export function moveHistoryMessages(
 ) {
   const fromKey = chatQueryKeys.history(fromFriendlyId, fromSessionKey)
   const toKey = chatQueryKeys.history(toFriendlyId, toSessionKey)
-  const fromData = queryClient.getQueryData(fromKey) as Record<string, unknown> | undefined
+  const fromData = queryClient.getQueryData(fromKey) as
+    | Record<string, unknown>
+    | undefined
   if (!fromData) return
   const messages = Array.isArray(fromData.messages) ? fromData.messages : []
   queryClient.setQueryData(toKey, {
@@ -552,14 +564,17 @@ export function reconcileSessionDraft(
             key: toSessionKey,
             friendlyId: toFriendlyId,
             lastMessage: source.lastMessage ?? session.lastMessage,
-            updatedAt: Math.max(source.updatedAt ?? 0, session.updatedAt ?? 0) ||
+            updatedAt:
+              Math.max(source.updatedAt ?? 0, session.updatedAt ?? 0) ||
               session.updatedAt ||
               source.updatedAt,
             label: session.label ?? source.label,
             title: session.title ?? source.title,
             derivedTitle: session.derivedTitle ?? source.derivedTitle,
             titleStatus:
-              session.titleStatus === 'idle' ? source.titleStatus : session.titleStatus,
+              session.titleStatus === 'idle'
+                ? source.titleStatus
+                : session.titleStatus,
             titleSource: session.titleSource ?? source.titleSource,
             titleError: session.titleError ?? source.titleError,
           },

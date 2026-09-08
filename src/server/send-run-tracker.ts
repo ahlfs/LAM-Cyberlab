@@ -1,7 +1,10 @@
 const ACTIVE_RUN_CONTROLLERS_KEY = '__claude_active_run_controllers__' as const
 const ACTIVE_RUNS_KEY = '__claude_active_send_runs__' as const
 
-type ActiveControllerMap = Map<string, { abortController: AbortController; sessionKey: string }>
+type ActiveControllerMap = Map<
+  string,
+  { abortController: AbortController; sessionKey: string }
+>
 
 function getActiveRuns(): Set<string> {
   const globalValue = globalThis as typeof globalThis & {

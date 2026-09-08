@@ -109,16 +109,16 @@ function Panel({
       }}
     >
       {/* Subtle glow effect on hover */}
-      <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-           style={{
-             background: 'radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--theme-accent) 15%, transparent), transparent 70%)'
-           }} 
+      <div
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--theme-accent) 15%, transparent), transparent 70%)',
+        }}
       />
-      
+
       {/* Content wrapper to stay above background effects */}
-      <div className="relative z-10 flex h-full flex-col gap-4">
-        {children}
-      </div>
+      <div className="relative z-10 flex h-full flex-col gap-4">{children}</div>
     </section>
   )
 }
@@ -167,8 +167,10 @@ function ProjectCard({
   const [customCmd, setCustomCmd] = useState('')
   const [showCustomCmd, setShowCustomCmd] = useState(false)
 
-  const fwColor = FRAMEWORK_COLORS[project.framework] ?? FRAMEWORK_COLORS.unknown
-  const fwIconClass = FRAMEWORK_ICON_CLASS[project.framework] ?? FRAMEWORK_ICON_CLASS.unknown
+  const fwColor =
+    FRAMEWORK_COLORS[project.framework] ?? FRAMEWORK_COLORS.unknown
+  const fwIconClass =
+    FRAMEWORK_ICON_CLASS[project.framework] ?? FRAMEWORK_ICON_CLASS.unknown
 
   const displayUrl = project.url
     ? project.url.replace('0.0.0.0', window.location.hostname)
@@ -187,13 +189,13 @@ function ProjectCard({
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-1 min-w-0 items-center gap-3">
           {/* Icon Box */}
-          <div 
+          <div
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-[var(--theme-bg)] shadow-sm"
             style={{ borderColor: 'var(--theme-border)' }}
           >
             <i className={`${fwIconClass} text-2xl`} />
           </div>
-          
+
           {/* Title & Path */}
           <div className="flex min-w-0 flex-col">
             <h3
@@ -216,12 +218,26 @@ function ProjectCard({
           </div>
         </div>
         {/* Status indicator */}
-        <div className="flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium"
-             style={{ 
-               borderColor: project.running ? 'color-mix(in srgb, var(--theme-success, #22c55e) 30%, transparent)' : project.crashed ? 'color-mix(in srgb, var(--theme-danger, #ef4444) 30%, transparent)' : 'var(--theme-border)',
-               background: project.running ? 'color-mix(in srgb, var(--theme-success, #22c55e) 10%, transparent)' : project.crashed ? 'color-mix(in srgb, var(--theme-danger, #ef4444) 10%, transparent)' : 'transparent',
-               color: project.running ? 'var(--theme-success, #22c55e)' : project.crashed ? 'var(--theme-danger, #ef4444)' : 'var(--theme-muted)',
-             }}>
+        <div
+          className="flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium"
+          style={{
+            borderColor: project.running
+              ? 'color-mix(in srgb, var(--theme-success, #22c55e) 30%, transparent)'
+              : project.crashed
+                ? 'color-mix(in srgb, var(--theme-danger, #ef4444) 30%, transparent)'
+                : 'var(--theme-border)',
+            background: project.running
+              ? 'color-mix(in srgb, var(--theme-success, #22c55e) 10%, transparent)'
+              : project.crashed
+                ? 'color-mix(in srgb, var(--theme-danger, #ef4444) 10%, transparent)'
+                : 'transparent',
+            color: project.running
+              ? 'var(--theme-success, #22c55e)'
+              : project.crashed
+                ? 'var(--theme-danger, #ef4444)'
+                : 'var(--theme-muted)',
+          }}
+        >
           <div className="relative flex h-2 w-2 items-center justify-center">
             {project.running && (
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--theme-success,#22c55e)] opacity-75"></span>
@@ -232,12 +248,16 @@ function ProjectCard({
                 background: project.running
                   ? 'var(--theme-success, #22c55e)'
                   : project.crashed
-                  ? 'var(--theme-danger, #ef4444)'
-                  : 'var(--theme-muted)',
+                    ? 'var(--theme-danger, #ef4444)'
+                    : 'var(--theme-muted)',
               }}
             />
           </div>
-          {project.running ? 'Running' : project.crashed ? 'Crashed' : 'Stopped'}
+          {project.running
+            ? 'Running'
+            : project.crashed
+              ? 'Crashed'
+              : 'Stopped'}
         </div>
       </div>
 
@@ -304,17 +324,25 @@ function ProjectCard({
               />
             </button>
           </div>
-          
+
           {/* Private mode SSH snippet */}
           {!project.isPublic && project.port && (
-            <div className="rounded-lg border bg-[var(--theme-card2)] p-2" style={{ borderColor: 'var(--theme-border)' }}>
-              <div className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
+            <div
+              className="rounded-lg border bg-[var(--theme-card2)] p-2"
+              style={{ borderColor: 'var(--theme-border)' }}
+            >
+              <div
+                className="mb-1.5 flex items-center justify-between text-[10px] uppercase tracking-wider"
+                style={{ color: 'var(--theme-muted)' }}
+              >
                 <span>SSH Port Forwarding</span>
                 <button
                   type="button"
                   onClick={() => {
                     const host = window.location.hostname
-                    navigator.clipboard.writeText(`ssh -L ${project.port}:localhost:${project.port} root@${host}`)
+                    navigator.clipboard.writeText(
+                      `ssh -L ${project.port}:localhost:${project.port} root@${host}`,
+                    )
                     toast('SSH command copied!', { type: 'success' })
                   }}
                   className="flex items-center gap-1 transition-colors hover:text-[var(--theme-text)]"
@@ -322,8 +350,12 @@ function ProjectCard({
                   <HugeiconsIcon icon={Copy01Icon} size={10} /> Copy
                 </button>
               </div>
-              <code className="block w-full overflow-x-auto whitespace-pre font-mono text-[11px]" style={{ color: 'var(--theme-accent)' }}>
-                ssh -L {project.port}:localhost:{project.port} root@{window.location.hostname}
+              <code
+                className="block w-full overflow-x-auto whitespace-pre font-mono text-[11px]"
+                style={{ color: 'var(--theme-accent)' }}
+              >
+                ssh -L {project.port}:localhost:{project.port} root@
+                {window.location.hostname}
               </code>
             </div>
           )}
@@ -343,7 +375,7 @@ function ProjectCard({
               <HugeiconsIcon icon={CommandLineIcon} size={12} />
               {showCustomCmd ? 'Hide custom command' : 'Custom command'}
             </button>
-            
+
             {project.crashed && (
               <button
                 type="button"
@@ -351,7 +383,10 @@ function ProjectCard({
                 className="flex items-center gap-1 text-[11px] font-medium transition-colors hover:opacity-80"
                 style={{ color: 'var(--theme-danger, #ef4444)' }}
               >
-                <HugeiconsIcon icon={showLogs ? ArrowUp01Icon : ArrowDown01Icon} size={12} />
+                <HugeiconsIcon
+                  icon={showLogs ? ArrowUp01Icon : ArrowDown01Icon}
+                  size={12}
+                />
                 {showLogs ? 'Hide Error Logs' : 'View Error Logs'}
               </button>
             )}
@@ -398,7 +433,11 @@ function ProjectCard({
                 >
                   {isStopping ? (
                     <>
-                      <HugeiconsIcon icon={ArrowReloadHorizontalIcon} size={14} className="animate-spin" />
+                      <HugeiconsIcon
+                        icon={ArrowReloadHorizontalIcon}
+                        size={14}
+                        className="animate-spin"
+                      />
                       Stopping...
                     </>
                   ) : (
@@ -427,13 +466,19 @@ function ProjectCard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onStart(project.path, customCmd || undefined, true)}
+                onClick={() =>
+                  onStart(project.path, customCmd || undefined, true)
+                }
                 disabled={isStarting}
                 className="w-full gap-1.5 hover:border-[var(--theme-success,#22c55e)] hover:bg-transparent hover:text-[var(--theme-success,#22c55e)]"
                 title="Bind to 0.0.0.0 (Accessible via VPS IP)"
               >
                 {isStarting ? (
-                  <HugeiconsIcon icon={ArrowReloadHorizontalIcon} size={14} className="animate-spin" />
+                  <HugeiconsIcon
+                    icon={ArrowReloadHorizontalIcon}
+                    size={14}
+                    className="animate-spin"
+                  />
                 ) : (
                   <HugeiconsIcon icon={Globe02Icon} size={14} />
                 )}
@@ -442,13 +487,19 @@ function ProjectCard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onStart(project.path, customCmd || undefined, false)}
+                onClick={() =>
+                  onStart(project.path, customCmd || undefined, false)
+                }
                 disabled={isStarting}
                 className="w-full gap-1.5 hover:border-[var(--theme-accent)] hover:bg-transparent hover:text-[var(--theme-accent)]"
                 title="Bind to 127.0.0.1 (Requires SSH Tunnel)"
               >
                 {isStarting ? (
-                  <HugeiconsIcon icon={ArrowReloadHorizontalIcon} size={14} className="animate-spin" />
+                  <HugeiconsIcon
+                    icon={ArrowReloadHorizontalIcon}
+                    size={14}
+                    className="animate-spin"
+                  />
                 ) : (
                   <HugeiconsIcon icon={LockIcon} size={14} />
                 )}
@@ -483,7 +534,15 @@ export function ProjectsScreen() {
   })
 
   const startMutation = useMutation({
-    mutationFn: async ({ path, command, isPublic }: { path: string; command?: string; isPublic?: boolean }) => {
+    mutationFn: async ({
+      path,
+      command,
+      isPublic,
+    }: {
+      path: string
+      command?: string
+      isPublic?: boolean
+    }) => {
       const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -498,7 +557,9 @@ export function ProjectsScreen() {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
     },
     onError: (err) => {
-      toast(err instanceof Error ? err.message : 'Failed to start server', { type: 'error' })
+      toast(err instanceof Error ? err.message : 'Failed to start server', {
+        type: 'error',
+      })
     },
   })
 
@@ -518,7 +579,9 @@ export function ProjectsScreen() {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
     },
     onError: (err) => {
-      toast(err instanceof Error ? err.message : 'Failed to stop server', { type: 'error' })
+      toast(err instanceof Error ? err.message : 'Failed to stop server', {
+        type: 'error',
+      })
     },
   })
 
@@ -531,13 +594,17 @@ export function ProjectsScreen() {
     <ProjectCard
       key={project.path}
       project={project}
-      onStart={(path, command, isPublic) => startMutation.mutate({ path, command, isPublic })}
+      onStart={(path, command, isPublic) =>
+        startMutation.mutate({ path, command, isPublic })
+      }
       onStop={(path) => stopMutation.mutate(path)}
       isStarting={
         startMutation.isPending &&
         (startMutation.variables as { path: string })?.path === project.path
       }
-      isStopping={stopMutation.isPending && stopMutation.variables === project.path}
+      isStopping={
+        stopMutation.isPending && stopMutation.variables === project.path
+      }
     />
   )
 
@@ -549,7 +616,10 @@ export function ProjectsScreen() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--theme-text)' }}>
+          <h1
+            className="text-xl font-bold"
+            style={{ color: 'var(--theme-text)' }}
+          >
             Projects
           </h1>
           <p className="mt-0.5 text-sm" style={{ color: 'var(--theme-muted)' }}>
@@ -561,7 +631,8 @@ export function ProjectsScreen() {
               <span
                 className="ml-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
                 style={{
-                  background: 'color-mix(in srgb, var(--theme-success, #22c55e) 15%, transparent)',
+                  background:
+                    'color-mix(in srgb, var(--theme-success, #22c55e) 15%, transparent)',
                   color: 'var(--theme-success, #22c55e)',
                 }}
               >
@@ -573,7 +644,9 @@ export function ProjectsScreen() {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['projects'] })}
+          onClick={() =>
+            queryClient.invalidateQueries({ queryKey: ['projects'] })
+          }
           className="gap-1.5"
         >
           <HugeiconsIcon icon={ArrowReloadHorizontalIcon} size={14} />
@@ -595,7 +668,8 @@ export function ProjectsScreen() {
       {error && (
         <Panel>
           <p className="text-sm" style={{ color: 'var(--theme-danger)' }}>
-            Failed to scan projects: {error instanceof Error ? error.message : 'Unknown error'}
+            Failed to scan projects:{' '}
+            {error instanceof Error ? error.message : 'Unknown error'}
           </p>
         </Panel>
       )}
@@ -611,13 +685,16 @@ export function ProjectsScreen() {
             >
               No projects found
             </h2>
-            <p className="max-w-sm text-sm" style={{ color: 'var(--theme-muted)' }}>
+            <p
+              className="max-w-sm text-sm"
+              style={{ color: 'var(--theme-muted)' }}
+            >
               Create a project in{' '}
               <code className="rounded bg-[var(--theme-card)] px-1 py-0.5 text-xs">
                 ~/workspace
               </code>{' '}
-              using Hermes Agent (e.g. "buatkan project React di ~/workspace/my-app"), then
-              come back here to start its dev server.
+              using Hermes Agent (e.g. "buatkan project React di
+              ~/workspace/my-app"), then come back here to start its dev server.
             </p>
           </div>
         </Panel>
@@ -659,7 +736,9 @@ export function ProjectsScreen() {
           className="pb-4 px-4 text-center text-[10px]"
           style={{ color: 'var(--theme-muted)' }}
         >
-          Supported: Flutter · Django · Laravel · Next.js · Vite · React · Node.js · Rust · Go · CodeIgniter 4 · Nuxt.js · SvelteKit · Vue.js · Angular · Ruby on Rails · Spring Boot · NestJS · Flask
+          Supported: Flutter · Django · Laravel · Next.js · Vite · React ·
+          Node.js · Rust · Go · CodeIgniter 4 · Nuxt.js · SvelteKit · Vue.js ·
+          Angular · Ruby on Rails · Spring Boot · NestJS · Flask
         </p>
       )}
     </div>

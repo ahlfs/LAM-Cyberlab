@@ -21,7 +21,10 @@ export const Route = createFileRoute('/api/links/item/$id/restore')({
             return json({ error: err.message }, { status: 404 })
           }
           return json(
-            { error: err instanceof Error ? err.message : 'failed to restore link' },
+            {
+              error:
+                err instanceof Error ? err.message : 'failed to restore link',
+            },
             { status: 500 },
           )
         }

@@ -15,7 +15,10 @@ export function isSwarmWorkerId(value: unknown): value is string {
 const WorkerIdSchema = z
   .string()
   .trim()
-  .regex(WORKER_ID_PATTERN, 'worker id must look like swarm13 or a semantic profile id')
+  .regex(
+    WORKER_ID_PATTERN,
+    'worker id must look like swarm13 or a semantic profile id',
+  )
 
 export const SwarmRosterWorkerSchema = z.object({
   id: WorkerIdSchema,
@@ -134,7 +137,10 @@ export function writeSwarmRoster(roster: SwarmRoster): void {
   writeFileSync(SWARM_ROSTER_PATH, doc)
 }
 
-export function upsertSwarmRosterWorker(input: SwarmRosterUpsert, ids: Array<string> = []): SwarmRoster {
+export function upsertSwarmRosterWorker(
+  input: SwarmRosterUpsert,
+  ids: Array<string> = [],
+): SwarmRoster {
   const nextWorker = SwarmRosterUpsertSchema.parse(input)
   const current = readSwarmRoster(ids)
   const byId = new Map(current.workers.map((worker) => [worker.id, worker]))
@@ -151,12 +157,21 @@ export function upsertSwarmRosterWorker(input: SwarmRosterUpsert, ids: Array<str
   return next
 }
 
-export function rosterByWorkerId(ids: Array<string> = []): Map<string, SwarmRosterWorker> {
-  return new Map(readSwarmRoster(ids).workers.map((worker) => [worker.id, worker]))
+export function rosterByWorkerId(
+  ids: Array<string> = [],
+): Map<string, SwarmRosterWorker> {
+  return new Map(
+    readSwarmRoster(ids).workers.map((worker) => [worker.id, worker]),
+  )
 }
 
-export function resolveSwarmWorkerDisplayName(workerId: string, worker?: Pick<SwarmRosterWorker, 'name'> | null): string {
-  return worker ? worker.name.trim() || titleCase(workerId) : titleCase(workerId)
+export function resolveSwarmWorkerDisplayName(
+  workerId: string,
+  worker?: Pick<SwarmRosterWorker, 'name'> | null,
+): string {
+  return worker
+    ? worker.name.trim() || titleCase(workerId)
+    : titleCase(workerId)
 }
 
 export function formatSwarmWorkerLabel(
@@ -164,6 +179,8 @@ export function formatSwarmWorkerLabel(
   worker?: Pick<SwarmRosterWorker, 'name' | 'role'> | null,
 ): string {
   const displayName = resolveSwarmWorkerDisplayName(workerId, worker)
-  const role = worker ? worker.role.trim() || defaultRoleFromId(workerId) : defaultRoleFromId(workerId)
+  const role = worker
+    ? worker.role.trim() || defaultRoleFromId(workerId)
+    : defaultRoleFromId(workerId)
   return `${displayName} — ${role}`
 }

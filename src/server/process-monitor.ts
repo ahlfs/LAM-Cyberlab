@@ -34,7 +34,10 @@ export function parseProcStat(
   const closeParen = raw.lastIndexOf(')')
   if (openParen === -1 || closeParen === -1) return null
   const name = raw.slice(openParen + 1, closeParen)
-  const rest = raw.slice(closeParen + 2).trim().split(/\s+/)
+  const rest = raw
+    .slice(closeParen + 2)
+    .trim()
+    .split(/\s+/)
   // rest[0] = state (field 3) ... rest[11] = utime (field 14), rest[12] = stime (field 15)
   const utime = Number(rest[11])
   const stime = Number(rest[12])
@@ -127,7 +130,9 @@ export async function isProcessRunning(name: string): Promise<boolean> {
   const names = await Promise.all(
     pids.map(async (pid) => {
       try {
-        return (await fs.readFile(`/proc/${pid}/comm`, 'utf-8')).trim().toLowerCase()
+        return (await fs.readFile(`/proc/${pid}/comm`, 'utf-8'))
+          .trim()
+          .toLowerCase()
       } catch {
         return ''
       }

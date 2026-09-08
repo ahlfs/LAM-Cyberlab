@@ -21,7 +21,10 @@ export const Route = createFileRoute('/api/links/item/$id/archive')({
             return json({ error: err.message }, { status: 404 })
           }
           return json(
-            { error: err instanceof Error ? err.message : 'failed to toggle archive' },
+            {
+              error:
+                err instanceof Error ? err.message : 'failed to toggle archive',
+            },
             { status: 500 },
           )
         }

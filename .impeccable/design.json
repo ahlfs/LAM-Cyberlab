@@ -4,30 +4,177 @@
   "title": "Design System: Hermes Workspace",
   "extensions": {
     "colorMeta": {
-      "harbor-night-teal": { "role": "neutral", "displayName": "Harbor-Night Teal", "canonical": "#041C1C", "tonalRamp": ["#02100f", "#041c1c", "#06282a", "#082f31", "#0a3638", "#3d6663", "#7ba39f", "#d5e8e6"] },
-      "teal-panel": { "role": "neutral", "displayName": "Teal Panel", "canonical": "#06282A", "tonalRamp": ["#031416", "#06282a", "#083539", "#0b4247", "#155a60", "#3d8187", "#7fb3b7", "#d3e9ea"] },
-      "teal-card": { "role": "neutral", "displayName": "Teal Card", "canonical": "#082F31", "tonalRamp": ["#041819", "#082f31", "#0b4144", "#0f5357", "#1a7075", "#459298", "#85bfc3", "#d7edee"] },
-      "teal-card-raised": { "role": "neutral", "displayName": "Teal Card Raised", "canonical": "#0A3638", "tonalRamp": ["#051b1c", "#0a3638", "#0e4b4e", "#136063", "#207f83", "#4b9fa3", "#8ac7ca", "#daf0f1"] },
-      "lantern-cream": { "role": "neutral", "displayName": "Lantern Cream", "canonical": "#FFE6CB", "tonalRamp": ["#332619", "#664c33", "#99724c", "#cc9866", "#ffbf80", "#ffd3a6", "#ffe6cb", "#fff5ea"] },
-      "signal-amber": { "role": "primary", "displayName": "Signal Amber", "canonical": "#FFAC02", "tonalRamp": ["#331f00", "#664000", "#996000", "#cc8500", "#ffac02", "#ffc14d", "#ffd88a", "#ffefcc"] },
-      "phosphor-green": { "role": "tertiary", "displayName": "Phosphor Green", "canonical": "#8FFF89", "tonalRamp": ["#0c2a0b", "#1a5518", "#278025", "#35aa32", "#5cd455", "#8fff89", "#b8ffb3", "#e2ffe0"] },
-      "alert-red": { "role": "tertiary", "displayName": "Alert Red", "canonical": "#FB2C36", "tonalRamp": ["#33090b", "#661216", "#991b21", "#cc242c", "#fb2c36", "#fc6169", "#fd969b", "#fecbcd"] }
+      "harbor-night-teal": {
+        "role": "neutral",
+        "displayName": "Harbor-Night Teal",
+        "canonical": "#041C1C",
+        "tonalRamp": [
+          "#02100f",
+          "#041c1c",
+          "#06282a",
+          "#082f31",
+          "#0a3638",
+          "#3d6663",
+          "#7ba39f",
+          "#d5e8e6"
+        ]
+      },
+      "teal-panel": {
+        "role": "neutral",
+        "displayName": "Teal Panel",
+        "canonical": "#06282A",
+        "tonalRamp": [
+          "#031416",
+          "#06282a",
+          "#083539",
+          "#0b4247",
+          "#155a60",
+          "#3d8187",
+          "#7fb3b7",
+          "#d3e9ea"
+        ]
+      },
+      "teal-card": {
+        "role": "neutral",
+        "displayName": "Teal Card",
+        "canonical": "#082F31",
+        "tonalRamp": [
+          "#041819",
+          "#082f31",
+          "#0b4144",
+          "#0f5357",
+          "#1a7075",
+          "#459298",
+          "#85bfc3",
+          "#d7edee"
+        ]
+      },
+      "teal-card-raised": {
+        "role": "neutral",
+        "displayName": "Teal Card Raised",
+        "canonical": "#0A3638",
+        "tonalRamp": [
+          "#051b1c",
+          "#0a3638",
+          "#0e4b4e",
+          "#136063",
+          "#207f83",
+          "#4b9fa3",
+          "#8ac7ca",
+          "#daf0f1"
+        ]
+      },
+      "lantern-cream": {
+        "role": "neutral",
+        "displayName": "Lantern Cream",
+        "canonical": "#FFE6CB",
+        "tonalRamp": [
+          "#332619",
+          "#664c33",
+          "#99724c",
+          "#cc9866",
+          "#ffbf80",
+          "#ffd3a6",
+          "#ffe6cb",
+          "#fff5ea"
+        ]
+      },
+      "signal-amber": {
+        "role": "primary",
+        "displayName": "Signal Amber",
+        "canonical": "#FFAC02",
+        "tonalRamp": [
+          "#331f00",
+          "#664000",
+          "#996000",
+          "#cc8500",
+          "#ffac02",
+          "#ffc14d",
+          "#ffd88a",
+          "#ffefcc"
+        ]
+      },
+      "phosphor-green": {
+        "role": "tertiary",
+        "displayName": "Phosphor Green",
+        "canonical": "#8FFF89",
+        "tonalRamp": [
+          "#0c2a0b",
+          "#1a5518",
+          "#278025",
+          "#35aa32",
+          "#5cd455",
+          "#8fff89",
+          "#b8ffb3",
+          "#e2ffe0"
+        ]
+      },
+      "alert-red": {
+        "role": "tertiary",
+        "displayName": "Alert Red",
+        "canonical": "#FB2C36",
+        "tonalRamp": [
+          "#33090b",
+          "#661216",
+          "#991b21",
+          "#cc242c",
+          "#fb2c36",
+          "#fc6169",
+          "#fd969b",
+          "#fecbcd"
+        ]
+      }
     },
     "typographyMeta": {
-      "body": { "displayName": "Body", "purpose": "Default UI text and chat prose; family follows the user-selectable --interface-font-family." },
-      "title": { "displayName": "Title", "purpose": "Panel and card headings." },
-      "headline": { "displayName": "Headline", "purpose": "Screen titles and KPI values." },
-      "label": { "displayName": "Label", "purpose": "Uppercase tracked micro-labels (KPI cards); the one sanctioned uppercase voice." },
-      "mono": { "displayName": "Machine Voice", "purpose": "JetBrains Mono for code, terminal, logs, IDs — wherever output belongs to the system." }
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default UI text and chat prose; family follows the user-selectable --interface-font-family."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel and card headings."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Screen titles and KPI values."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase tracked micro-labels (KPI cards); the one sanctioned uppercase voice."
+      },
+      "mono": {
+        "displayName": "Machine Voice",
+        "purpose": "JetBrains Mono for code, terminal, logs, IDs — wherever output belongs to the system."
+      }
     },
     "shadows": [
-      { "name": "theme-shadow-1", "value": "0 1px 2px rgba(0,0,0,0.55)", "purpose": "Resting cards that need a whisper of lift (Nous values; theme-scoped)." },
-      { "name": "theme-shadow-2", "value": "0 6px 16px rgba(0,0,0,0.48)", "purpose": "Hover states and small popovers." },
-      { "name": "theme-shadow-3", "value": "0 16px 36px rgba(0,0,0,0.58)", "purpose": "Dialogs, command palette, dropdowns." }
+      {
+        "name": "theme-shadow-1",
+        "value": "0 1px 2px rgba(0,0,0,0.55)",
+        "purpose": "Resting cards that need a whisper of lift (Nous values; theme-scoped)."
+      },
+      {
+        "name": "theme-shadow-2",
+        "value": "0 6px 16px rgba(0,0,0,0.48)",
+        "purpose": "Hover states and small popovers."
+      },
+      {
+        "name": "theme-shadow-3",
+        "value": "0 16px 36px rgba(0,0,0,0.58)",
+        "purpose": "Dialogs, command palette, dropdowns."
+      }
     ],
     "motion": [
-      { "name": "transition-fast", "value": "150ms ease", "purpose": "Hover/focus feedback on buttons, rows, chips." },
-      { "name": "transition-standard", "value": "200ms ease", "purpose": "Card hover lift, panel state changes." }
+      {
+        "name": "transition-fast",
+        "value": "150ms ease",
+        "purpose": "Hover/focus feedback on buttons, rows, chips."
+      },
+      {
+        "name": "transition-standard",
+        "value": "200ms ease",
+        "purpose": "Card hover lift, panel state changes."
+      }
     ],
     "breakpoints": [
       { "name": "sm", "value": "640px" },
@@ -101,12 +248,36 @@
       "Alive but disciplined: fast 150–200ms feedback, uniform component vocabulary."
     ],
     "rules": [
-      { "name": "The Theme Contract Rule", "body": "No component ever hardcodes a color. Every fill, border, and text color flows through a --theme-* variable. A feature is not done until it looks intentional in all fourteen themes, both modes.", "section": "colors" },
-      { "name": "The One Lantern Rule", "body": "Signal Amber (and each theme's accent counterpart) covers at most ~10% of any screen: actions, current selection, live indicators. Amber used decoratively is a bug.", "section": "colors" },
-      { "name": "The No Foreign Gray Rule", "body": "Muted text and borders are transparencies of Lantern Cream over teal, never a neutral gray dropped onto the palette.", "section": "colors" },
-      { "name": "The Machine Voice Rule", "body": "JetBrains Mono appears exactly where output belongs to the system (code, terminal, logs, IDs) — never as decoration on human-facing labels or buttons.", "section": "typography" },
-      { "name": "The Fixed Scale Rule", "body": "Type sizes are fixed rem steps (scale ≈1.2); nothing fluid, nothing clamped. This is product UI viewed at consistent DPI.", "section": "typography" },
-      { "name": "The Tonal-First Rule", "body": "If a layer boundary needs expressing, reach for the next surface tone and a hairline border before reaching for a shadow. Shadows respond to state (hover, floating, modal); they do not decorate rest.", "section": "elevation" }
+      {
+        "name": "The Theme Contract Rule",
+        "body": "No component ever hardcodes a color. Every fill, border, and text color flows through a --theme-* variable. A feature is not done until it looks intentional in all fourteen themes, both modes.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Lantern Rule",
+        "body": "Signal Amber (and each theme's accent counterpart) covers at most ~10% of any screen: actions, current selection, live indicators. Amber used decoratively is a bug.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Foreign Gray Rule",
+        "body": "Muted text and borders are transparencies of Lantern Cream over teal, never a neutral gray dropped onto the palette.",
+        "section": "colors"
+      },
+      {
+        "name": "The Machine Voice Rule",
+        "body": "JetBrains Mono appears exactly where output belongs to the system (code, terminal, logs, IDs) — never as decoration on human-facing labels or buttons.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fixed Scale Rule",
+        "body": "Type sizes are fixed rem steps (scale ≈1.2); nothing fluid, nothing clamped. This is product UI viewed at consistent DPI.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tonal-First Rule",
+        "body": "If a layer boundary needs expressing, reach for the next surface tone and a hairline border before reaching for a shadow. Shadows respond to state (hover, floating, modal); they do not decorate rest.",
+        "section": "elevation"
+      }
     ],
     "dos": [
       "Do route every color through the --theme-* contract and test new UI in at least Nous, one light theme, and one high-character theme (Matrix/Dracula) before calling it done.",

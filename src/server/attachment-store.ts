@@ -66,7 +66,10 @@ function ensureAttachmentsDir(): void {
 
 loadIndex()
 
-function getExtensionForContentType(contentType: string, fileName = ''): string {
+function getExtensionForContentType(
+  contentType: string,
+  fileName = '',
+): string {
   const fromName = extname(fileName).toLowerCase()
   if (fromName && fromName.length > 1) return fromName
 
@@ -169,7 +172,9 @@ export function getAttachmentFileStreamOrBuffer(
   }
 }
 
-export function getAttachmentsForSession(sessionId: string): Array<StoredAttachment> {
+export function getAttachmentsForSession(
+  sessionId: string,
+): Array<StoredAttachment> {
   const ids = index.sessionAttachments[sessionId] || []
   return ids
     .map((id) => index.attachments[id])

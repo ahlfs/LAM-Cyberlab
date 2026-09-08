@@ -2,7 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { requireLocalOrAuth } from '../../server/auth-middleware'
 import { restoreBackupZip } from '../../server/backup'
-import { getClientIp, rateLimit, rateLimitResponse } from '../../server/rate-limit'
+import {
+  getClientIp,
+  rateLimit,
+  rateLimitResponse,
+} from '../../server/rate-limit'
 
 const MAX_BACKUP_BYTES = 200 * 1024 * 1024 // 200MB — generous, but not unbounded
 
@@ -42,7 +46,11 @@ export const Route = createFileRoute('/api/backup/import')({
           if (!result.ok) {
             return json({ error: result.error }, { status: 400 })
           }
-          return json({ ok: true, settings: result.settings, manifest: result.manifest })
+          return json({
+            ok: true,
+            settings: result.settings,
+            manifest: result.manifest,
+          })
         } catch (err) {
           return json(
             { error: err instanceof Error ? err.message : 'Restore failed' },

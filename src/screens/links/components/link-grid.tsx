@@ -1,5 +1,10 @@
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Add01Icon, Delete02Icon, Link01Icon, Search01Icon } from '@hugeicons/core-free-icons'
+import {
+  Add01Icon,
+  Delete02Icon,
+  Link01Icon,
+  Search01Icon,
+} from '@hugeicons/core-free-icons'
 import type { LinkuLink } from '@/server/linku-db'
 import { LinkCard } from './link-card'
 
@@ -8,7 +13,10 @@ function LinkSkeleton() {
     <div
       aria-hidden
       className="h-[108px] rounded-xl border motion-safe:animate-pulse"
-      style={{ background: 'var(--theme-card)', borderColor: 'var(--theme-border)' }}
+      style={{
+        background: 'var(--theme-card)',
+        borderColor: 'var(--theme-border)',
+      }}
     />
   )
 }
@@ -76,7 +84,12 @@ export function LinkGrid({
       style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}
     >
       {links.map((link) => (
-        <LinkCard key={link.id} link={link} isTrashView={isTrashView} onEdit={() => onEdit(link)} />
+        <LinkCard
+          key={link.id}
+          link={link}
+          isTrashView={isTrashView}
+          onEdit={() => onEdit(link)}
+        />
       ))}
     </div>
   )
@@ -98,9 +111,16 @@ function EmptyState({
       className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-center"
       style={{ borderColor: 'var(--theme-border)' }}
     >
-      <HugeiconsIcon icon={icon} size={28} style={{ color: 'var(--theme-muted)' }} />
+      <HugeiconsIcon
+        icon={icon}
+        size={28}
+        style={{ color: 'var(--theme-muted)' }}
+      />
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+        <p
+          className="text-sm font-medium"
+          style={{ color: 'var(--theme-text)' }}
+        >
           {title}
         </p>
         <p className="text-[13px]" style={{ color: 'var(--theme-muted)' }}>
@@ -112,7 +132,10 @@ function EmptyState({
           type="button"
           onClick={action.onClick}
           className="mt-1 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium"
-          style={{ background: 'var(--theme-accent)', color: 'var(--theme-bg)' }}
+          style={{
+            background: 'var(--theme-accent)',
+            color: 'var(--theme-bg)',
+          }}
         >
           <HugeiconsIcon icon={Add01Icon} size={14} />
           {action.label}

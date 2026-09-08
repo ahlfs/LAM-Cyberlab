@@ -241,7 +241,7 @@ export function MobileHamburgerMenu() {
 
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  
+
   const { data: remoteStatus } = useQuery({
     queryKey: ['remote-access-status'],
     queryFn: async () => {
@@ -474,12 +474,17 @@ export function MobileHamburgerMenu() {
                   aria-label="Logout"
                   style={{ color: 'var(--color-ink-muted, #888)' }}
                 >
-                  <HugeiconsIcon icon={Logout01Icon} size={20} strokeWidth={1.5} />
+                  <HugeiconsIcon
+                    icon={Logout01Icon}
+                    size={20}
+                    strokeWidth={1.5}
+                  />
                 </AlertDialogTrigger>
                 <AlertDialogContent className="p-5">
                   <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to log out of the workspace? You will need to enter the password to access it again.
+                    Are you sure you want to log out of the workspace? You will
+                    need to enter the password to access it again.
                   </AlertDialogDescription>
                   <div className="mt-6 flex justify-end gap-3">
                     <AlertDialogCancel>Cancel</AlertDialogCancel>

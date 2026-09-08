@@ -36,27 +36,24 @@ describe('readEnvFileValue / writeEnvFileValue', () => {
 
   it('appends a new key when .env exists but lacks it', async () => {
     writeFileSync('.env', 'FOO=bar\n')
-    const { writeEnvFileValue, readEnvFileValue } = await import(
-      './remote-access-config'
-    )
+    const { writeEnvFileValue, readEnvFileValue } =
+      await import('./remote-access-config')
     writeEnvFileValue('HOST', '0.0.0.0')
     expect(readEnvFileValue('HOST')).toBe('0.0.0.0')
     expect(readFileSync('.env', 'utf8')).toContain('FOO=bar')
   })
 
   it('creates .env when missing', async () => {
-    const { writeEnvFileValue, readEnvFileValue } = await import(
-      './remote-access-config'
-    )
+    const { writeEnvFileValue, readEnvFileValue } =
+      await import('./remote-access-config')
     writeEnvFileValue('HOST', '0.0.0.0')
     expect(readEnvFileValue('HOST')).toBe('0.0.0.0')
   })
 
   it('replaces an existing key in place, preserving other lines', async () => {
     writeFileSync('.env', '# comment\nHOST=127.0.0.1\nFOO=bar\n')
-    const { writeEnvFileValue, readEnvFileValue } = await import(
-      './remote-access-config'
-    )
+    const { writeEnvFileValue, readEnvFileValue } =
+      await import('./remote-access-config')
     writeEnvFileValue('HOST', '0.0.0.0')
     const raw = readFileSync('.env', 'utf8')
     expect(raw).toContain('HOST=0.0.0.0')
@@ -68,9 +65,8 @@ describe('readEnvFileValue / writeEnvFileValue', () => {
 
   it('ignores a commented-out key when reading and replacing', async () => {
     writeFileSync('.env', '# HOST=0.0.0.0\nFOO=bar\n')
-    const { writeEnvFileValue, readEnvFileValue } = await import(
-      './remote-access-config'
-    )
+    const { writeEnvFileValue, readEnvFileValue } =
+      await import('./remote-access-config')
     expect(readEnvFileValue('HOST')).toBeNull()
     writeEnvFileValue('HOST', '0.0.0.0')
     const raw = readFileSync('.env', 'utf8')
@@ -119,9 +115,8 @@ describe('setWorkspacePassword', () => {
   })
 
   it('persists to .env and applies live immediately', async () => {
-    const { setWorkspacePassword, readEnvFileValue } = await import(
-      './remote-access-config'
-    )
+    const { setWorkspacePassword, readEnvFileValue } =
+      await import('./remote-access-config')
     const result = setWorkspacePassword('a-strong-password')
     expect(result.ok).toBe(true)
     expect(readEnvFileValue('HERMES_PASSWORD')).toBe('a-strong-password')
@@ -139,18 +134,16 @@ describe('setExposeEnabled', () => {
 
   it('writes HOST=0.0.0.0 once a password is configured', async () => {
     process.env.HERMES_PASSWORD = 'a-strong-password'
-    const { setExposeEnabled, readEnvFileValue } = await import(
-      './remote-access-config'
-    )
+    const { setExposeEnabled, readEnvFileValue } =
+      await import('./remote-access-config')
     const result = setExposeEnabled(true)
     expect(result.ok).toBe(true)
     expect(readEnvFileValue('HOST')).toBe('0.0.0.0')
   })
 
   it('writes HOST=127.0.0.1 when disabling', async () => {
-    const { setExposeEnabled, readEnvFileValue } = await import(
-      './remote-access-config'
-    )
+    const { setExposeEnabled, readEnvFileValue } =
+      await import('./remote-access-config')
     const result = setExposeEnabled(false)
     expect(result.ok).toBe(true)
     expect(readEnvFileValue('HOST')).toBe('127.0.0.1')
@@ -158,14 +151,13 @@ describe('setExposeEnabled', () => {
 })
 
 describe('isValidDomain', () => {
-  it.each([
-    'example.com',
-    'sub.example.com',
-    'my-app.example.co.uk',
-  ])('accepts %s', async (domain) => {
-    const { isValidDomain } = await import('./remote-access-config')
-    expect(isValidDomain(domain)).toBe(true)
-  })
+  it.each(['example.com', 'sub.example.com', 'my-app.example.co.uk'])(
+    'accepts %s',
+    async (domain) => {
+      const { isValidDomain } = await import('./remote-access-config')
+      expect(isValidDomain(domain)).toBe(true)
+    },
+  )
 
   it.each([
     ['bare IPv4', '203.0.113.10'],

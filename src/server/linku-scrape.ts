@@ -19,14 +19,21 @@ const HTML_ENTITIES: Record<string, string> = {
 }
 
 export function decodeEntities(text: string): string {
-  return text.replace(/&(#\d+|#x[0-9a-f]+|[a-z0-9]+);/gi, (match, code: string) => {
-    if (code[0] === '#') {
-      const codePoint =
-        code[1]?.toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10)
-      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : match
-    }
-    return HTML_ENTITIES[code.toLowerCase()] ?? match
-  })
+  return text.replace(
+    /&(#\d+|#x[0-9a-f]+|[a-z0-9]+);/gi,
+    (match, code: string) => {
+      if (code[0] === '#') {
+        const codePoint =
+          code[1]?.toLowerCase() === 'x'
+            ? parseInt(code.slice(2), 16)
+            : parseInt(code.slice(1), 10)
+        return Number.isFinite(codePoint)
+          ? String.fromCodePoint(codePoint)
+          : match
+      }
+      return HTML_ENTITIES[code.toLowerCase()] ?? match
+    },
+  )
 }
 
 export type ScrapeResult = { title: string; faviconUrl: string | null }
@@ -48,7 +55,10 @@ export function parseTitleAndFavicon(html: string, baseUrl: URL): ScrapeResult {
 
   let faviconUrl: string | null
   try {
-    faviconUrl = new URL(iconMatch ? iconMatch[1] : '/favicon.ico', baseUrl).toString()
+    faviconUrl = new URL(
+      iconMatch ? iconMatch[1] : '/favicon.ico',
+      baseUrl,
+    ).toString()
   } catch {
     faviconUrl = null
   }

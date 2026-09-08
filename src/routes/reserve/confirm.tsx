@@ -22,7 +22,8 @@ function ReserveConfirmRoute() {
     if (!token) {
       setState({
         status: 'error',
-        message: 'Missing confirmation token. Re-open the link from your email.',
+        message:
+          'Missing confirmation token. Re-open the link from your email.',
       })
       return
     }
@@ -63,7 +64,9 @@ function ReserveConfirmRoute() {
               ? 'Confirmation problem.'
               : 'Confirming reservation…'}
         </h1>
-        <p className="mt-4 text-base leading-7 text-[#d7d0bd]/68">{state.message}</p>
+        <p className="mt-4 text-base leading-7 text-[#d7d0bd]/68">
+          {state.message}
+        </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <a
             href="/reserve"

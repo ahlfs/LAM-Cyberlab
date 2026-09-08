@@ -94,7 +94,9 @@ export function parseMeminfo(text: string): {
   const total = kb.get('MemTotal')
   const available = kb.get('MemAvailable')
   const cachedBytes =
-    (kb.get('Cached') ?? 0) + (kb.get('Buffers') ?? 0) + (kb.get('SReclaimable') ?? 0)
+    (kb.get('Cached') ?? 0) +
+    (kb.get('Buffers') ?? 0) +
+    (kb.get('SReclaimable') ?? 0)
   const memory =
     total && available !== undefined
       ? {
@@ -187,7 +189,8 @@ export function parseNetDev(text: string): {
 }
 
 /** Whole-disk device names only — excludes partitions (sda1, nvme0n1p1, ...). */
-const WHOLE_DISK_RE = /^(sd[a-z]+|vd[a-z]+|hd[a-z]+|xvd[a-z]+|nvme\d+n\d+|mmcblk\d+)$/
+const WHOLE_DISK_RE =
+  /^(sd[a-z]+|vd[a-z]+|hd[a-z]+|xvd[a-z]+|nvme\d+n\d+|mmcblk\d+)$/
 
 export type DiskStatsSnapshot = Map<
   string,
@@ -222,13 +225,15 @@ export function parseLoadavgProcs(
 function snapshotCpu(): CpuCoreTimes[] {
   return os
     .cpus()
-    .map((c): CpuCoreTimes => [
-      c.times.user,
-      c.times.nice,
-      c.times.sys,
-      c.times.idle,
-      c.times.irq,
-    ])
+    .map(
+      (c): CpuCoreTimes => [
+        c.times.user,
+        c.times.nice,
+        c.times.sys,
+        c.times.idle,
+        c.times.irq,
+      ],
+    )
 }
 
 async function readMemory(): Promise<{
@@ -392,7 +397,9 @@ export async function collectSystemStats(): Promise<SystemStats> {
         })
         .sort(
           (a, b) =>
-            b.rxBytesPerSec + b.txBytesPerSec - (a.rxBytesPerSec + a.txBytesPerSec),
+            b.rxBytesPerSec +
+            b.txBytesPerSec -
+            (a.rxBytesPerSec + a.txBytesPerSec),
         )
       network = {
         rxBytesPerSec: Math.max(0, (netNow.rx - prevNet.snapshot.rx) / dt),
@@ -413,17 +420,25 @@ export async function collectSystemStats(): Promise<SystemStats> {
           return {
             device,
             readBytesPerSec: p
-              ? Math.max(0, ((s.sectorsRead - p.sectorsRead) * SECTOR_BYTES) / dt)
+              ? Math.max(
+                  0,
+                  ((s.sectorsRead - p.sectorsRead) * SECTOR_BYTES) / dt,
+                )
               : 0,
             writeBytesPerSec: p
-              ? Math.max(0, ((s.sectorsWritten - p.sectorsWritten) * SECTOR_BYTES) / dt)
+              ? Math.max(
+                  0,
+                  ((s.sectorsWritten - p.sectorsWritten) * SECTOR_BYTES) / dt,
+                )
               : 0,
           }
         })
         .filter((d) => d.readBytesPerSec + d.writeBytesPerSec > 0)
         .sort(
           (a, b) =>
-            b.readBytesPerSec + b.writeBytesPerSec - (a.readBytesPerSec + a.writeBytesPerSec),
+            b.readBytesPerSec +
+            b.writeBytesPerSec -
+            (a.readBytesPerSec + a.writeBytesPerSec),
         )
     }
     prevDiskIo = { snapshot: diskIoNow, at: now }

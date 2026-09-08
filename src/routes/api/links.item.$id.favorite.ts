@@ -21,7 +21,12 @@ export const Route = createFileRoute('/api/links/item/$id/favorite')({
             return json({ error: err.message }, { status: 404 })
           }
           return json(
-            { error: err instanceof Error ? err.message : 'failed to toggle favorite' },
+            {
+              error:
+                err instanceof Error
+                  ? err.message
+                  : 'failed to toggle favorite',
+            },
             { status: 500 },
           )
         }

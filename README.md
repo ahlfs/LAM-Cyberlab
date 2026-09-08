@@ -10,9 +10,9 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 
-> **Attribution & Architecture.** The base frontend codebase originated from [**Hermes Workspace**](https://github.com/outsourc-e/hermes-workspace) by outsourc-e. 
-> Currently, 100% of this repository is independently maintained and developed by [ahlfs](https://github.com/ahlfs). 
-> Please note that the "brain" and intelligence of LAM Cyberlab live 100% inside the backend [**Hermes Agent (Second Brain Edition)**](https://github.com/ahlfs/hermes-agent). 
+> **Attribution & Architecture.** The base frontend codebase originated from [**Hermes Workspace**](https://github.com/outsourc-e/hermes-workspace) by outsourc-e.
+> Currently, 100% of this repository is independently maintained and developed by [ahlfs](https://github.com/ahlfs).
+> Please note that the "brain" and intelligence of LAM Cyberlab live 100% inside the backend [**Hermes Agent (Second Brain Edition)**](https://github.com/ahlfs/hermes-agent).
 > This repository (LAM Cyberlab) acts exclusively as the interactive frontend surface for that agent.
 
 > Not just a chat wrapper. A complete digital laboratory — orchestrate AI agents, interact with your Second Brain, manage skills, and control everything from one interface, running seamlessly on top of your customized Hermes Agent backend.
@@ -83,16 +83,17 @@ Everything below installs and runs **this repository** (the web UI) which pairs 
 
 Before starting, ensure you have the following installed on your system:
 
-| Prerequisite | Version | Description |
-|---|---|---|
-| **Node.js** | 22+ | Required to run the Lam-Cyberlab web server. [Download Node.js](https://nodejs.org/) |
-| **pnpm** | 9+ | Package manager (`npm install -g pnpm`). [Installation guide](https://pnpm.io/installation) |
-| **Git** | latest | Required to clone this repository. [Download Git](https://git-scm.com/downloads) |
+| Prerequisite     | Version       | Description                                                                                                                                                               |
+| ---------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Node.js**      | 22+           | Required to run the Lam-Cyberlab web server. [Download Node.js](https://nodejs.org/)                                                                                      |
+| **pnpm**         | 9+            | Package manager (`npm install -g pnpm`). [Installation guide](https://pnpm.io/installation)                                                                               |
+| **Git**          | latest        | Required to clone this repository. [Download Git](https://git-scm.com/downloads)                                                                                          |
 | **Hermes Agent** | modified fork | **CRITICAL:** You must use the modified fork of Hermes Agent for full compatibility. See instructions at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent). |
 
 ---
 
 You can run LAM-Cyberlab in two ways depending on your needs:
+
 1. **[Option A: Local Deployment](#-option-a-local-deployment-personal-computer)** — Best for local usage, testing, and development. Runs directly in your terminal.
 2. **[Option B: Cloud VPS Deployment](#-option-b-cloud-vps-deployment-always-on)** — Best for a permanent, headless server. Uses PM2 to run quietly in the background.
 
@@ -109,15 +110,18 @@ You can run LAM-Cyberlab in two ways depending on your needs:
 Please refer to the documentation at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent) for detailed instructions on installing the agent, configuring OS dependencies for the Second Brain pipeline, and setting up environment variables.
 
 **3. Clone Lam-Cyberlab and install dependencies**
+
 ```bash
 git clone git@github.com:ahlfs/LAM-Cyberlab.git lam-cyberlab
 cd lam-cyberlab
 pnpm install
 ```
-*(If you don't use SSH keys, use: `https://github.com/ahlfs/LAM-Cyberlab.git`)*
+
+_(If you don't use SSH keys, use: `https://github.com/ahlfs/LAM-Cyberlab.git`)_
 
 **4. Configure the workspace**
 Copy the example env file and set the token to match `API_SERVER_KEY` from your agent setup:
+
 ```bash
 cp .env.example .env
 cat >> .env <<'EOF'
@@ -129,6 +133,7 @@ EOF
 ```
 
 **5. Start everything** (each in its own terminal):
+
 ```bash
 # Terminal 1 — gateway
 hermes gateway run
@@ -140,6 +145,7 @@ hermes dashboard
 cd lam-cyberlab
 pnpm dev
 ```
+
 Open **http://127.0.0.1:3000** in your browser.
 
 ---
@@ -147,6 +153,7 @@ Open **http://127.0.0.1:3000** in your browser.
 #### 🪟 Windows
 
 **1. Install prerequisites** (PowerShell):
+
 ```powershell
 # Node.js 22+
 winget install OpenJS.NodeJS.LTS
@@ -159,6 +166,7 @@ npm install -g pnpm
 Please refer to the documentation at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent) for Windows installation instructions (note that the Second Brain pipeline requires WSL2). Make sure to configure `%LocalAppData%\hermes\.env` with your `API_SERVER_KEY`.
 
 **3. Clone Lam-Cyberlab**
+
 ```powershell
 git clone https://github.com/ahlfs/LAM-Cyberlab.git lam-cyberlab
 cd lam-cyberlab
@@ -167,6 +175,7 @@ pnpm install
 
 **4. Configure the workspace**
 Copy `.env.example` to `.env` and configure the token to match `API_SERVER_KEY`:
+
 ```env
 HERMES_API_URL=http://127.0.0.1:8642
 HERMES_DASHBOARD_URL=http://127.0.0.1:9119
@@ -175,6 +184,7 @@ PORT=3000
 ```
 
 **5. Start everything** (each in its own terminal):
+
 ```powershell
 # Terminal 1 — gateway
 hermes gateway run
@@ -186,6 +196,7 @@ hermes dashboard
 cd C:\Users\<you>\lam-cyberlab
 pnpm dev
 ```
+
 Open **http://127.0.0.1:3000**.
 
 > **Agent in WSL, workspace on native Windows?**
@@ -350,7 +361,7 @@ directly. When absent, Workspace falls back to its native Swarm dispatch
 
 > [!WARNING]
 > **Docker setup is currently NOT recommended for the Second Brain Edition.**
-> The current `docker-compose.yml` pulls the vanilla `nousresearch/hermes-agent:latest` image for the backend. It does not yet use a custom image for the `ahlfs/hermes-agent` fork, meaning it lacks `ffmpeg`, `tesseract`, and the Second Brain ingestion scripts. 
+> The current `docker-compose.yml` pulls the vanilla `nousresearch/hermes-agent:latest` image for the backend. It does not yet use a custom image for the `ahlfs/hermes-agent` fork, meaning it lacks `ffmpeg`, `tesseract`, and the Second Brain ingestion scripts.
 > If you want to use the Second Brain capabilities (which is the core of this fork), please use the **Local Installation** method above.
 
 Runs the **Hermes Agent gateway** (vanilla upstream image) and **LAM Cyberlab** (built from local source) in containers.
@@ -374,7 +385,7 @@ want `hermes-agent` to use:
 Using Ollama, LM Studio, or another local server instead? No key needed — point
 `hermes-agent` at it via the onboarding flow.
 
-Build and start (this compiles *this repo's* code into the workspace image,
+Build and start (this compiles _this repo's_ code into the workspace image,
 rather than pulling a prebuilt one):
 
 ```bash
@@ -419,14 +430,14 @@ docker compose down && docker compose -f docker-compose.yml -f docker-compose.de
 
 ### Docker troubleshooting
 
-| Symptom | Fix |
-|---|---|
-| `[workspace] refusing to start — HERMES_PASSWORD is unset` | Add `HERMES_PASSWORD=<secret>` to `.env` |
-| Login silently fails (no error, page reloads) | Add `COOKIE_SECURE=0` for HTTP, or `COOKIE_SECURE=1` + HTTPS |
-| `[Api_Server] Refusing to start: binding to 0.0.0.0 requires API_SERVER_KEY` | Add `API_SERVER_KEY=***` to `.env` |
-| `No user allowlists configured` | Add `GATEWAY_ALLOW_ALL_USERS=true` to `.env` |
-| "Unauthorized" / "Connection refused" to hermes-agent | Check a provider key is set (`grep _API_KEY .env`), then `docker compose logs hermes-agent` |
-| 500 error on login after fixing the above | Clear browser cookies for the workspace domain, retry |
+| Symptom                                                                      | Fix                                                                                         |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `[workspace] refusing to start — HERMES_PASSWORD is unset`                   | Add `HERMES_PASSWORD=<secret>` to `.env`                                                    |
+| Login silently fails (no error, page reloads)                                | Add `COOKIE_SECURE=0` for HTTP, or `COOKIE_SECURE=1` + HTTPS                                |
+| `[Api_Server] Refusing to start: binding to 0.0.0.0 requires API_SERVER_KEY` | Add `API_SERVER_KEY=***` to `.env`                                                          |
+| `No user allowlists configured`                                              | Add `GATEWAY_ALLOW_ALL_USERS=true` to `.env`                                                |
+| "Unauthorized" / "Connection refused" to hermes-agent                        | Check a provider key is set (`grep _API_KEY .env`), then `docker compose logs hermes-agent` |
+| 500 error on login after fixing the above                                    | Clear browser cookies for the workspace domain, retry                                       |
 
 ---
 
@@ -508,12 +519,12 @@ If you are deploying this on a cloud VPS (e.g., Azure, DigitalOcean) and accessi
 
 A fresh VPS usually doesn't have the required developer tools installed. Before running the script, ensure you have:
 
-| Prerequisite | Description | Installation Guide |
-|---|---|---|
-| **Node.js 22+** | Required to run the Lam-Cyberlab web server. | [NodeSource Distributions](https://github.com/nodesource/distributions) |
-| **PM2** | Process manager to keep the app running in the background. | [PM2 Quick Start](https://pm2.keymetrics.io/docs/usage/quick-start/) |
-| **pnpm** | Fast, disk space efficient package manager. | [pnpm Installation](https://pnpm.io/installation) |
-| **Hermes Agent** | The intelligence backend. **MUST** be installed first. | [ahlfs/hermes-agent](https://github.com/ahlfs/hermes-agent) |
+| Prerequisite     | Description                                                | Installation Guide                                                      |
+| ---------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **Node.js 22+**  | Required to run the Lam-Cyberlab web server.               | [NodeSource Distributions](https://github.com/nodesource/distributions) |
+| **PM2**          | Process manager to keep the app running in the background. | [PM2 Quick Start](https://pm2.keymetrics.io/docs/usage/quick-start/)    |
+| **pnpm**         | Fast, disk space efficient package manager.                | [pnpm Installation](https://pnpm.io/installation)                       |
+| **Hermes Agent** | The intelligence backend. **MUST** be installed first.     | [ahlfs/hermes-agent](https://github.com/ahlfs/hermes-agent)             |
 
 #### 🛠️ Automated Setup
 
@@ -525,6 +536,7 @@ cd ~/lam-cyberlab
 ```
 
 **What the script does:**
+
 1. Prompts you for a secure API token and UI password.
 2. Configures `~/.hermes/.env` (enabling `API_SERVER_ENABLED=true` so port 8642 opens).
 3. Configures `lam-cyberlab/.env` (setting `COOKIE_SECURE=0` so you don't get stuck in an HTTP login loop).
@@ -544,7 +556,7 @@ systemctl --user status hermes-gateway.service   # gateway is separate, check it
 
 ### Updating the workspace code
 
-Since pm2 runs the *built* output, pulling new code needs a rebuild before it
+Since pm2 runs the _built_ output, pulling new code needs a rebuild before it
 takes effect:
 
 ```bash
@@ -600,6 +612,7 @@ The **Second Brain** is a knowledge ingestion pipeline that turns raw captures (
 Because this feature requires background processing and direct model access, **the Second Brain engine now runs entirely within the modified Hermes Agent** (the backend). Lam-Cyberlab serves as the frontend interface to visualize and interact with this knowledge.
 
 ### How it works
+
 - **Ingestion & Consolidation:** Handled autonomously by the [modified `hermes-agent`](https://github.com/ahlfs/hermes-agent). It transcribes audio, extracts text from PDFs, and synthesizes them into durable facts and interlinked `[[wikilink]]` entity/concept pages.
 - **Visualization:** Lam-Cyberlab provides the **Graph** page (`/graph`). It fetches the knowledge graph data from the backend and renders it as a lightweight, interactive 3D-projected force layout so you can visually explore how concepts connect.
 - **Integration:** The agent reads these distilled facts on every session, making the AI "smarter" and more context-aware over time.
@@ -612,26 +625,26 @@ For setup instructions, vault structure, and configuration of the Second Brain e
 
 ### Shipped ✅
 
-| Feature | What it does |
-|---|---|
-| Chat + SSE streaming | Live agent output with tool call rendering |
-| Links | Personal link manager: folders, favorites/archive/trash, search, stats |
-| System monitor | Live CPU/memory/disk/network/uptime page |
-| Files + Terminal | Full workspace file browser + cross-platform PTY |
-| Memory + Skills browsers | Edit memory, browse 2,000+ skills with marketplace |
-| Dashboard | Sessions, model mix, cost ledger, attention card |
-| Operations | Multi-agent management with preset personas |
-| Agent View | Live agent panel in chat |
-| Swarm Mode | Persistent tmux-backed worker pool with role dispatch |
-| MCP page | Full catalog + marketplace + sources |
-| Mobile PWA + Tailscale | Install as native-feeling app on any device |
-| Desktop app | Electron build for macOS / Windows / Linux |
-| Themes | 7 palettes × light/dark: Nous, Hermes, Bronze, Slate, Matrix, SciFi, Dracula Soft |
-| Capability gates | Graceful 'upstream not ready' placeholders |
-| Multi-provider | OpenAI/OpenAI-compatible, OpenRouter, Google, Ollama, LM Studio, vLLM, and other Hermes-supported providers |
-| Remote Access | Guided public IP/domain exposure with mandatory password + Caddy HTTPS setup |
-| Backup & Restore | One-click export/import of Links, Memory, and settings |
-| Permanent server (pm2) | Optional always-on background service setup for VPS/home-server use |
+| Feature                  | What it does                                                                                                |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| Chat + SSE streaming     | Live agent output with tool call rendering                                                                  |
+| Links                    | Personal link manager: folders, favorites/archive/trash, search, stats                                      |
+| System monitor           | Live CPU/memory/disk/network/uptime page                                                                    |
+| Files + Terminal         | Full workspace file browser + cross-platform PTY                                                            |
+| Memory + Skills browsers | Edit memory, browse 2,000+ skills with marketplace                                                          |
+| Dashboard                | Sessions, model mix, cost ledger, attention card                                                            |
+| Operations               | Multi-agent management with preset personas                                                                 |
+| Agent View               | Live agent panel in chat                                                                                    |
+| Swarm Mode               | Persistent tmux-backed worker pool with role dispatch                                                       |
+| MCP page                 | Full catalog + marketplace + sources                                                                        |
+| Mobile PWA + Tailscale   | Install as native-feeling app on any device                                                                 |
+| Desktop app              | Electron build for macOS / Windows / Linux                                                                  |
+| Themes                   | 7 palettes × light/dark: Nous, Hermes, Bronze, Slate, Matrix, SciFi, Dracula Soft                           |
+| Capability gates         | Graceful 'upstream not ready' placeholders                                                                  |
+| Multi-provider           | OpenAI/OpenAI-compatible, OpenRouter, Google, Ollama, LM Studio, vLLM, and other Hermes-supported providers |
+| Remote Access            | Guided public IP/domain exposure with mandatory password + Caddy HTTPS setup                                |
+| Backup & Restore         | One-click export/import of Links, Memory, and settings                                                      |
+| Permanent server (pm2)   | Optional always-on background service setup for VPS/home-server use                                         |
 
 ### Planned
 

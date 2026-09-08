@@ -224,7 +224,10 @@ export async function restoreBackupZip(buffer: Buffer): Promise<RestoreResult> {
 
   const manifestEntry = zip.file('manifest.json')
   if (!manifestEntry) {
-    return { ok: false, error: 'Not a LAM Cyberlab backup (missing manifest.json).' }
+    return {
+      ok: false,
+      error: 'Not a LAM Cyberlab backup (missing manifest.json).',
+    }
   }
   let manifest: BackupManifest
   try {
@@ -233,7 +236,10 @@ export async function restoreBackupZip(buffer: Buffer): Promise<RestoreResult> {
     return { ok: false, error: 'manifest.json is corrupt.' }
   }
   if (manifest.kind !== BACKUP_KIND) {
-    return { ok: false, error: 'This zip is not a LAM Cyberlab workspace backup.' }
+    return {
+      ok: false,
+      error: 'This zip is not a LAM Cyberlab workspace backup.',
+    }
   }
   if (manifest.version > BACKUP_VERSION) {
     return {
@@ -247,7 +253,10 @@ export async function restoreBackupZip(buffer: Buffer): Promise<RestoreResult> {
   const memRoot = getMemoryWorkspaceRoot()
   const memoryMdEntry = zip.file('memory/MEMORY.md')
   if (memoryMdEntry) {
-    writeFileSync(join(memRoot, 'MEMORY.md'), await memoryMdEntry.async('nodebuffer'))
+    writeFileSync(
+      join(memRoot, 'MEMORY.md'),
+      await memoryMdEntry.async('nodebuffer'),
+    )
   }
   for (const subdir of ['memory', 'memories']) {
     await extractZipDirToDisk(zip, `memory/${subdir}`, join(memRoot, subdir))
@@ -257,7 +266,10 @@ export async function restoreBackupZip(buffer: Buffer): Promise<RestoreResult> {
   const usageEntry = zip.file('skills/usage.json')
   if (usageEntry) {
     mkdirSync(skillsDir, { recursive: true })
-    writeFileSync(join(skillsDir, '.usage.json'), await usageEntry.async('nodebuffer'))
+    writeFileSync(
+      join(skillsDir, '.usage.json'),
+      await usageEntry.async('nodebuffer'),
+    )
   }
   await extractZipDirToDisk(zip, 'skills/custom', skillsDir)
 
@@ -265,9 +277,16 @@ export async function restoreBackupZip(buffer: Buffer): Promise<RestoreResult> {
   const localSessionsEntry = zip.file('runtime/local-sessions.json')
   if (localSessionsEntry) {
     mkdirSync(runtime, { recursive: true })
-    writeFileSync(join(runtime, 'local-sessions.json'), await localSessionsEntry.async('nodebuffer'))
+    writeFileSync(
+      join(runtime, 'local-sessions.json'),
+      await localSessionsEntry.async('nodebuffer'),
+    )
   }
-  await extractZipDirToDisk(zip, 'runtime/tool-artifacts', join(runtime, 'tool-artifacts'))
+  await extractZipDirToDisk(
+    zip,
+    'runtime/tool-artifacts',
+    join(runtime, 'tool-artifacts'),
+  )
 
   let settings: Record<string, string> = {}
   const settingsEntry = zip.file('settings.json')

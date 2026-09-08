@@ -108,7 +108,9 @@ export function getDb(): DatabaseType {
   instance.pragma('journal_mode = WAL')
   instance.pragma('foreign_keys = ON')
 
-  const currentVersion = instance.pragma('user_version', { simple: true }) as number
+  const currentVersion = instance.pragma('user_version', {
+    simple: true,
+  }) as number
   for (let v = currentVersion; v < MIGRATIONS.length; v++) {
     instance.exec(MIGRATIONS[v])
     instance.pragma(`user_version = ${v + 1}`)
@@ -193,7 +195,9 @@ export function updateFolder(
   const existing = getFolder(id)
   if (!existing) throw new LinkuNotFoundError('folder', id)
   getDb()
-    .prepare(`UPDATE folders SET name = ?, color = ?, updated_at = ? WHERE id = ?`)
+    .prepare(
+      `UPDATE folders SET name = ?, color = ?, updated_at = ? WHERE id = ?`,
+    )
     .run(patch.name ?? existing.name, patch.color ?? existing.color, now(), id)
   const updated = getFolder(id)
   if (!updated) throw new Error('folder update failed')
@@ -246,13 +250,15 @@ const LINK_SELECT = `
   FROM links l LEFT JOIN folders f ON f.id = l.folder_id
 `
 
-export function listLinks(opts: {
-  folderId?: number
-  view?: LinkuView
-  search?: string
-  limit?: number
-  offset?: number
-} = {}): LinkuLink[] {
+export function listLinks(
+  opts: {
+    folderId?: number
+    view?: LinkuView
+    search?: string
+    limit?: number
+    offset?: number
+  } = {},
+): LinkuLink[] {
   const view = opts.view ?? 'all'
   const clauses: string[] = []
   const params: Array<string | number> = []
@@ -357,7 +363,9 @@ export function updateLink(
       patch.url ?? existing.url,
       patch.title ?? existing.title,
       patch.faviconUrl !== undefined ? patch.faviconUrl : existing.faviconUrl,
-      patch.description !== undefined ? patch.description : existing.description,
+      patch.description !== undefined
+        ? patch.description
+        : existing.description,
       now(),
       id,
     )
@@ -366,10 +374,16 @@ export function updateLink(
   return updated
 }
 
-function touchAndGet(id: number, sql: string, params: Array<string | number>): LinkuLink {
+function touchAndGet(
+  id: number,
+  sql: string,
+  params: Array<string | number>,
+): LinkuLink {
   const existing = getLink(id)
   if (!existing) throw new LinkuNotFoundError('link', id)
-  getDb().prepare(sql).run(...params, id)
+  getDb()
+    .prepare(sql)
+    .run(...params, id)
   const updated = getLink(id)
   if (!updated) throw new Error('link update failed')
   return updated
@@ -444,7 +458,10 @@ export function recordOpen(id: number): LinkuLink {
 }
 
 /** Import folders and links from a JSON payload, skipping duplicate URLs and mapping folder IDs. */
-export function importData(data: { folders: LinkuFolder[]; links: LinkuLink[] }): { importedFolders: number; importedLinks: number } {
+export function importData(data: {
+  folders: LinkuFolder[]
+  links: LinkuLink[]
+}): { importedFolders: number; importedLinks: number } {
   let importedFolders = 0
   let importedLinks = 0
 
@@ -452,10 +469,10 @@ export function importData(data: { folders: LinkuFolder[]; links: LinkuLink[] })
     // 1. Map old folder ID to new folder ID
     const folderIdMap = new Map<number, number>()
     const existingFolders = listFolders()
-    
+
     for (const folder of data.folders) {
       // Find by name to avoid duplicates
-      const existing = existingFolders.find(f => f.name === folder.name)
+      const existing = existingFolders.find((f) => f.name === folder.name)
       if (existing) {
         folderIdMap.set(folder.id, existing.id)
       } else {
@@ -465,9 +482,15 @@ export function importData(data: { folders: LinkuFolder[]; links: LinkuLink[] })
           .get() as { m: number }
         const info = getDb()
           .prepare(
-            `INSERT INTO folders (name, color, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+            `INSERT INTO folders (name, color, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
           )
-          .run(folder.name, folder.color, maxOrder.m + 1, folder.createdAt || t, folder.updatedAt || t)
+          .run(
+            folder.name,
+            folder.color,
+            maxOrder.m + 1,
+            folder.createdAt || t,
+            folder.updatedAt || t,
+          )
         folderIdMap.set(folder.id, Number(info.lastInsertRowid))
         importedFolders++
       }
@@ -475,7 +498,9 @@ export function importData(data: { folders: LinkuFolder[]; links: LinkuLink[] })
 
     // 2. Insert links, skipping existing URLs
     const existingUrls = new Set(
-      (getDb().prepare(`SELECT url FROM links`).all() as { url: string }[]).map(r => r.url)
+      (getDb().prepare(`SELECT url FROM links`).all() as { url: string }[]).map(
+        (r) => r.url,
+      ),
     )
 
     for (const link of data.links) {
@@ -483,13 +508,15 @@ export function importData(data: { folders: LinkuFolder[]; links: LinkuLink[] })
       // Skip trashed links
       if (link.isTrashed) continue
 
-      const newFolderId = link.folderId ? folderIdMap.get(link.folderId) ?? null : null
+      const newFolderId = link.folderId
+        ? (folderIdMap.get(link.folderId) ?? null)
+        : null
       const t = now()
 
       getDb()
         .prepare(
           `INSERT INTO links (folder_id, url, title, favicon_url, description, is_favorite, is_archived, is_trashed, visited_count, opened_count, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`
+           VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
         )
         .run(
           newFolderId,
@@ -502,13 +529,13 @@ export function importData(data: { folders: LinkuFolder[]; links: LinkuLink[] })
           link.visitedCount || 0,
           link.openedCount || 0,
           link.createdAt || t,
-          link.updatedAt || t
+          link.updatedAt || t,
         )
       existingUrls.add(link.url)
       importedLinks++
     }
   })
-  
+
   runner()
   return { importedFolders, importedLinks }
 }

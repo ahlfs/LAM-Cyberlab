@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { computeProcessCpuPct, parseProcStat, parseVmRssBytes } from './process-monitor'
+import {
+  computeProcessCpuPct,
+  parseProcStat,
+  parseVmRssBytes,
+} from './process-monitor'
 
 describe('parseProcStat', () => {
   it('parses a normal /proc/pid/stat line', () => {

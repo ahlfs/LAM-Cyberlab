@@ -35,7 +35,10 @@ export const Route = createFileRoute('/api/links/folders/$id')({
             return json({ error: err.message }, { status: 404 })
           }
           return json(
-            { error: err instanceof Error ? err.message : 'failed to update folder' },
+            {
+              error:
+                err instanceof Error ? err.message : 'failed to update folder',
+            },
             { status: 500 },
           )
         }
@@ -56,7 +59,10 @@ export const Route = createFileRoute('/api/links/folders/$id')({
             return json({ error: err.message }, { status: 404 })
           }
           return json(
-            { error: err instanceof Error ? err.message : 'failed to delete folder' },
+            {
+              error:
+                err instanceof Error ? err.message : 'failed to delete folder',
+            },
             { status: 500 },
           )
         }

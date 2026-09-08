@@ -87,7 +87,38 @@ type ContextMenuState = {
 // ──────────────────────────────────────────────────────────────────────────────
 
 const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'])
-const CODE_EXTS = new Set(['ts', 'tsx', 'js', 'jsx', 'json', 'css', 'html', 'yml', 'yaml', 'sh', 'py', 'env', 'md', 'mdx', 'toml', 'rs', 'go', 'rb', 'java', 'c', 'cpp', 'h', 'hpp', 'sql', 'xml', 'txt', 'log', 'conf', 'ini', 'cfg'])
+const CODE_EXTS = new Set([
+  'ts',
+  'tsx',
+  'js',
+  'jsx',
+  'json',
+  'css',
+  'html',
+  'yml',
+  'yaml',
+  'sh',
+  'py',
+  'env',
+  'md',
+  'mdx',
+  'toml',
+  'rs',
+  'go',
+  'rb',
+  'java',
+  'c',
+  'cpp',
+  'h',
+  'hpp',
+  'sql',
+  'xml',
+  'txt',
+  'log',
+  'conf',
+  'ini',
+  'cfg',
+])
 
 function getExt(name: string): string {
   const dot = name.lastIndexOf('.')
@@ -101,7 +132,8 @@ function isImageFile(name: string): boolean {
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
@@ -126,7 +158,13 @@ function getParentPath(pathValue: string): string {
 // Breadcrumb Navigation
 // ──────────────────────────────────────────────────────────────────────────────
 
-function PathBreadcrumb({ currentPath, onNavigate }: { currentPath: string; onNavigate: (path: string) => void }) {
+function PathBreadcrumb({
+  currentPath,
+  onNavigate,
+}: {
+  currentPath: string
+  onNavigate: (path: string) => void
+}) {
   const parts = currentPath.split('/').filter(Boolean)
   return (
     <div className="flex items-center gap-0.5 min-w-0 overflow-x-auto text-sm">
@@ -143,9 +181,13 @@ function PathBreadcrumb({ currentPath, onNavigate }: { currentPath: string; onNa
         const isLast = i === parts.length - 1
         return (
           <Fragment key={i}>
-            <span className="shrink-0 text-primary-300 dark:text-neutral-600 text-xs">/</span>
+            <span className="shrink-0 text-primary-300 dark:text-neutral-600 text-xs">
+              /
+            </span>
             {isLast ? (
-              <span className="shrink-0 rounded px-1.5 py-0.5 font-medium text-primary-800 dark:text-neutral-200">{part}</span>
+              <span className="shrink-0 rounded px-1.5 py-0.5 font-medium text-primary-800 dark:text-neutral-200">
+                {part}
+              </span>
             ) : (
               <button
                 type="button"
@@ -208,16 +250,23 @@ function FileRow({
           </div>
         </td>
       )}
-      <td className={cn("py-2 pr-2", isMultiSelectMode ? "pl-1" : "pl-4")}>
+      <td className={cn('py-2 pr-2', isMultiSelectMode ? 'pl-1' : 'pl-4')}>
         <div className="flex items-start gap-2 min-w-0">
           <span className="shrink-0 text-base leading-none mt-0.5">
-            <FileIcon name={entry.name} type={entry.type} size={16} className={isFolder ? "text-amber-500" : ""} />
+            <FileIcon
+              name={entry.name}
+              type={entry.type}
+              size={16}
+              className={isFolder ? 'text-amber-500' : ''}
+            />
           </span>
           <span className="break-all">{entry.name}</span>
         </div>
       </td>
       <td className="py-2 px-3 text-right text-xs text-primary-500 dark:text-neutral-500 whitespace-nowrap">
-        {entry.type === 'file' && entry.size != null ? formatBytes(entry.size) : '—'}
+        {entry.type === 'file' && entry.size != null
+          ? formatBytes(entry.size)
+          : '—'}
       </td>
       <td className="py-2 px-3 text-xs text-primary-500 dark:text-neutral-500 whitespace-nowrap hidden md:table-cell">
         {entry.modifiedAt ? formatDate(entry.modifiedAt) : '—'}
@@ -256,7 +305,9 @@ function FilePreview({ entry }: { entry: FileEntry | null }) {
       setContent('')
       setDataUrl('')
       try {
-        const res = await fetch(`/api/files?action=read&mode=browse&path=${encodeURIComponent(entry.path)}`)
+        const res = await fetch(
+          `/api/files?action=read&mode=browse&path=${encodeURIComponent(entry.path)}`,
+        )
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = (await res.json()) as FileReadResponse
         if (data.type === 'image') {
@@ -293,7 +344,11 @@ function FilePreview({ entry }: { entry: FileEntry | null }) {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <HugeiconsIcon icon={Loading03Icon} size={24} className="animate-spin text-primary-400" />
+        <HugeiconsIcon
+          icon={Loading03Icon}
+          size={24}
+          className="animate-spin text-primary-400"
+        />
       </div>
     )
   }
@@ -309,7 +364,11 @@ function FilePreview({ entry }: { entry: FileEntry | null }) {
   if (dataUrl) {
     return (
       <div className="flex h-full items-center justify-center overflow-auto p-4">
-        <img src={dataUrl} alt={entry.name} className="max-h-full max-w-full rounded-lg border border-primary-200 dark:border-neutral-700 shadow-sm object-contain" />
+        <img
+          src={dataUrl}
+          alt={entry.name}
+          className="max-h-full max-w-full rounded-lg border border-primary-200 dark:border-neutral-700 shadow-sm object-contain"
+        />
       </div>
     )
   }
@@ -339,16 +398,20 @@ export function FileManagerScreen() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set())
-  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null)
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(
+    null,
+  )
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false)
 
-  const [history, setHistory] = useState<{ stack: string[], index: number }>(() => {
-    let initial = ''
-    if (typeof window !== 'undefined') {
-      initial = localStorage.getItem('file-manager-path') || ''
-    }
-    return { stack: [initial || '/'], index: 0 }
-  })
+  const [history, setHistory] = useState<{ stack: string[]; index: number }>(
+    () => {
+      let initial = ''
+      if (typeof window !== 'undefined') {
+        initial = localStorage.getItem('file-manager-path') || ''
+      }
+      return { stack: [initial || '/'], index: 0 }
+    },
+  )
   const currentPath = history.stack[history.index] || '/'
 
   // Update local storage when path changes
@@ -361,14 +424,20 @@ export function FileManagerScreen() {
   const [homedirResolved, setHomedirResolved] = useState(false)
   const homedirRef = useRef<string>('/')
 
-  const [clipboard, setClipboard] = useState<{ action: 'copy' | 'cut'; entries: FileEntry[] } | null>(null)
+  const [clipboard, setClipboard] = useState<{
+    action: 'copy' | 'cut'
+    entries: FileEntry[]
+  } | null>(null)
 
   // CRUD state
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
 
   // Ensure context menu stays within viewport
-  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
+  const [menuPosition, setMenuPosition] = useState<{
+    x: number
+    y: number
+  } | null>(null)
 
   useEffect(() => {
     if (!contextMenu) {
@@ -392,7 +461,10 @@ export function FileManagerScreen() {
         nextY = Math.max(padding, window.innerHeight - height - padding)
       }
 
-      setMenuPosition({ x: Math.max(padding, nextX), y: Math.max(padding, nextY) })
+      setMenuPosition({
+        x: Math.max(padding, nextX),
+        y: Math.max(padding, nextY),
+      })
     }
 
     // Run layout calculation after render
@@ -403,47 +475,58 @@ export function FileManagerScreen() {
   const [promptState, setPromptState] = useState<PromptState | null>(null)
   const [promptValue, setPromptValue] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<boolean>(false)
-  const [modalPreviewEntry, setModalPreviewEntry] = useState<FileEntry | null>(null)
+  const [modalPreviewEntry, setModalPreviewEntry] = useState<FileEntry | null>(
+    null,
+  )
 
   // ── Load directory ──────────────────────────────────────────────────────────
 
-  const loadDirectory = useCallback(async (dirPath: string) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const params = new URLSearchParams({
-        action: 'list',
-        mode: 'browse',
-        path: dirPath,
-        maxDepth: '0',
-      })
-      const res = await fetch(`/api/files?${params.toString()}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = (await res.json()) as FilesListResponse & { homedir?: string }
-      setEntries(Array.isArray(data.entries) ? data.entries : [])
-
-      // Save homedir for the Home button
-      if (data.homedir) homedirRef.current = data.homedir
-
-      // On first load without a saved path, redirect to home directory
-      if (!homedirResolved && data.homedir && !localStorage.getItem('file-manager-path')) {
-        setHomedirResolved(true)
-        setHistory(prev => {
-          if (prev.stack[0] === '' || prev.stack[0] === '/') {
-            return { stack: [data.homedir!], index: 0 }
-          }
-          return prev
+  const loadDirectory = useCallback(
+    async (dirPath: string) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const params = new URLSearchParams({
+          action: 'list',
+          mode: 'browse',
+          path: dirPath,
+          maxDepth: '0',
         })
-        return // will re-trigger via useEffect
+        const res = await fetch(`/api/files?${params.toString()}`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = (await res.json()) as FilesListResponse & {
+          homedir?: string
+        }
+        setEntries(Array.isArray(data.entries) ? data.entries : [])
+
+        // Save homedir for the Home button
+        if (data.homedir) homedirRef.current = data.homedir
+
+        // On first load without a saved path, redirect to home directory
+        if (
+          !homedirResolved &&
+          data.homedir &&
+          !localStorage.getItem('file-manager-path')
+        ) {
+          setHomedirResolved(true)
+          setHistory((prev) => {
+            if (prev.stack[0] === '' || prev.stack[0] === '/') {
+              return { stack: [data.homedir!], index: 0 }
+            }
+            return prev
+          })
+          return // will re-trigger via useEffect
+        }
+        setHomedirResolved(true)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
+        setHomedirResolved(true)
+      } finally {
+        setLoading(false)
       }
-      setHomedirResolved(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-      setHomedirResolved(true)
-    } finally {
-      setLoading(false)
-    }
-  }, [homedirResolved])
+    },
+    [homedirResolved],
+  )
 
   // Persist currentPath
   useEffect(() => {
@@ -483,7 +566,7 @@ export function FileManagerScreen() {
   const navigateTo = useCallback((path: string) => {
     setSelectedPaths(new Set())
     setLastSelectedIndex(null)
-    setHistory(prev => {
+    setHistory((prev) => {
       if (prev.stack[prev.index] === path) return prev
       const newStack = [...prev.stack.slice(0, prev.index + 1), path]
       return { stack: newStack, index: newStack.length - 1 }
@@ -498,69 +581,78 @@ export function FileManagerScreen() {
   const goBack = useCallback(() => {
     setSelectedPaths(new Set())
     setLastSelectedIndex(null)
-    setHistory(prev => ({
+    setHistory((prev) => ({
       ...prev,
-      index: Math.max(0, prev.index - 1)
+      index: Math.max(0, prev.index - 1),
     }))
   }, [])
 
   const goForward = useCallback(() => {
     setSelectedPaths(new Set())
     setLastSelectedIndex(null)
-    setHistory(prev => ({
+    setHistory((prev) => ({
       ...prev,
-      index: Math.min(prev.stack.length - 1, prev.index + 1)
+      index: Math.min(prev.stack.length - 1, prev.index + 1),
     }))
   }, [])
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
-  const handleDoubleClick = useCallback((entry: FileEntry) => {
-    if (entry.type === 'folder') {
-      navigateTo(entry.path)
-    } else {
-      // Show modal preview
-      setModalPreviewEntry(entry)
-    }
-  }, [navigateTo])
-
-  const handleSelect = useCallback((e: React.MouseEvent, entry: FileEntry, index: number) => {
-    e.stopPropagation()
-    setSelectedPaths(prev => {
-      const newSet = new Set(prev)
-      if (e.shiftKey && lastSelectedIndex !== null) {
-        const start = Math.min(lastSelectedIndex, index)
-        const end = Math.max(lastSelectedIndex, index)
-        newSet.clear() // Optional: clear or add to existing selection? Standard shift-click clears other selection usually, but we'll just add for now, wait, let's clear and add range.
-        for (let i = start; i <= end; i++) {
-          newSet.add(entries[i].path)
-        }
-      } else if (e.ctrlKey || e.metaKey || isMultiSelectMode) {
-        if (newSet.has(entry.path)) {
-          newSet.delete(entry.path)
-        } else {
-          newSet.add(entry.path)
-        }
-        setLastSelectedIndex(index)
+  const handleDoubleClick = useCallback(
+    (entry: FileEntry) => {
+      if (entry.type === 'folder') {
+        navigateTo(entry.path)
       } else {
-        newSet.clear()
-        newSet.add(entry.path)
-        setLastSelectedIndex(index)
+        // Show modal preview
+        setModalPreviewEntry(entry)
       }
-      return newSet
-    })
-  }, [entries, lastSelectedIndex, isMultiSelectMode])
+    },
+    [navigateTo],
+  )
 
-  const handleContextMenu = useCallback((e: React.MouseEvent, entry: FileEntry | null) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (entry && !selectedPaths.has(entry.path)) {
-      setSelectedPaths(new Set([entry.path]))
-      const idx = entries.findIndex(x => x.path === entry.path)
-      setLastSelectedIndex(idx >= 0 ? idx : null)
-    }
-    setContextMenu({ x: e.clientX, y: e.clientY, entry })
-  }, [selectedPaths, entries])
+  const handleSelect = useCallback(
+    (e: React.MouseEvent, entry: FileEntry, index: number) => {
+      e.stopPropagation()
+      setSelectedPaths((prev) => {
+        const newSet = new Set(prev)
+        if (e.shiftKey && lastSelectedIndex !== null) {
+          const start = Math.min(lastSelectedIndex, index)
+          const end = Math.max(lastSelectedIndex, index)
+          newSet.clear() // Optional: clear or add to existing selection? Standard shift-click clears other selection usually, but we'll just add for now, wait, let's clear and add range.
+          for (let i = start; i <= end; i++) {
+            newSet.add(entries[i].path)
+          }
+        } else if (e.ctrlKey || e.metaKey || isMultiSelectMode) {
+          if (newSet.has(entry.path)) {
+            newSet.delete(entry.path)
+          } else {
+            newSet.add(entry.path)
+          }
+          setLastSelectedIndex(index)
+        } else {
+          newSet.clear()
+          newSet.add(entry.path)
+          setLastSelectedIndex(index)
+        }
+        return newSet
+      })
+    },
+    [entries, lastSelectedIndex, isMultiSelectMode],
+  )
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, entry: FileEntry | null) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (entry && !selectedPaths.has(entry.path)) {
+        setSelectedPaths(new Set([entry.path]))
+        const idx = entries.findIndex((x) => x.path === entry.path)
+        setLastSelectedIndex(idx >= 0 ? idx : null)
+      }
+      setContextMenu({ x: e.clientX, y: e.clientY, entry })
+    },
+    [selectedPaths, entries],
+  )
 
   // ── CRUD actions ────────────────────────────────────────────────────────────
 
@@ -569,13 +661,13 @@ export function FileManagerScreen() {
     setLoading(true)
     try {
       await Promise.all(
-        Array.from(selectedPaths).map(path =>
+        Array.from(selectedPaths).map((path) =>
           fetch('/api/files', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ action: 'delete', mode: 'browse', path }),
-          })
-        )
+          }),
+        ),
       )
       toast(`Deleted ${selectedPaths.size} item(s)`, { type: 'success' })
       setSelectedPaths(new Set())
@@ -588,87 +680,107 @@ export function FileManagerScreen() {
     }
   }, [deleteConfirm, selectedPaths, loadDirectory, currentPath])
 
-  const handleDownload = useCallback((paths: Set<string>) => {
-    if (paths.size === 0) return
-    toast(`Starting download for ${paths.size} item(s)...`, { type: 'info' })
-    Array.from(paths).forEach(path => {
-      const entry = entries.find(e => e.path === path)
-      if (!entry) return
-      const url = `/api/files?action=download&mode=browse&path=${encodeURIComponent(path)}`
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = entry.type === 'folder' ? `${entry.name}.zip` : entry.name
-      document.body.appendChild(anchor)
-      anchor.click()
-      document.body.removeChild(anchor)
-    })
-  }, [entries])
-
-  const handleZip = useCallback(async (paths: Set<string>) => {
-    if (paths.size === 0) return
-    const pathList = Array.from(paths)
-    const firstEntry = entries.find(e => e.path === pathList[0])
-    const defaultZipName = pathList.length === 1 && firstEntry
-      ? `${firstEntry.name.replace(/\.[^/.]+$/, '')}.zip`
-      : 'archive.zip'
-    
-    const zipName = window.prompt('Enter archive name (.zip):', defaultZipName)
-    if (!zipName) return
-    const finalZipName = zipName.endsWith('.zip') ? zipName : `${zipName}.zip`
-    const targetZipPath = `${currentPath === '/' ? '' : currentPath}/${finalZipName}`
-
-    setLoading(true)
-    try {
-      const res = await fetch('/api/files', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          action: 'zip',
-          mode: 'browse',
-          paths: pathList,
-          zipPath: targetZipPath,
-        }),
+  const handleDownload = useCallback(
+    (paths: Set<string>) => {
+      if (paths.size === 0) return
+      toast(`Starting download for ${paths.size} item(s)...`, { type: 'info' })
+      Array.from(paths).forEach((path) => {
+        const entry = entries.find((e) => e.path === path)
+        if (!entry) return
+        const url = `/api/files?action=download&mode=browse&path=${encodeURIComponent(path)}`
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download =
+          entry.type === 'folder' ? `${entry.name}.zip` : entry.name
+        document.body.appendChild(anchor)
+        anchor.click()
+        document.body.removeChild(anchor)
       })
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null)
-        throw new Error(errorData?.error || `Zip failed: ${res.statusText}`)
-      }
-      toast(`Created archive ${finalZipName}`, { type: 'success' })
-      await loadDirectory(currentPath)
-    } catch (err: any) {
-      toast(err.message, { type: 'error' })
-      setLoading(false)
-    }
-  }, [entries, currentPath, loadDirectory])
+    },
+    [entries],
+  )
 
-  const handleUnzip = useCallback(async (zipEntry: FileEntry) => {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/files', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          action: 'unzip',
-          mode: 'browse',
-          path: zipEntry.path,
-          destination: currentPath,
-        }),
-      })
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null)
-        throw new Error(errorData?.error || `Unzip failed: ${res.statusText}`)
+  const handleZip = useCallback(
+    async (paths: Set<string>) => {
+      if (paths.size === 0) return
+      const pathList = Array.from(paths)
+      const firstEntry = entries.find((e) => e.path === pathList[0])
+      const defaultZipName =
+        pathList.length === 1 && firstEntry
+          ? `${firstEntry.name.replace(/\.[^/.]+$/, '')}.zip`
+          : 'archive.zip'
+
+      const zipName = window.prompt(
+        'Enter archive name (.zip):',
+        defaultZipName,
+      )
+      if (!zipName) return
+      const finalZipName = zipName.endsWith('.zip') ? zipName : `${zipName}.zip`
+      const targetZipPath = `${currentPath === '/' ? '' : currentPath}/${finalZipName}`
+
+      setLoading(true)
+      try {
+        const res = await fetch('/api/files', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            action: 'zip',
+            mode: 'browse',
+            paths: pathList,
+            zipPath: targetZipPath,
+          }),
+        })
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => null)
+          throw new Error(errorData?.error || `Zip failed: ${res.statusText}`)
+        }
+        toast(`Created archive ${finalZipName}`, { type: 'success' })
+        await loadDirectory(currentPath)
+      } catch (err: any) {
+        toast(err.message, { type: 'error' })
+        setLoading(false)
       }
-      const data = await res.json().catch(() => ({}))
-      toast(`Extracted ${data.count ?? ''} files from ${zipEntry.name}`, { type: 'success' })
-      await loadDirectory(currentPath)
-    } catch (err: any) {
-      toast(err.message, { type: 'error' })
-      setLoading(false)
-    }
-  }, [currentPath, loadDirectory])
+    },
+    [entries, currentPath, loadDirectory],
+  )
+
+  const handleUnzip = useCallback(
+    async (zipEntry: FileEntry) => {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/files', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            action: 'unzip',
+            mode: 'browse',
+            path: zipEntry.path,
+            destination: currentPath,
+          }),
+        })
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => null)
+          throw new Error(errorData?.error || `Unzip failed: ${res.statusText}`)
+        }
+        const data = await res.json().catch(() => ({}))
+        toast(`Extracted ${data.count ?? ''} files from ${zipEntry.name}`, {
+          type: 'success',
+        })
+        await loadDirectory(currentPath)
+      } catch (err: any) {
+        toast(err.message, { type: 'error' })
+        setLoading(false)
+      }
+    },
+    [currentPath, loadDirectory],
+  )
 
   const openRenamePrompt = useCallback((entry: FileEntry) => {
-    setPromptState({ mode: 'rename', targetPath: entry.path, defaultValue: entry.name })
+    setPromptState({
+      mode: 'rename',
+      targetPath: entry.path,
+      defaultValue: entry.name,
+    })
     setPromptValue(entry.name)
   }, [])
 
@@ -701,10 +813,17 @@ export function FileManagerScreen() {
 
         if (!res.ok) {
           const errorData = await res.json().catch(() => null)
-          throw new Error(errorData?.error || `Upload failed: ${res.statusText}`)
+          throw new Error(
+            errorData?.error || `Upload failed: ${res.statusText}`,
+          )
         }
 
-        toast(files.length > 1 ? `Uploaded ${files.length} files` : `Uploaded ${files[0].name}`, { type: 'success' })
+        toast(
+          files.length > 1
+            ? `Uploaded ${files.length} files`
+            : `Uploaded ${files[0].name}`,
+          { type: 'success' },
+        )
         void loadDirectory(currentPath)
       } catch (err: any) {
         toast(err.message, { type: 'error' })
@@ -715,25 +834,33 @@ export function FileManagerScreen() {
         }
       }
     },
-    [currentPath, loadDirectory]
+    [currentPath, loadDirectory],
   )
 
   const handlePaste = useCallback(async () => {
     if (!clipboard || clipboard.entries.length === 0) return
-    const targetFolder = contextMenu?.entry?.type === 'folder' ? contextMenu.entry.path : currentPath
-    
+    const targetFolder =
+      contextMenu?.entry?.type === 'folder'
+        ? contextMenu.entry.path
+        : currentPath
+
     setLoading(true)
     try {
       await Promise.all(
-        clipboard.entries.map(entry => {
+        clipboard.entries.map((entry) => {
           const targetPath = targetFolder + '/' + entry.name
           const action = clipboard.action === 'copy' ? 'copy' : 'rename'
           return fetch('/api/files', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ action, mode: 'browse', from: entry.path, to: targetPath }),
+            body: JSON.stringify({
+              action,
+              mode: 'browse',
+              from: entry.path,
+              to: targetPath,
+            }),
           })
-        })
+        }),
       )
       toast(`Pasted ${clipboard.entries.length} item(s)`, { type: 'success' })
       if (clipboard.action === 'cut') {
@@ -762,21 +889,35 @@ export function FileManagerScreen() {
       await fetch('/api/files', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'rename', mode: 'browse', from: promptState.targetPath, to: nextPath }),
+        body: JSON.stringify({
+          action: 'rename',
+          mode: 'browse',
+          from: promptState.targetPath,
+          to: nextPath,
+        }),
       })
     } else if (promptState.mode === 'new-folder') {
       const nextPath = `${promptState.targetPath === '/' ? '' : promptState.targetPath}/${value}`
       await fetch('/api/files', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'mkdir', mode: 'browse', path: nextPath }),
+        body: JSON.stringify({
+          action: 'mkdir',
+          mode: 'browse',
+          path: nextPath,
+        }),
       })
     } else if (promptState.mode === 'new-file') {
       const nextPath = `${promptState.targetPath === '/' ? '' : promptState.targetPath}/${value}`
       await fetch('/api/files', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'write', mode: 'browse', path: nextPath, content: '' }),
+        body: JSON.stringify({
+          action: 'write',
+          mode: 'browse',
+          path: nextPath,
+          content: '',
+        }),
       })
     }
 
@@ -789,20 +930,27 @@ export function FileManagerScreen() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't intercept if user is typing in an input/textarea
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
         return
       }
 
       if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
         if (selectedPaths.size > 0) {
           e.preventDefault()
-          const entriesToCopy = entries.filter(entry => selectedPaths.has(entry.path))
+          const entriesToCopy = entries.filter((entry) =>
+            selectedPaths.has(entry.path),
+          )
           setClipboard({ action: 'copy', entries: entriesToCopy })
         }
       } else if (e.key === 'x' && (e.ctrlKey || e.metaKey)) {
         if (selectedPaths.size > 0) {
           e.preventDefault()
-          const entriesToCut = entries.filter(entry => selectedPaths.has(entry.path))
+          const entriesToCut = entries.filter((entry) =>
+            selectedPaths.has(entry.path),
+          )
           setClipboard({ action: 'cut', entries: entriesToCut })
         }
       } else if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
@@ -817,7 +965,7 @@ export function FileManagerScreen() {
         if (selectedPaths.size === 1) {
           e.preventDefault()
           const selectedPath = Array.from(selectedPaths)[0]
-          const entry = entries.find(e => e.path === selectedPath)
+          const entry = entries.find((e) => e.path === selectedPath)
           if (entry) openRenamePrompt(entry)
         }
       }
@@ -837,19 +985,47 @@ export function FileManagerScreen() {
           <HamburgerTrigger />
         </div>
         {/* Navigation buttons */}
-        <button type="button" onClick={goBack} disabled={history.index <= 0} title="Back" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
+        <button
+          type="button"
+          onClick={goBack}
+          disabled={history.index <= 0}
+          title="Back"
+          className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors"
+        >
           <HugeiconsIcon icon={ArrowLeft01Icon} size={18} />
         </button>
-        <button type="button" onClick={goForward} disabled={history.index >= history.stack.length - 1} title="Forward" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
+        <button
+          type="button"
+          onClick={goForward}
+          disabled={history.index >= history.stack.length - 1}
+          title="Forward"
+          className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors"
+        >
           <HugeiconsIcon icon={ArrowRight01Icon} size={18} />
         </button>
-        <button type="button" onClick={goUp} disabled={currentPath === '/'} title="Go up" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors">
+        <button
+          type="button"
+          onClick={goUp}
+          disabled={currentPath === '/'}
+          title="Go up"
+          className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 disabled:opacity-30 transition-colors"
+        >
           ⬆
         </button>
-        <button type="button" onClick={() => navigateTo(homedirRef.current)} title="Home directory" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors">
+        <button
+          type="button"
+          onClick={() => navigateTo(homedirRef.current)}
+          title="Home directory"
+          className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+        >
           <HugeiconsIcon icon={Home01Icon} size={18} />
         </button>
-        <button type="button" onClick={() => void loadDirectory(currentPath)} title="Refresh" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors">
+        <button
+          type="button"
+          onClick={() => void loadDirectory(currentPath)}
+          title="Refresh"
+          className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+        >
           <HugeiconsIcon icon={RefreshIcon} size={18} />
         </button>
 
@@ -864,22 +1040,53 @@ export function FileManagerScreen() {
 
         {/* Action buttons */}
         <div className="flex items-center gap-1 ml-auto md:ml-0 order-2 md:order-none">
-          <button type="button" onClick={() => {
-            setIsMultiSelectMode(!isMultiSelectMode)
-            setSelectedPaths(new Set())
-            setLastSelectedIndex(null)
-          }} title="Toggle Multi-Select" className={cn("rounded p-1.5 transition-colors", isMultiSelectMode ? "bg-primary-200 text-primary-800 dark:bg-neutral-800 dark:text-neutral-100" : "text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800")}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsMultiSelectMode(!isMultiSelectMode)
+              setSelectedPaths(new Set())
+              setLastSelectedIndex(null)
+            }}
+            title="Toggle Multi-Select"
+            className={cn(
+              'rounded p-1.5 transition-colors',
+              isMultiSelectMode
+                ? 'bg-primary-200 text-primary-800 dark:bg-neutral-800 dark:text-neutral-100'
+                : 'text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800',
+            )}
+          >
             <HugeiconsIcon icon={CheckListIcon} size={16} />
           </button>
           <div className="h-4 w-px bg-primary-200 dark:bg-neutral-700 mx-1" />
-          <input type="file" ref={fileInputRef} multiple className="hidden" onChange={handleFileUpload} />
-          <button type="button" onClick={() => fileInputRef.current?.click()} title="Upload file" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors">
+          <input
+            type="file"
+            ref={fileInputRef}
+            multiple
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            title="Upload file"
+            className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+          >
             <HugeiconsIcon icon={CloudUploadIcon} size={16} />
           </button>
-          <button type="button" onClick={openNewFilePrompt} title="New file" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors">
+          <button
+            type="button"
+            onClick={openNewFilePrompt}
+            title="New file"
+            className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+          >
             <HugeiconsIcon icon={File01Icon} size={16} />
           </button>
-          <button type="button" onClick={openNewFolderPrompt} title="New folder" className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors">
+          <button
+            type="button"
+            onClick={openNewFolderPrompt}
+            title="New folder"
+            className="rounded p-1.5 text-primary-500 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+          >
             <HugeiconsIcon icon={Folder01Icon} size={16} />
           </button>
         </div>
@@ -891,19 +1098,28 @@ export function FileManagerScreen() {
         <div className="flex flex-col flex-1 min-h-0 min-w-0 bg-white dark:bg-neutral-900 overflow-hidden relative">
           {loading ? (
             <div className="flex flex-1 items-center justify-center text-primary-400 dark:text-neutral-600">
-              <HugeiconsIcon icon={Loading03Icon} size={24} className="animate-spin" />
+              <HugeiconsIcon
+                icon={Loading03Icon}
+                size={24}
+                className="animate-spin"
+              />
             </div>
           ) : error ? (
             <div className="flex flex-1 flex-col items-center justify-center px-4 text-center text-sm text-red-500">
               <p>{error}</p>
-              <p className="mt-1 text-xs text-primary-400">Cannot access this directory.</p>
+              <p className="mt-1 text-xs text-primary-400">
+                Cannot access this directory.
+              </p>
             </div>
           ) : entries.length === 0 ? (
             <div className="flex flex-1 items-center justify-center px-4 text-center text-sm text-primary-400 dark:text-neutral-600">
               This directory is empty.
             </div>
           ) : (
-            <ScrollAreaRoot className="flex-1 min-h-0 w-full" onContextMenu={(e) => handleContextMenu(e, null)}>
+            <ScrollAreaRoot
+              className="flex-1 min-h-0 w-full"
+              onContextMenu={(e) => handleContextMenu(e, null)}
+            >
               <ScrollAreaViewport className="h-full w-full [&>div]:!block">
                 <table className="w-full text-left table-fixed">
                   <thead className="sticky top-0 z-10 bg-primary-100/80 dark:bg-neutral-900/80 backdrop-blur-sm text-xs text-primary-500 dark:text-neutral-500 uppercase tracking-wider">
@@ -913,10 +1129,15 @@ export function FileManagerScreen() {
                           <div className="flex items-center justify-center">
                             <input
                               type="checkbox"
-                              checked={entries.length > 0 && selectedPaths.size === entries.length}
+                              checked={
+                                entries.length > 0 &&
+                                selectedPaths.size === entries.length
+                              }
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedPaths(new Set(entries.map(x => x.path)))
+                                  setSelectedPaths(
+                                    new Set(entries.map((x) => x.path)),
+                                  )
                                 } else {
                                   setSelectedPaths(new Set())
                                 }
@@ -927,10 +1148,23 @@ export function FileManagerScreen() {
                           </div>
                         </th>
                       )}
-                      <th className={cn("py-2 pr-2 font-medium", isMultiSelectMode ? "pl-1" : "pl-4")}>Name</th>
-                      <th className="py-2 px-3 text-right font-medium w-24">Size</th>
-                      <th className="py-2 px-3 font-medium hidden md:table-cell w-44">Modified</th>
-                      <th className="py-2 px-3 font-medium hidden lg:table-cell w-20">Type</th>
+                      <th
+                        className={cn(
+                          'py-2 pr-2 font-medium',
+                          isMultiSelectMode ? 'pl-1' : 'pl-4',
+                        )}
+                      >
+                        Name
+                      </th>
+                      <th className="py-2 px-3 text-right font-medium w-24">
+                        Size
+                      </th>
+                      <th className="py-2 px-3 font-medium hidden md:table-cell w-44">
+                        Modified
+                      </th>
+                      <th className="py-2 px-3 font-medium hidden lg:table-cell w-20">
+                        Type
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-primary-100 dark:divide-neutral-800/50">
@@ -977,77 +1211,157 @@ export function FileManagerScreen() {
         >
           {contextMenu.entry && (
             <>
-              {contextMenu.entry.type === 'folder' && selectedPaths.size === 1 && (
-                <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { navigateTo(contextMenu.entry!.path); setContextMenu(null) }}>
-                  <HugeiconsIcon icon={FolderOpenIcon} size={16} /> Open
-                </button>
-              )}
-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { 
-                const entriesToCut = entries.filter(e => selectedPaths.has(e.path));
-                setClipboard({ action: 'cut', entries: entriesToCut }); 
-                setContextMenu(null) 
-              }}>
-                <HugeiconsIcon icon={Scissor01Icon} size={16} /> Cut {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
+              {contextMenu.entry.type === 'folder' &&
+                selectedPaths.size === 1 && (
+                  <button
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+                    onClick={() => {
+                      navigateTo(contextMenu.entry!.path)
+                      setContextMenu(null)
+                    }}
+                  >
+                    <HugeiconsIcon icon={FolderOpenIcon} size={16} /> Open
+                  </button>
+                )}
+              <button
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+                onClick={() => {
+                  const entriesToCut = entries.filter((e) =>
+                    selectedPaths.has(e.path),
+                  )
+                  setClipboard({ action: 'cut', entries: entriesToCut })
+                  setContextMenu(null)
+                }}
+              >
+                <HugeiconsIcon icon={Scissor01Icon} size={16} /> Cut{' '}
+                {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
               </button>
-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { 
-                const entriesToCopy = entries.filter(e => selectedPaths.has(e.path));
-                setClipboard({ action: 'copy', entries: entriesToCopy }); 
-                setContextMenu(null) 
-              }}>
-                <HugeiconsIcon icon={Copy01Icon} size={16} /> Copy {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
+              <button
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+                onClick={() => {
+                  const entriesToCopy = entries.filter((e) =>
+                    selectedPaths.has(e.path),
+                  )
+                  setClipboard({ action: 'copy', entries: entriesToCopy })
+                  setContextMenu(null)
+                }}
+              >
+                <HugeiconsIcon icon={Copy01Icon} size={16} /> Copy{' '}
+                {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
               </button>
               <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
               {selectedPaths.size === 1 && (
-                <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { openRenamePrompt(contextMenu.entry!); setContextMenu(null) }}>
+                <button
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+                  onClick={() => {
+                    openRenamePrompt(contextMenu.entry!)
+                    setContextMenu(null)
+                  }}
+                >
                   <HugeiconsIcon icon={Edit02Icon} size={16} /> Rename
                 </button>
               )}
-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handleDownload(selectedPaths); setContextMenu(null) }}>
-                <HugeiconsIcon icon={Download01Icon} size={16} /> Download {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
+              <button
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+                onClick={() => {
+                  void handleDownload(selectedPaths)
+                  setContextMenu(null)
+                }}
+              >
+                <HugeiconsIcon icon={Download01Icon} size={16} /> Download{' '}
+                {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
               </button>
-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handleZip(selectedPaths); setContextMenu(null) }}>
-                <HugeiconsIcon icon={Archive01Icon} size={16} /> Compress to ZIP {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
+              <button
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+                onClick={() => {
+                  void handleZip(selectedPaths)
+                  setContextMenu(null)
+                }}
+              >
+                <HugeiconsIcon icon={Archive01Icon} size={16} /> Compress to ZIP{' '}
+                {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
               </button>
-              {selectedPaths.size === 1 && contextMenu.entry.name.toLowerCase().endsWith('.zip') && (
-                <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors text-amber-600 dark:text-amber-400" onClick={() => { void handleUnzip(contextMenu.entry!); setContextMenu(null) }}>
-                  <HugeiconsIcon icon={Archive01Icon} size={16} /> Extract ZIP Here
-                </button>
-              )}
+              {selectedPaths.size === 1 &&
+                contextMenu.entry.name.toLowerCase().endsWith('.zip') && (
+                  <button
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors text-amber-600 dark:text-amber-400"
+                    onClick={() => {
+                      void handleUnzip(contextMenu.entry!)
+                      setContextMenu(null)
+                    }}
+                  >
+                    <HugeiconsIcon icon={Archive01Icon} size={16} /> Extract ZIP
+                    Here
+                  </button>
+                )}
               <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
             </>
           )}
 
-          {(!contextMenu.entry || (contextMenu.entry.type === 'folder' && selectedPaths.size === 1)) && clipboard && (
-            <>
-              <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors" onClick={() => { void handlePaste(); setContextMenu(null) }}>
-                <HugeiconsIcon icon={ClipboardIcon} size={16} /> Paste {clipboard.entries.length > 1 ? `(${clipboard.entries.length})` : ''}
-              </button>
-              <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
-            </>
-          )}
+          {(!contextMenu.entry ||
+            (contextMenu.entry.type === 'folder' &&
+              selectedPaths.size === 1)) &&
+            clipboard && (
+              <>
+                <button
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-neutral-800 transition-colors"
+                  onClick={() => {
+                    void handlePaste()
+                    setContextMenu(null)
+                  }}
+                >
+                  <HugeiconsIcon icon={ClipboardIcon} size={16} /> Paste{' '}
+                  {clipboard.entries.length > 1
+                    ? `(${clipboard.entries.length})`
+                    : ''}
+                </button>
+                <div className="my-1 border-t border-primary-200 dark:border-neutral-800 mx-1" />
+              </>
+            )}
 
           {contextMenu.entry && (
-            <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors" onClick={() => { setDeleteConfirm(true); setContextMenu(null) }}>
-              <HugeiconsIcon icon={Delete01Icon} size={16} /> Delete {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
+            <button
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+              onClick={() => {
+                setDeleteConfirm(true)
+                setContextMenu(null)
+              }}
+            >
+              <HugeiconsIcon icon={Delete01Icon} size={16} /> Delete{' '}
+              {selectedPaths.size > 1 ? `(${selectedPaths.size})` : ''}
             </button>
           )}
         </div>
       )}
 
       {/* ── Rename / New folder / New file dialog ─────────────────────────── */}
-      <DialogRoot open={Boolean(promptState)} onOpenChange={(open) => { if (!open) setPromptState(null) }}>
+      <DialogRoot
+        open={Boolean(promptState)}
+        onOpenChange={(open) => {
+          if (!open) setPromptState(null)
+        }}
+      >
         <DialogContent>
           <div className="p-5 space-y-3">
             <DialogTitle>
-              {promptState?.mode === 'rename' ? 'Rename' : promptState?.mode === 'new-folder' ? 'New Folder' : 'New File'}
+              {promptState?.mode === 'rename'
+                ? 'Rename'
+                : promptState?.mode === 'new-folder'
+                  ? 'New Folder'
+                  : 'New File'}
             </DialogTitle>
             <DialogDescription>
-              {promptState?.mode === 'rename' ? 'Enter a new name.' : 'Enter a name to create.'}
+              {promptState?.mode === 'rename'
+                ? 'Enter a new name.'
+                : 'Enter a name to create.'}
             </DialogDescription>
             <input
               value={promptValue}
               onChange={(e) => setPromptValue(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) void handlePromptSubmit() }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing)
+                  void handlePromptSubmit()
+              }}
               className="w-full rounded-md border border-primary-200 dark:border-neutral-700 bg-primary-50 dark:bg-neutral-900 px-3 py-2 text-sm text-primary-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-300"
               autoFocus
             />
@@ -1062,41 +1376,76 @@ export function FileManagerScreen() {
       </DialogRoot>
 
       {/* ── Delete confirm dialog ──────────────────────────────────────────── */}
-      <DialogRoot open={deleteConfirm} onOpenChange={(open) => { if (!open) setDeleteConfirm(false) }}>
+      <DialogRoot
+        open={deleteConfirm}
+        onOpenChange={(open) => {
+          if (!open) setDeleteConfirm(false)
+        }}
+      >
         <DialogContent>
           <div className="p-5 space-y-3">
-            <DialogTitle>Delete {selectedPaths.size > 1 ? 'Files' : 'File'}</DialogTitle>
+            <DialogTitle>
+              Delete {selectedPaths.size > 1 ? 'Files' : 'File'}
+            </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete <strong>{selectedPaths.size === 1 ? Array.from(selectedPaths)[0].split('/').pop() : `${selectedPaths.size} items`}</strong>?
-              {' '}This action cannot be undone.
+              Are you sure you want to delete{' '}
+              <strong>
+                {selectedPaths.size === 1
+                  ? Array.from(selectedPaths)[0].split('/').pop()
+                  : `${selectedPaths.size} items`}
+              </strong>
+              ? This action cannot be undone.
             </DialogDescription>
             <div className="flex justify-end gap-2 pt-2">
               <DialogClose render={<Button variant="outline">Cancel</Button>} />
-              <Button variant="destructive" onClick={() => void handleDeleteConfirmed()}>Delete</Button>
+              <Button
+                variant="destructive"
+                onClick={() => void handleDeleteConfirmed()}
+              >
+                Delete
+              </Button>
             </div>
           </div>
         </DialogContent>
       </DialogRoot>
 
       {/* ── Mobile file preview dialog ─────────────────────────────────────── */}
-      <DialogRoot open={Boolean(modalPreviewEntry)} onOpenChange={(open) => { if (!open) setModalPreviewEntry(null) }}>
+      <DialogRoot
+        open={Boolean(modalPreviewEntry)}
+        onOpenChange={(open) => {
+          if (!open) setModalPreviewEntry(null)
+        }}
+      >
         <DialogContent className="max-w-[95vw] w-[500px] h-[80vh] p-0 flex flex-col overflow-hidden bg-primary-50 dark:bg-neutral-950">
           <div className="flex shrink-0 items-center justify-between border-b border-primary-200 dark:border-neutral-800 px-4 py-3 bg-white dark:bg-neutral-900">
-            <DialogTitle className="text-sm font-semibold truncate pr-4">{modalPreviewEntry?.name}</DialogTitle>
-            <DialogClose render={
-              <button type="button" className="text-xs text-primary-400 hover:text-primary-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors">
-                ✕
-              </button>
-            } />
+            <DialogTitle className="text-sm font-semibold truncate pr-4">
+              {modalPreviewEntry?.name}
+            </DialogTitle>
+            <DialogClose
+              render={
+                <button
+                  type="button"
+                  className="text-xs text-primary-400 hover:text-primary-600 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors"
+                >
+                  ✕
+                </button>
+              }
+            />
           </div>
           <div className="flex-1 min-h-0 overflow-hidden bg-white dark:bg-neutral-900">
             <FilePreview entry={modalPreviewEntry} />
           </div>
           {modalPreviewEntry && (
             <div className="shrink-0 border-t border-primary-200 dark:border-neutral-800 px-4 py-3 space-y-1 text-xs text-primary-500 dark:text-neutral-500 bg-white dark:bg-neutral-900">
-              {modalPreviewEntry.size != null && <div>Size: {formatBytes(modalPreviewEntry.size)}</div>}
-              {modalPreviewEntry.modifiedAt && <div>Modified: {formatDate(modalPreviewEntry.modifiedAt)}</div>}
-              <div className="truncate text-[10px] text-primary-400 dark:text-neutral-600">{modalPreviewEntry.path}</div>
+              {modalPreviewEntry.size != null && (
+                <div>Size: {formatBytes(modalPreviewEntry.size)}</div>
+              )}
+              {modalPreviewEntry.modifiedAt && (
+                <div>Modified: {formatDate(modalPreviewEntry.modifiedAt)}</div>
+              )}
+              <div className="truncate text-[10px] text-primary-400 dark:text-neutral-600">
+                {modalPreviewEntry.path}
+              </div>
             </div>
           )}
         </DialogContent>

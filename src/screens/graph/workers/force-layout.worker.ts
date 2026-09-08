@@ -6,8 +6,14 @@ self.onmessage = (event) => {
   const connectionCount = new Map<string, number>()
   for (const node of nodes) connectionCount.set(node.id, 0)
   for (const edge of edges) {
-    connectionCount.set(edge.source, (connectionCount.get(edge.source) ?? 0) + 1)
-    connectionCount.set(edge.target, (connectionCount.get(edge.target) ?? 0) + 1)
+    connectionCount.set(
+      edge.source,
+      (connectionCount.get(edge.source) ?? 0) + 1,
+    )
+    connectionCount.set(
+      edge.target,
+      (connectionCount.get(edge.target) ?? 0) + 1,
+    )
   }
 
   const simNodes = nodes.map((n: any) => {
@@ -26,12 +32,22 @@ self.onmessage = (event) => {
   })
 
   const simLinks = edges
-    .filter((e: any) => connectionCount.has(e.source) && connectionCount.has(e.target))
+    .filter(
+      (e: any) =>
+        connectionCount.has(e.source) && connectionCount.has(e.target),
+    )
     .map((e: any) => ({ source: e.source, target: e.target }))
 
   const simulation = d3
     .forceSimulation(simNodes, 3)
-    .force('link', d3.forceLink(simLinks).id((d: any) => d.id).distance(150).strength(0.5))
+    .force(
+      'link',
+      d3
+        .forceLink(simLinks)
+        .id((d: any) => d.id)
+        .distance(150)
+        .strength(0.5),
+    )
     .force('charge', d3.forceManyBody().strength(-400))
     .force('center', d3.forceCenter(0, 0, 0))
     .force('collide', d3.forceCollide().radius(30))

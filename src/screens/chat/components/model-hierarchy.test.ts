@@ -15,8 +15,16 @@ describe('buildModelHierarchy', () => {
 
   it('groups 3-level prefix: vps/ag/gemini-2.5-flash and vps/ag/claude-sonnet-4-6', () => {
     const models: HierarchicalModelItem[] = [
-      { id: 'vps/ag/gemini-2.5-flash', name: 'gemini-2.5-flash', provider: 'custom' },
-      { id: 'vps/ag/claude-sonnet-4-6', name: 'claude-sonnet-4-6', provider: 'custom' },
+      {
+        id: 'vps/ag/gemini-2.5-flash',
+        name: 'gemini-2.5-flash',
+        provider: 'custom',
+      },
+      {
+        id: 'vps/ag/claude-sonnet-4-6',
+        name: 'claude-sonnet-4-6',
+        provider: 'custom',
+      },
     ]
     const tree = buildModelHierarchy(models)
     expect(tree.length).toBe(1)
@@ -30,7 +38,9 @@ describe('buildModelHierarchy', () => {
     expect(ag.name).toBe('ag')
     expect(ag.children.length).toBe(2)
 
-    const model1 = ag.children.find((c) => !c.isGroup && c.id === 'vps/ag/gemini-2.5-flash') as HierarchicalModelItem
+    const model1 = ag.children.find(
+      (c) => !c.isGroup && c.id === 'vps/ag/gemini-2.5-flash',
+    ) as HierarchicalModelItem
     expect(model1).toBeDefined()
     expect(model1.isGroup).toBe(false)
     expect(model1.id).toBe('vps/ag/gemini-2.5-flash')
@@ -58,7 +68,11 @@ describe('buildModelHierarchy', () => {
   it('handles model without prefix (bare model name) using direct item', () => {
     const models: HierarchicalModelItem[] = [
       { id: 'gpt-4o', name: 'gpt-4o', provider: 'openai' },
-      { id: 'claude-3-5-sonnet', name: 'claude-3-5-sonnet', provider: 'anthropic' },
+      {
+        id: 'claude-3-5-sonnet',
+        name: 'claude-3-5-sonnet',
+        provider: 'anthropic',
+      },
     ]
     const tree = buildModelHierarchy(models)
     expect(tree.length).toBe(2)
@@ -84,8 +98,16 @@ describe('buildModelHierarchy', () => {
 
   it('filters model hierarchy with search query across any level or leaf', () => {
     const models: HierarchicalModelItem[] = [
-      { id: 'vps/ag/gemini-2.5-flash', name: 'gemini-2.5-flash', provider: 'custom' },
-      { id: 'vps/ag/claude-sonnet-4-6', name: 'claude-sonnet-4-6', provider: 'custom' },
+      {
+        id: 'vps/ag/gemini-2.5-flash',
+        name: 'gemini-2.5-flash',
+        provider: 'custom',
+      },
+      {
+        id: 'vps/ag/claude-sonnet-4-6',
+        name: 'claude-sonnet-4-6',
+        provider: 'custom',
+      },
       { id: 'hb/gemini-pro', name: 'gemini-pro', provider: 'hb' },
       { id: 'gpt-4o', name: 'gpt-4o', provider: 'openai' },
     ]
@@ -96,12 +118,22 @@ describe('buildModelHierarchy', () => {
 
     const filteredVps = filterModelHierarchy(tree, 'vps')
     expect(filteredVps.length).toBe(1)
-    expect((filteredVps[0] as HierarchicalModelGroup).children[0].name).toBe('ag')
+    expect((filteredVps[0] as HierarchicalModelGroup).children[0].name).toBe(
+      'ag',
+    )
   })
 
   it('extracts ancestor group paths correctly', () => {
-    expect(getAncestorGroupPaths('vps/ag/gemini-2.5-flash')).toEqual(['vps', 'vps/ag'])
+    expect(getAncestorGroupPaths('vps/ag/gemini-2.5-flash')).toEqual([
+      'vps',
+      'vps/ag',
+    ])
     expect(getAncestorGroupPaths('gpt-4o')).toEqual([])
-    expect(getAncestorGroupPaths('a/b/c/d/model')).toEqual(['a', 'a/b', 'a/b/c', 'a/b/c/d'])
+    expect(getAncestorGroupPaths('a/b/c/d/model')).toEqual([
+      'a',
+      'a/b',
+      'a/b/c',
+      'a/b/c/d',
+    ])
   })
 })

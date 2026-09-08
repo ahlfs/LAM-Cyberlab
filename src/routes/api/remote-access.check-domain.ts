@@ -2,7 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { requireLocalOrAuth } from '../../server/auth-middleware'
 import { checkDomainDns } from '../../server/remote-access-config'
-import { getClientIp, rateLimit, rateLimitResponse } from '../../server/rate-limit'
+import {
+  getClientIp,
+  rateLimit,
+  rateLimitResponse,
+} from '../../server/rate-limit'
 
 export const Route = createFileRoute('/api/remote-access/check-domain')({
   server: {
@@ -19,9 +23,13 @@ export const Route = createFileRoute('/api/remote-access/check-domain')({
 
         const url = new URL(request.url)
         const domain = url.searchParams.get('domain')?.trim() ?? ''
-        const expectedIp = url.searchParams.get('expectedIp')?.trim() || undefined
+        const expectedIp =
+          url.searchParams.get('expectedIp')?.trim() || undefined
         if (!domain) {
-          return json({ error: 'domain query param is required' }, { status: 400 })
+          return json(
+            { error: 'domain query param is required' },
+            { status: 400 },
+          )
         }
 
         const result = await checkDomainDns(domain, expectedIp)

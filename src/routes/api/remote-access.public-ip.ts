@@ -2,7 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { json } from '@tanstack/react-start'
 import { requireLocalOrAuth } from '../../server/auth-middleware'
 import { detectPublicIp } from '../../server/remote-access-config'
-import { getClientIp, rateLimit, rateLimitResponse } from '../../server/rate-limit'
+import {
+  getClientIp,
+  rateLimit,
+  rateLimitResponse,
+} from '../../server/rate-limit'
 
 export const Route = createFileRoute('/api/remote-access/public-ip')({
   server: {

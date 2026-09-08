@@ -65,7 +65,8 @@ export const THEMES: Array<{
   {
     id: 'claude-nous',
     label: 'Nous',
-    description: 'Deep teal background, cream accent — matches Nous Research chrome',
+    description:
+      'Deep teal background, cream accent — matches Nous Research chrome',
     icon: '◱',
   },
   {
@@ -244,17 +245,17 @@ const LIGHT_THEME_MAP: Record<
   'claude-official': 'claude-official-light',
   'claude-classic': 'claude-classic-light',
   'claude-slate': 'claude-slate-light',
-  'scifi': 'scifi-light',
-  'dracula': 'dracula-light',
+  scifi: 'scifi-light',
+  dracula: 'dracula-light',
   'discord-nitro': 'discord-nitro-light',
-  'arctic': 'arctic-light',
-  'synthwave': 'synthwave-light',
-  'biolab': 'biolab-light',
-  'monokai': 'monokai-light',
-  'tokyonight': 'tokyonight-light',
-  'crimson': 'crimson-light',
-  'deusex': 'deusex-light',
-  'highcontrast': 'highcontrast-light',
+  arctic: 'arctic-light',
+  synthwave: 'synthwave-light',
+  biolab: 'biolab-light',
+  monokai: 'monokai-light',
+  tokyonight: 'tokyonight-light',
+  crimson: 'crimson-light',
+  deusex: 'deusex-light',
+  highcontrast: 'highcontrast-light',
 }
 const DARK_THEME_MAP: Record<
   Extract<ThemeId, `${string}-light`>,

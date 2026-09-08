@@ -109,7 +109,8 @@ const FRAMEWORK_DEFS: Array<{
   {
     kind: 'laravel',
     label: 'Laravel',
-    detect: (d) => existsSync(join(d, 'artisan')) && existsSync(join(d, 'composer.json')),
+    detect: (d) =>
+      existsSync(join(d, 'artisan')) && existsSync(join(d, 'composer.json')),
     defaultCmd: 'php artisan serve --port=8000',
   },
   {
@@ -153,25 +154,32 @@ const FRAMEWORK_DEFS: Array<{
   {
     kind: 'codeigniter',
     label: 'CodeIgniter 4',
-    detect: (d) => existsSync(join(d, 'spark')) && existsSync(join(d, 'app', 'Config')),
+    detect: (d) =>
+      existsSync(join(d, 'spark')) && existsSync(join(d, 'app', 'Config')),
     defaultCmd: 'php spark serve',
   },
   {
     kind: 'nuxtjs',
     label: 'Nuxt.js',
-    detect: (d) => existsSync(join(d, 'nuxt.config.js')) || existsSync(join(d, 'nuxt.config.ts')),
+    detect: (d) =>
+      existsSync(join(d, 'nuxt.config.js')) ||
+      existsSync(join(d, 'nuxt.config.ts')),
     defaultCmd: 'npm run dev',
   },
   {
     kind: 'svelte',
     label: 'SvelteKit',
-    detect: (d) => existsSync(join(d, 'svelte.config.js')) || existsSync(join(d, 'svelte.config.ts')),
+    detect: (d) =>
+      existsSync(join(d, 'svelte.config.js')) ||
+      existsSync(join(d, 'svelte.config.ts')),
     defaultCmd: 'npm run dev',
   },
   {
     kind: 'vue',
     label: 'Vue.js',
-    detect: (d) => existsSync(join(d, 'vue.config.js')) || existsSync(join(d, 'vue.config.ts')),
+    detect: (d) =>
+      existsSync(join(d, 'vue.config.js')) ||
+      existsSync(join(d, 'vue.config.ts')),
     defaultCmd: 'npm run serve',
   },
   {
@@ -183,13 +191,17 @@ const FRAMEWORK_DEFS: Array<{
   {
     kind: 'rails',
     label: 'Ruby on Rails',
-    detect: (d) => existsSync(join(d, 'Gemfile')) && existsSync(join(d, 'app', 'controllers')),
+    detect: (d) =>
+      existsSync(join(d, 'Gemfile')) &&
+      existsSync(join(d, 'app', 'controllers')),
     defaultCmd: 'rails server',
   },
   {
     kind: 'spring',
     label: 'Spring Boot',
-    detect: (d) => existsSync(join(d, 'pom.xml')) && existsSync(join(d, 'src', 'main', 'java')),
+    detect: (d) =>
+      existsSync(join(d, 'pom.xml')) &&
+      existsSync(join(d, 'src', 'main', 'java')),
     defaultCmd: 'mvn spring-boot:run',
   },
   {
@@ -201,25 +213,33 @@ const FRAMEWORK_DEFS: Array<{
   {
     kind: 'flask',
     label: 'Flask',
-    detect: (d) => existsSync(join(d, 'requirements.txt')) && (existsSync(join(d, 'app.py')) || existsSync(join(d, 'main.py'))),
+    detect: (d) =>
+      existsSync(join(d, 'requirements.txt')) &&
+      (existsSync(join(d, 'app.py')) || existsSync(join(d, 'main.py'))),
     defaultCmd: 'flask run',
   },
   {
     kind: 'html',
     label: 'Native HTML/CSS',
-    detect: (d) => existsSync(join(d, 'index.html')) && !existsSync(join(d, 'package.json')),
+    detect: (d) =>
+      existsSync(join(d, 'index.html')) && !existsSync(join(d, 'package.json')),
     defaultCmd: 'python3 -m http.server 8080',
   },
   {
     kind: 'python',
     label: 'Python Script',
-    detect: (d) => (existsSync(join(d, 'main.py')) || existsSync(join(d, 'script.py'))) && !existsSync(join(d, 'requirements.txt')) && !existsSync(join(d, 'manage.py')),
+    detect: (d) =>
+      (existsSync(join(d, 'main.py')) || existsSync(join(d, 'script.py'))) &&
+      !existsSync(join(d, 'requirements.txt')) &&
+      !existsSync(join(d, 'manage.py')),
     defaultCmd: 'python3 main.py',
   },
   {
     kind: 'vanillajs',
     label: 'Vanilla JS',
-    detect: (d) => (existsSync(join(d, 'index.js')) || existsSync(join(d, 'main.js'))) && !existsSync(join(d, 'package.json')),
+    detect: (d) =>
+      (existsSync(join(d, 'index.js')) || existsSync(join(d, 'main.js'))) &&
+      !existsSync(join(d, 'package.json')),
     defaultCmd: 'node index.js',
   },
   {
@@ -228,7 +248,10 @@ const FRAMEWORK_DEFS: Array<{
     detect: (d) => {
       try {
         const pkg = JSON.parse(readFileSync(join(d, 'package.json'), 'utf-8'))
-        return !!(pkg.dependencies?.['react-scripts'] || pkg.devDependencies?.['react-scripts'])
+        return !!(
+          pkg.dependencies?.['react-scripts'] ||
+          pkg.devDependencies?.['react-scripts']
+        )
       } catch {
         return false
       }
@@ -262,9 +285,11 @@ function getBasePaths(): string[] {
   return existsSync(defaultPath) ? [defaultPath] : []
 }
 
-function detectFramework(
-  dir: string,
-): { kind: FrameworkKind; label: string; defaultCmd: string } {
+function detectFramework(dir: string): {
+  kind: FrameworkKind
+  label: string
+  defaultCmd: string
+} {
   for (const def of FRAMEWORK_DEFS) {
     if (def.detect(dir)) {
       return { kind: def.kind, label: def.label, defaultCmd: def.defaultCmd }
@@ -276,10 +301,14 @@ function detectFramework(
 async function gitBranch(cwd: string): Promise<string | null> {
   if (!existsSync(join(cwd, '.git'))) return null
   try {
-    const { stdout } = await execFileAsync('git', ['-C', cwd, 'rev-parse', '--abbrev-ref', 'HEAD'], {
-      encoding: 'utf-8',
-      timeout: 1500,
-    })
+    const { stdout } = await execFileAsync(
+      'git',
+      ['-C', cwd, 'rev-parse', '--abbrev-ref', 'HEAD'],
+      {
+        encoding: 'utf-8',
+        timeout: 1500,
+      },
+    )
     const branch = stdout.trim()
     return branch && branch !== 'HEAD' ? branch : null
   } catch {
@@ -290,10 +319,14 @@ async function gitBranch(cwd: string): Promise<string | null> {
 async function gitChangedCount(cwd: string): Promise<number> {
   if (!existsSync(join(cwd, '.git'))) return 0
   try {
-    const { stdout } = await execFileAsync('git', ['-C', cwd, 'status', '--porcelain'], {
-      encoding: 'utf-8',
-      timeout: 2000,
-    })
+    const { stdout } = await execFileAsync(
+      'git',
+      ['-C', cwd, 'status', '--porcelain'],
+      {
+        encoding: 'utf-8',
+        timeout: 2000,
+      },
+    )
     return stdout.split('\n').filter((l) => l.trim()).length
   } catch {
     return 0
@@ -304,7 +337,9 @@ async function projectName(dir: string): Promise<string> {
   return basename(dir)
 }
 
-function extractPortFromCommand(cmd: string): { port: number; start: number; end: number } | null {
+function extractPortFromCommand(
+  cmd: string,
+): { port: number; start: number; end: number } | null {
   // Match --port=XXXX, --port XXXX, --web-port=XXXX, -p XXXX, PORT=XXXX, :XXXX (django style)
   const patterns = [
     /--(?:web-)?port[=\s](\d{2,5})/,
@@ -351,7 +386,7 @@ async function getAvailablePort(startPort: number): Promise<number> {
 export async function scanProjects(): Promise<ProjectInfo[]> {
   const basePaths = getBasePaths()
   const projects: ProjectInfo[] = []
-  
+
   // Recursively find projects up to maxDepth
   async function scanDir(dir: string, depth: number, maxDepth: number) {
     if (depth > maxDepth) return
@@ -364,7 +399,7 @@ export async function scanProjects(): Promise<ProjectInfo[]> {
 
     for (const entry of entries) {
       if (entry.startsWith('.') || entry === 'node_modules') continue
-      
+
       const fullPath = join(dir, entry)
       try {
         const s = await stat(fullPath)
@@ -387,7 +422,9 @@ export async function scanProjects(): Promise<ProjectInfo[]> {
           running: !!server?.process,
           crashed: !!server?.crashed,
           port: server?.port ?? null,
-          url: server?.port ? `http://${server.isPublic ? '0.0.0.0' : 'localhost'}:${server.port}` : null,
+          url: server?.port
+            ? `http://${server.isPublic ? '0.0.0.0' : 'localhost'}:${server.port}`
+            : null,
           startedAt: server?.startedAt ?? null,
           recentLogs: server?.logBuffer.slice(-50) ?? [],
           isPublic: !!server?.isPublic,
@@ -432,7 +469,10 @@ export async function startProject(
   const fw = detectFramework(projectPath)
   let command = customCommand || fw.defaultCmd
   if (!command) {
-    return { ok: false, error: 'No run command available for this project type' }
+    return {
+      ok: false,
+      error: 'No run command available for this project type',
+    }
   }
 
   if (isPublic) {
@@ -471,7 +511,10 @@ export async function startProject(
   if (match && match.port) {
     const newPort = await getAvailablePort(match.port)
     if (newPort !== match.port) {
-      command = command.substring(0, match.start) + newPort.toString() + command.substring(match.end)
+      command =
+        command.substring(0, match.start) +
+        newPort.toString() +
+        command.substring(match.end)
       port = newPort
     }
   }
@@ -497,11 +540,13 @@ export async function startProject(
       logBuffer.shift()
     }
     emitter.emit('log', line)
-    
+
     // Dynamic port detection from stdout (e.g. Vite, Next.js, Laravel)
     const serverEntry = runningServers.get(projectPath)
     if (serverEntry && !serverEntry.port) {
-      const m = line.match(/(?:http:\/\/localhost:|started server on.*:|Ready in.*port\s)(\d{2,5})/i)
+      const m = line.match(
+        /(?:http:\/\/localhost:|started server on.*:|Ready in.*port\s)(\d{2,5})/i,
+      )
       if (m && m[1]) {
         serverEntry.port = parseInt(m[1], 10)
       }
@@ -509,12 +554,18 @@ export async function startProject(
   }
 
   proc.stdout?.on('data', (data: Buffer) => {
-    const lines = data.toString().split('\n').filter((l) => l.trim())
+    const lines = data
+      .toString()
+      .split('\n')
+      .filter((l) => l.trim())
     for (const line of lines) pushLog(line)
   })
 
   proc.stderr?.on('data', (data: Buffer) => {
-    const lines = data.toString().split('\n').filter((l) => l.trim())
+    const lines = data
+      .toString()
+      .split('\n')
+      .filter((l) => l.trim())
     for (const line of lines) pushLog(line)
   })
 
@@ -565,7 +616,10 @@ export async function startProject(
   })
 }
 
-export function stopProject(projectPath: string): { ok: boolean; error?: string } {
+export function stopProject(projectPath: string): {
+  ok: boolean
+  error?: string
+} {
   const server = runningServers.get(projectPath)
   if (!server) {
     return { ok: false, error: 'No running server found for this project' }
@@ -602,7 +656,10 @@ export function stopProject(projectPath: string): { ok: boolean; error?: string 
     runningServers.delete(projectPath)
     return { ok: true }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'Failed to stop' }
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Failed to stop',
+    }
   }
 }
 

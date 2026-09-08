@@ -42,7 +42,8 @@ export const Route = createFileRoute('/api/sessions')({
         }
 
         try {
-          const { getChatMode } = await import('../../server/gateway-capabilities')
+          const { getChatMode } =
+            await import('../../server/gateway-capabilities')
           const chatMode = getChatMode()
 
           // In portable / responses mode, conversation history lives in the
@@ -60,7 +61,9 @@ export const Route = createFileRoute('/api/sessions')({
 
           // Always merge local portable sessions
           const localSessions = listLocalSessions()
-          const gatewayIds = new Set(gatewaySessions.map((s: any) => s.key || s.id))
+          const gatewayIds = new Set(
+            gatewaySessions.map((s: any) => s.key || s.id),
+          )
           for (const ls of localSessions) {
             if (!gatewayIds.has(ls.id)) {
               gatewaySessions.push({
@@ -146,7 +149,6 @@ export const Route = createFileRoute('/api/sessions')({
             })
           }
 
-          
           let resolvedGatewayProvider: string | undefined
           let rawModel = typeof model === 'string' ? model.trim() : ''
           const nonSlugMatch = rawModel.match(/^[^/]*[\s()][^/]*\/(.+)$/)
@@ -154,34 +156,58 @@ export const Route = createFileRoute('/api/sessions')({
           let resolvedGatewayModel = cleanModel || model
 
           if (cleanModel) {
-            const { fetchConfiguredLiveModels, readClaudeConfigCatalog } = await import('./models')
-            const configuredLiveModels = await fetchConfiguredLiveModels().catch(() => [])
+            const { fetchConfiguredLiveModels, readClaudeConfigCatalog } =
+              await import('./models')
+            const configuredLiveModels =
+              await fetchConfiguredLiveModels().catch(() => [])
             const catalogModels = readClaudeConfigCatalog()
             const allModels = [...configuredLiveModels, ...catalogModels]
-            
-            const bareModel = cleanModel.includes('/') ? cleanModel.split('/').slice(1).join('/') : cleanModel
+
+            const bareModel = cleanModel.includes('/')
+              ? cleanModel.split('/').slice(1).join('/')
+              : cleanModel
             const liveMatch = allModels.find((m) => {
               if (m.id === cleanModel || m.id === bareModel) return true
-              if (m.provider && cleanModel === `${m.provider}/${m.id}`) return true
-              if (m.provider && cleanModel.startsWith(`${m.provider}/`) && cleanModel.slice(m.provider.length + 1) === m.id) return true
+              if (m.provider && cleanModel === `${m.provider}/${m.id}`)
+                return true
+              if (
+                m.provider &&
+                cleanModel.startsWith(`${m.provider}/`) &&
+                cleanModel.slice(m.provider.length + 1) === m.id
+              )
+                return true
               return false
             })
             if (liveMatch) {
-               const prov = (liveMatch as any).endpointProvider || liveMatch.provider;
-               const isLiveProxyModel = Boolean((liveMatch as any).source === 'live-proxy' || (liveMatch as any).baseUrl);
-               const isMultiSegmentModel = (cleanModel && cleanModel.includes('/')) || (liveMatch.id && liveMatch.id.includes('/'));
-               const isValidProviderSlug = prov && /^[a-z0-9_-]+$/i.test(prov);
-               if (prov && prov.toLowerCase() !== 'custom' && prov.toLowerCase() !== 'configured' && !isLiveProxyModel && !isMultiSegmentModel && isValidProviderSlug) {
-                  resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
-               } else {
-                  resolvedGatewayProvider = 'custom'
-               }
-               // Prefer the original model ID over liveMatch.id to avoid stripping
-               // the routing prefix (e.g. vps/ag/) that 9router needs.
-               const matchId = liveMatch.id ?? ''
-               resolvedGatewayModel = (cleanModel && matchId && cleanModel.includes(matchId))
-                 ? cleanModel
-                 : (liveMatch.id || cleanModel)
+              const prov =
+                (liveMatch as any).endpointProvider || liveMatch.provider
+              const isLiveProxyModel = Boolean(
+                (liveMatch as any).source === 'live-proxy' ||
+                (liveMatch as any).baseUrl,
+              )
+              const isMultiSegmentModel =
+                (cleanModel && cleanModel.includes('/')) ||
+                (liveMatch.id && liveMatch.id.includes('/'))
+              const isValidProviderSlug = prov && /^[a-z0-9_-]+$/i.test(prov)
+              if (
+                prov &&
+                prov.toLowerCase() !== 'custom' &&
+                prov.toLowerCase() !== 'configured' &&
+                !isLiveProxyModel &&
+                !isMultiSegmentModel &&
+                isValidProviderSlug
+              ) {
+                resolvedGatewayProvider = `custom:${prov.toLowerCase()}`
+              } else {
+                resolvedGatewayProvider = 'custom'
+              }
+              // Prefer the original model ID over liveMatch.id to avoid stripping
+              // the routing prefix (e.g. vps/ag/) that 9router needs.
+              const matchId = liveMatch.id ?? ''
+              resolvedGatewayModel =
+                cleanModel && matchId && cleanModel.includes(matchId)
+                  ? cleanModel
+                  : liveMatch.id || cleanModel
             }
           }
 

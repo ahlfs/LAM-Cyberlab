@@ -6,13 +6,7 @@
  * No WebGL or Three.js required.
  */
 import { useQuery } from '@tanstack/react-query'
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Search01Icon,
@@ -52,16 +46,16 @@ type LayoutNode = GraphNode & {
 // ── Colors & Sizes ──────────────────────────────────────────────────
 
 const NODE_COLORS: Record<string, string> = {
-  entity: '#00FFFF',    // Pure Cyan
-  concept: '#FFFFFF',   // White
-  action: '#FFCC00',    // Bright Yellow
-  file: '#3B82F6',      // Neon Blue
-  folder: '#FF0055',    // Laser Red
+  entity: '#00FFFF', // Pure Cyan
+  concept: '#FFFFFF', // White
+  action: '#FFCC00', // Bright Yellow
+  file: '#3B82F6', // Neon Blue
+  folder: '#FF0055', // Laser Red
   default: '#00F0FF',
 }
 
 const BG_COLOR = '#02040A' // Deep space black
-const EDGE_COLOR = 'rgba(255, 255, 255, 0.15)' 
+const EDGE_COLOR = 'rgba(255, 255, 255, 0.15)'
 const EDGE_FADED_COLOR = 'rgba(255, 255, 255, 0.03)'
 const EDGE_HIGHLIGHT_COLOR = 'rgba(0, 240, 255, 0.7)' // Cyan highlight
 
@@ -91,7 +85,7 @@ function useForceLayout(
     // Spawn Web Worker for heavy d3-force-3d layout calculation
     const worker = new Worker(
       new URL('./workers/force-layout.worker.ts', import.meta.url),
-      { type: 'module' }
+      { type: 'module' },
     )
 
     worker.onmessage = (event) => {
@@ -130,7 +124,7 @@ function CanvasRenderer({
   const projDataRef = useRef<Float32Array | null>(null)
   const drawOrderRef = useRef<Uint16Array | null>(null)
   const nodeIndexMapRef = useRef<Map<string, number>>(new Map())
-  
+
   // Transform state
   const state = useRef({
     rotX: -0.3,
@@ -143,7 +137,7 @@ function CanvasRenderer({
     height: 0,
     hoveredId: hoveredNodeId,
     selectedId: selectedNodeId,
-    pointers: new Map<number, { x: number, y: number }>(),
+    pointers: new Map<number, { x: number; y: number }>(),
     lastPinchDist: 0,
   })
 
@@ -154,11 +148,11 @@ function CanvasRenderer({
   useEffect(() => {
     state.current.hoveredId = hoveredNodeId
     state.current.selectedId = selectedNodeId
-    
+
     // Precompute active sets to eliminate GC pressure inside render loop
     const activeIds = new Set<string>()
     for (const id of searchHighlightIds) activeIds.add(id)
-    
+
     let activeEdges = new Set<string>()
     const addActive = (centerId: string) => {
       activeIds.add(centerId)
@@ -173,13 +167,12 @@ function CanvasRenderer({
         }
       }
     }
-    
+
     if (selectedNodeId) addActive(selectedNodeId)
     if (hoveredNodeId) addActive(hoveredNodeId)
-    
+
     activeIdsRef.current = activeIds
     activeEdgesRef.current = activeEdges
-    
   }, [hoveredNodeId, selectedNodeId, searchHighlightIds, edges])
 
   // Resize observer
@@ -210,13 +203,16 @@ function CanvasRenderer({
   // Allocate typed arrays once when nodes change
   useEffect(() => {
     if (nodes && nodes.length > 0) {
-      if (!projDataRef.current || projDataRef.current.length < nodes.length * 5) {
+      if (
+        !projDataRef.current ||
+        projDataRef.current.length < nodes.length * 5
+      ) {
         projDataRef.current = new Float32Array(nodes.length * 5)
         drawOrderRef.current = new Uint16Array(nodes.length)
       }
       const drawOrder = drawOrderRef.current!
       for (let i = 0; i < nodes.length; i++) drawOrder[i] = i
-      
+
       const map = new Map<string, number>()
       nodes.forEach((n, i) => map.set(n.id, i))
       nodeIndexMapRef.current = map
@@ -266,13 +262,18 @@ function CanvasRenderer({
 
     const render = () => {
       // Auto-rotation when idle (no drag, no hover, no selection)
-      if (!state.current.isDragging && !state.current.hoveredId && !state.current.selectedId) {
+      if (
+        !state.current.isDragging &&
+        !state.current.hoveredId &&
+        !state.current.selectedId
+      ) {
         state.current.rotY += 0.002 // Slow horizontal spin
       }
-      
-      const { width, height, rotX, rotY, zoom, hoveredId, selectedId } = state.current
+
+      const { width, height, rotX, rotY, zoom, hoveredId, selectedId } =
+        state.current
       const dpr = window.devicePixelRatio || 1
-      
+
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.save()
       ctx.scale(dpr, dpr)
@@ -286,7 +287,7 @@ function CanvasRenderer({
       const sinY = Math.sin(rotY)
       const focalLength = 600
       const cameraDistance = 350
-      
+
       const activeIds = activeIdsRef.current
       const activeEdges = activeEdgesRef.current
       const hasFocus = activeIds.size > 0
@@ -295,7 +296,7 @@ function CanvasRenderer({
       const projData = projDataRef.current
       const drawOrder = drawOrderRef.current
       const nodeIndexMap = nodeIndexMapRef.current
-      
+
       if (!projData || !drawOrder) {
         animationId = requestAnimationFrame(render)
         return
@@ -336,15 +337,29 @@ function CanvasRenderer({
         const r2y = y * cosX - r1z * sinX
         const finalZ = y * sinX + r1z * cosX
         if (finalZ < -focalLength) return null
-        const scale = (focalLength / (focalLength + finalZ + cameraDistance)) * zoom
+        const scale =
+          (focalLength / (focalLength + finalZ + cameraDistance)) * zoom
         return { px: r1x * scale + cx, py: r2y * scale + cy, scale }
       }
 
       // Helper for 3D rotation independent of camera
-      const rotate3D = (x: number, y: number, z: number, rx: number, ry: number, rz: number) => {
-        let x1 = x * Math.cos(rz) - y * Math.sin(rz), y1 = x * Math.sin(rz) + y * Math.cos(rz), z1 = z
-        let y2 = y1 * Math.cos(rx) - z1 * Math.sin(rx), z2 = y1 * Math.sin(rx) + z1 * Math.cos(rx), x2 = x1
-        let x3 = x2 * Math.cos(ry) + z2 * Math.sin(ry), z3 = -x2 * Math.sin(ry) + z2 * Math.cos(ry), y3 = y2
+      const rotate3D = (
+        x: number,
+        y: number,
+        z: number,
+        rx: number,
+        ry: number,
+        rz: number,
+      ) => {
+        let x1 = x * Math.cos(rz) - y * Math.sin(rz),
+          y1 = x * Math.sin(rz) + y * Math.cos(rz),
+          z1 = z
+        let y2 = y1 * Math.cos(rx) - z1 * Math.sin(rx),
+          z2 = y1 * Math.sin(rx) + z1 * Math.cos(rx),
+          x2 = x1
+        let x3 = x2 * Math.cos(ry) + z2 * Math.sin(ry),
+          z3 = -x2 * Math.sin(ry) + z2 * Math.cos(ry),
+          y3 = y2
         return [x3, y3, z3]
       }
 
@@ -354,7 +369,14 @@ function CanvasRenderer({
         const time = performance.now() * 0.001
 
         // 1. Far outer glow (Event Horizon Aura)
-        const gradient = ctx.createRadialGradient(coreProj.px, coreProj.py, 15 * coreProj.scale, coreProj.px, coreProj.py, 70 * coreProj.scale)
+        const gradient = ctx.createRadialGradient(
+          coreProj.px,
+          coreProj.py,
+          15 * coreProj.scale,
+          coreProj.px,
+          coreProj.py,
+          70 * coreProj.scale,
+        )
         gradient.addColorStop(0, 'rgba(255, 100, 0, 0.8)')
         gradient.addColorStop(0.3, 'rgba(255, 50, 0, 0.3)')
         gradient.addColorStop(1, 'transparent')
@@ -365,60 +387,74 @@ function CanvasRenderer({
 
         // 2. Accretion Disks (3D Rings intersecting like an atom)
         let diskIdx = 0
-        const createRing = (rx: number, ry: number, rz: number, count: number, baseRadius: number) => {
-           for (let i = 0; i < count; i++) {
-             const angle = (i / count) * Math.PI * 2
-             const rDisk = baseRadius + Math.sin(angle * 6 + time * 3) * 3
-             const px = Math.cos(angle) * rDisk
-             const pz = Math.sin(angle) * rDisk
-             const py = Math.cos(angle * 3 + time * 2) * 2 // slight vertical wobble
-             
-             const [x3, y3, z3] = rotate3D(px, py, pz, rx, ry, rz)
-             
-             // Inline projectPoint to grab the finalZ for depth sorting
-             const r1x = x3 * cosY - z3 * sinY
-             const r1z = x3 * sinY + z3 * cosY
-             const r2y = y3 * cosX - r1z * sinX
-             const finalZ = y3 * sinX + r1z * cosX
-             if (finalZ >= -focalLength) {
-                const scale = (focalLength / (focalLength + finalZ + cameraDistance)) * zoom
-                diskProj[diskIdx++] = r1x * scale + cx
-                diskProj[diskIdx++] = r2y * scale + cy
-                diskProj[diskIdx++] = scale
-                diskProj[diskIdx++] = finalZ
-             }
-           }
+        const createRing = (
+          rx: number,
+          ry: number,
+          rz: number,
+          count: number,
+          baseRadius: number,
+        ) => {
+          for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2
+            const rDisk = baseRadius + Math.sin(angle * 6 + time * 3) * 3
+            const px = Math.cos(angle) * rDisk
+            const pz = Math.sin(angle) * rDisk
+            const py = Math.cos(angle * 3 + time * 2) * 2 // slight vertical wobble
+
+            const [x3, y3, z3] = rotate3D(px, py, pz, rx, ry, rz)
+
+            // Inline projectPoint to grab the finalZ for depth sorting
+            const r1x = x3 * cosY - z3 * sinY
+            const r1z = x3 * sinY + z3 * cosY
+            const r2y = y3 * cosX - r1z * sinX
+            const finalZ = y3 * sinX + r1z * cosX
+            if (finalZ >= -focalLength) {
+              const scale =
+                (focalLength / (focalLength + finalZ + cameraDistance)) * zoom
+              diskProj[diskIdx++] = r1x * scale + cx
+              diskProj[diskIdx++] = r2y * scale + cy
+              diskProj[diskIdx++] = scale
+              diskProj[diskIdx++] = finalZ
+            }
+          }
         }
-        
+
         createRing(0, 0, 0, 150, 32) // Horizontal
         createRing(Math.PI / 2, 0, 0, 100, 38) // Vertical 1
         createRing(0, Math.PI / 2, 0, 100, 38) // Vertical 2
 
         // Draw Back Disk (Z < 0)
         for (let i = 0; i < diskIdx; i += 4) {
-           if (diskProj[i + 3] < 0) {
-              const size = 32 * diskProj[i + 2]
-              ctx.drawImage(glowSprite, diskProj[i] - size / 2, diskProj[i + 1] - size / 2, size, size)
-           }
+          if (diskProj[i + 3] < 0) {
+            const size = 32 * diskProj[i + 2]
+            ctx.drawImage(
+              glowSprite,
+              diskProj[i] - size / 2,
+              diskProj[i + 1] - size / 2,
+              size,
+              size,
+            )
+          }
         }
 
         // 3. The Black Hole (Event Horizon - Turbulent Anomaly)
         ctx.beginPath()
         const baseBHRadius = 22 * coreProj.scale
         for (let i = 0; i <= 60; i++) {
-           const a = (i / 60) * Math.PI * 2
-           // Chaotic ripples to the radius based on angle and time
-           const ripple = Math.sin(a * 5 + time * 8) * 1.5 + Math.cos(a * 3 - time * 6) * 1.5
-           const rBH = baseBHRadius + ripple * coreProj.scale
-           
-           const px = coreProj.px + Math.cos(a) * rBH
-           const py = coreProj.py + Math.sin(a) * rBH
-           
-           if (i === 0) ctx.moveTo(px, py)
-           else ctx.lineTo(px, py)
+          const a = (i / 60) * Math.PI * 2
+          // Chaotic ripples to the radius based on angle and time
+          const ripple =
+            Math.sin(a * 5 + time * 8) * 1.5 + Math.cos(a * 3 - time * 6) * 1.5
+          const rBH = baseBHRadius + ripple * coreProj.scale
+
+          const px = coreProj.px + Math.cos(a) * rBH
+          const py = coreProj.py + Math.sin(a) * rBH
+
+          if (i === 0) ctx.moveTo(px, py)
+          else ctx.lineTo(px, py)
         }
         ctx.closePath()
-        
+
         ctx.fillStyle = '#000000' // Pure void
         ctx.shadowBlur = 0
         ctx.fill()
@@ -430,24 +466,40 @@ function CanvasRenderer({
         // Draw front half of the disks (overlapping the black hole)
         // Draw Front Disk (Z >= 0)
         for (let i = 0; i < diskIdx; i += 4) {
-           if (diskProj[i + 3] >= 0) {
-              const size = 32 * diskProj[i + 2]
-              ctx.drawImage(glowSprite, diskProj[i] - size / 2, diskProj[i + 1] - size / 2, size, size)
-           }
+          if (diskProj[i + 3] >= 0) {
+            const size = 32 * diskProj[i + 2]
+            ctx.drawImage(
+              glowSprite,
+              diskProj[i] - size / 2,
+              diskProj[i + 1] - size / 2,
+              size,
+              size,
+            )
+          }
         }
-        
+
         // 4. Sucked-in particles (Comets falling in)
         for (let i = 0; i < 6; i++) {
-           const t = (time * 1.2 + i * 0.33) % 1 // loops from 0 to 1
-           const angle = i * (Math.PI * 2 / 6) + time * 2
-           const r = 70 - t * 48 // spirals inwards from 70 to 22
-           const p = projectPoint(Math.cos(angle) * r, (Math.sin(time + i) - 0.5) * 15, Math.sin(angle) * r)
-           if (p) {
-             const size = 32 * p.scale
-             ctx.drawImage(cometSprite, p.px - size / 2, p.py - size / 2, size, size)
-           }
+          const t = (time * 1.2 + i * 0.33) % 1 // loops from 0 to 1
+          const angle = i * ((Math.PI * 2) / 6) + time * 2
+          const r = 70 - t * 48 // spirals inwards from 70 to 22
+          const p = projectPoint(
+            Math.cos(angle) * r,
+            (Math.sin(time + i) - 0.5) * 15,
+            Math.sin(angle) * r,
+          )
+          if (p) {
+            const size = 32 * p.scale
+            ctx.drawImage(
+              cometSprite,
+              p.px - size / 2,
+              p.py - size / 2,
+              size,
+              size,
+            )
+          }
         }
-        
+
         ctx.shadowBlur = 0 // reset
       }
 
@@ -455,44 +507,44 @@ function CanvasRenderer({
       const r = 400
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'
       ctx.lineWidth = 1
-      
+
       // Equator and Latitudes
       for (let lat = -2; lat <= 2; lat++) {
-         const latAngle = (lat / 5) * (Math.PI / 2)
-         const latR = Math.cos(latAngle) * r
-         const latY = Math.sin(latAngle) * r
-         
-         ctx.beginPath()
-         for (let i = 0; i <= 60; i++) {
-           const lonAngle = (i / 60) * Math.PI * 2
-           const x = latR * Math.cos(lonAngle)
-           const z = latR * Math.sin(lonAngle)
-           const proj = projectPoint(x, latY, z)
-           if (proj) {
-             if (i === 0) ctx.moveTo(proj.px, proj.py)
-             else ctx.lineTo(proj.px, proj.py)
-           }
-         }
-         ctx.stroke()
+        const latAngle = (lat / 5) * (Math.PI / 2)
+        const latR = Math.cos(latAngle) * r
+        const latY = Math.sin(latAngle) * r
+
+        ctx.beginPath()
+        for (let i = 0; i <= 60; i++) {
+          const lonAngle = (i / 60) * Math.PI * 2
+          const x = latR * Math.cos(lonAngle)
+          const z = latR * Math.sin(lonAngle)
+          const proj = projectPoint(x, latY, z)
+          if (proj) {
+            if (i === 0) ctx.moveTo(proj.px, proj.py)
+            else ctx.lineTo(proj.px, proj.py)
+          }
+        }
+        ctx.stroke()
       }
 
       // Longitudes
       for (let j = 0; j < 12; j++) {
-         const lonAngle = (j / 12) * Math.PI * 2
-         ctx.beginPath()
-         for (let i = 0; i <= 60; i++) {
-            const latAngle = (i / 60) * Math.PI * 2
-            const x = r * Math.cos(latAngle) * Math.cos(lonAngle)
-            const y = r * Math.sin(latAngle)
-            const z = r * Math.cos(latAngle) * Math.sin(lonAngle)
+        const lonAngle = (j / 12) * Math.PI * 2
+        ctx.beginPath()
+        for (let i = 0; i <= 60; i++) {
+          const latAngle = (i / 60) * Math.PI * 2
+          const x = r * Math.cos(latAngle) * Math.cos(lonAngle)
+          const y = r * Math.sin(latAngle)
+          const z = r * Math.cos(latAngle) * Math.sin(lonAngle)
 
-            const proj = projectPoint(x, y, z)
-            if (proj) {
-              if (i === 0) ctx.moveTo(proj.px, proj.py)
-              else ctx.lineTo(proj.px, proj.py)
-            }
-         }
-         ctx.stroke()
+          const proj = projectPoint(x, y, z)
+          if (proj) {
+            if (i === 0) ctx.moveTo(proj.px, proj.py)
+            else ctx.lineTo(proj.px, proj.py)
+          }
+        }
+        ctx.stroke()
       }
 
       // Draw Edges
@@ -501,28 +553,35 @@ function CanvasRenderer({
         const fromIdx = nodeIndexMap.get(edge.source)
         const toIdx = nodeIndexMap.get(edge.target)
         if (fromIdx === undefined || toIdx === undefined) continue
-        
+
         const fScale = projData[fromIdx * 5 + 4]
         const tScale = projData[toIdx * 5 + 4]
-        
+
         // Don't draw edges behind camera
         if (fScale < 0 && tScale < 0) continue
-        
+
         const fx = projData[fromIdx * 5 + 0]
         const fy = projData[fromIdx * 5 + 1]
         const tx = projData[toIdx * 5 + 0]
         const ty = projData[toIdx * 5 + 1]
-        
+
         // Edge Frustum Culling
-        if ((fx < 0 && tx < 0) || (fx > width && tx > width) || 
-            (fy < 0 && ty < 0) || (fy > height && ty > height)) {
-            continue
+        if (
+          (fx < 0 && tx < 0) ||
+          (fx > width && tx > width) ||
+          (fy < 0 && ty < 0) ||
+          (fy > height && ty > height)
+        ) {
+          continue
         }
 
         let isFaded = hasFocus
         let isHighlighted = false
-        
-        if (activeEdges.has(`${edge.source}->${edge.target}`) || activeEdges.has(`${edge.target}->${edge.source}`)) {
+
+        if (
+          activeEdges.has(`${edge.source}->${edge.target}`) ||
+          activeEdges.has(`${edge.target}->${edge.source}`)
+        ) {
           isFaded = false
           isHighlighted = true
         } else if (activeIds.has(edge.source) && activeIds.has(edge.target)) {
@@ -532,7 +591,11 @@ function CanvasRenderer({
         ctx.beginPath()
         ctx.moveTo(fx, fy)
         ctx.lineTo(tx, ty)
-        ctx.strokeStyle = isHighlighted ? EDGE_HIGHLIGHT_COLOR : isFaded ? EDGE_FADED_COLOR : EDGE_COLOR
+        ctx.strokeStyle = isHighlighted
+          ? EDGE_HIGHLIGHT_COLOR
+          : isFaded
+            ? EDGE_FADED_COLOR
+            : EDGE_COLOR
         ctx.stroke()
       }
 
@@ -541,24 +604,27 @@ function CanvasRenderer({
         const nodeIdx = drawOrder[i]
         const idx = nodeIdx * 5
         const scale = projData[idx + 4]
-        
+
         if (scale < 0) continue // behind camera
-        
+
         const px = projData[idx + 0]
         const py = projData[idx + 1]
         const pr = projData[idx + 2]
         const node = nodes[nodeIdx]
-        
-        const isHighlighted = activeIds.has(node.id) || hoveredId === node.id || searchHighlightIds.has(node.id)
+
+        const isHighlighted =
+          activeIds.has(node.id) ||
+          hoveredId === node.id ||
+          searchHighlightIds.has(node.id)
         const isSelected = selectedId === node.id
         const isFaded = hasFocus && !isHighlighted
         const isSearchHit = searchHighlightIds.has(node.id)
-        
+
         const baseColor = getNodeColor(node.type)
         const radius = isHighlighted || isSelected ? pr * 1.5 : pr
-        
+
         const actualRadius = Math.max(0.5, radius)
-        
+
         // Helper to draw circle
         const drawCircle = (x: number, y: number, r: number) => {
           ctx.beginPath()
@@ -576,23 +642,23 @@ function CanvasRenderer({
             ctx.fillStyle = baseColor
             // Faint opacity for background stars, bright for highlighted
             ctx.globalAlpha = isHighlighted || isSelected ? 1.0 : 0.6
-            
+
             // Draw as a tiny square (data bit)
             const size = Math.max(1.5, actualRadius * 0.8)
             ctx.fillRect(px - size / 2, py - size / 2, size, size)
-            
+
             ctx.globalAlpha = 1.0 // reset alpha
           }
-          
+
           if (isSelected || isSearchHit) {
-             ctx.shadowBlur = 0 // turn off shadow for ring
-             drawCircle(px, py, actualRadius + (4 * scale))
-             ctx.strokeStyle = '#FFFFFF'
-             ctx.lineWidth = 1.5 * scale
-             ctx.stroke()
+            ctx.shadowBlur = 0 // turn off shadow for ring
+            drawCircle(px, py, actualRadius + 4 * scale)
+            ctx.strokeStyle = '#FFFFFF'
+            ctx.lineWidth = 1.5 * scale
+            ctx.stroke()
           }
         }
-        
+
         ctx.shadowBlur = 0 // reset shadow for next draw
 
         // Draw Label if highlighted
@@ -600,7 +666,7 @@ function CanvasRenderer({
           ctx.font = `bold ${Math.max(10, 12 * Math.min(1.5, scale))}px 'JetBrains Mono', 'Courier New', monospace`
           ctx.fillStyle = '#FFFFFF'
           ctx.textAlign = 'center'
-          ctx.fillText(node.title.toUpperCase(), px, py - radius - (8 * scale))
+          ctx.fillText(node.title.toUpperCase(), px, py - radius - 8 * scale)
         }
       }
 
@@ -622,7 +688,10 @@ function CanvasRenderer({
     } else if (state.current.pointers.size === 2) {
       state.current.isDragging = false // disable rotation when pinching
       const pts = Array.from(state.current.pointers.values())
-      state.current.lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)
+      state.current.lastPinchDist = Math.hypot(
+        pts[0].x - pts[1].x,
+        pts[0].y - pts[1].y,
+      )
     }
     try {
       ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
@@ -664,7 +733,7 @@ function CanvasRenderer({
       const rect = canvasRef.current!.getBoundingClientRect()
       const mx = e.clientX - rect.left
       const my = e.clientY - rect.top
-      
+
       let hitId: string | null = null
       // Check from front to back (drawOrder is sorted back-to-front, so we iterate backwards)
       if (projDataRef.current && drawOrderRef.current) {
@@ -675,11 +744,11 @@ function CanvasRenderer({
           const idx = nodeIdx * 5
           const scale = projData[idx + 4]
           if (scale < 0) continue
-          
+
           const px = projData[idx + 0]
           const py = projData[idx + 1]
           const pr = projData[idx + 2]
-          
+
           const r = Math.max(pr * 1.5, 5) // at least 5px hit radius
           const distSq = (px - mx) ** 2 + (py - my) ** 2
           if (distSq < r ** 2) {
@@ -688,20 +757,24 @@ function CanvasRenderer({
           }
         }
       }
-      
+
       if (hitId !== s.hoveredId) {
         onHover(hitId)
       }
-      
+
       if (canvasRef.current) {
-        canvasRef.current.style.cursor = hitId ? 'pointer' : s.isDragging ? 'grabbing' : 'grab'
+        canvasRef.current.style.cursor = hitId
+          ? 'pointer'
+          : s.isDragging
+            ? 'grabbing'
+            : 'grab'
       }
     }
   }
 
   const handlePointerUp = (e: React.PointerEvent) => {
     state.current.pointers.delete(e.pointerId)
-    
+
     if (state.current.pointers.size === 0) {
       state.current.isDragging = false
       state.current.lastPinchDist = 0
@@ -716,9 +789,11 @@ function CanvasRenderer({
     try {
       ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
     } catch {}
-    
+
     if (canvasRef.current) {
-      canvasRef.current.style.cursor = state.current.hoveredId ? 'pointer' : 'grab'
+      canvasRef.current.style.cursor = state.current.hoveredId
+        ? 'pointer'
+        : 'grab'
     }
   }
 
@@ -729,30 +804,31 @@ function CanvasRenderer({
     newZoom = Math.max(0.2, Math.min(newZoom, 5))
     state.current.zoom = newZoom
   }
-  
+
   const handleClick = (e: React.MouseEvent) => {
-    if (!canvasRef.current || !projDataRef.current || !drawOrderRef.current) return
-    
+    if (!canvasRef.current || !projDataRef.current || !drawOrderRef.current)
+      return
+
     // Perform hit detection directly on click for mobile tap support
     const rect = canvasRef.current.getBoundingClientRect()
     const mx = e.clientX - rect.left
     const my = e.clientY - rect.top
-    
+
     let hitId: string | null = null
     const projData = projDataRef.current
     const drawOrder = drawOrderRef.current
-    
+
     // Check from front to back
     for (let i = drawOrder.length - 1; i >= 0; i--) {
       const nodeIdx = drawOrder[i]
       const idx = nodeIdx * 5
       const scale = projData[idx + 4]
       if (scale < 0) continue
-      
+
       const px = projData[idx + 0]
       const py = projData[idx + 1]
       const pr = projData[idx + 2]
-      
+
       const r = Math.max(pr * 1.5, 5) // at least 5px hit radius
       const distSq = (px - mx) ** 2 + (py - my) ** 2
       if (distSq < r ** 2) {
@@ -824,10 +900,12 @@ function NodeDetailPanel({
     <div
       className="absolute right-4 top-16 z-10 w-60 sm:w-80 overflow-hidden rounded-2xl border"
       style={{
-        background: 'linear-gradient(135deg, rgba(15, 20, 35, 0.8), rgba(5, 10, 20, 0.95))',
+        background:
+          'linear-gradient(135deg, rgba(15, 20, 35, 0.8), rgba(5, 10, 20, 0.95))',
         borderColor: 'rgba(255, 255, 255, 0.1)',
         backdropFilter: 'blur(24px)',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        boxShadow:
+          '0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
       }}
     >
       <div className="flex items-start justify-between gap-2 border-b border-white/5 p-3 sm:p-5">
@@ -838,7 +916,10 @@ function NodeDetailPanel({
           <div className="mt-2 flex items-center gap-2">
             <span
               className="inline-block h-2 w-2 rounded-full"
-              style={{ backgroundColor: typeColor, boxShadow: `0 0 8px ${typeColor}` }}
+              style={{
+                backgroundColor: typeColor,
+                boxShadow: `0 0 8px ${typeColor}`,
+              }}
             />
             <span className="text-xs font-medium uppercase tracking-wider text-slate-300">
               {node.type ?? 'unknown'}
@@ -874,7 +955,10 @@ function NodeDetailPanel({
               >
                 <span
                   className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: getNodeColor(c.type), boxShadow: `0 0 6px ${getNodeColor(c.type)}` }}
+                  style={{
+                    backgroundColor: getNodeColor(c.type),
+                    boxShadow: `0 0 6px ${getNodeColor(c.type)}`,
+                  }}
                 />
                 <span className="truncate text-xs font-medium text-slate-300 transition-colors group-hover:text-white">
                   {c.title}
@@ -957,33 +1041,34 @@ function StatItem({
 function getDummyGraphData(): GraphResponse {
   const nodes: GraphNode[] = []
   const edges: GraphEdge[] = []
-  
+
   const types = ['entity', 'concept', 'action', 'file', 'folder']
-  
+
   // Create 1000 nodes
   for (let i = 0; i < 1000; i++) {
     nodes.push({
       id: `node_${i}`,
       title: `Node ${Math.random().toString(36).substring(7)}`.toUpperCase(),
       type: types[Math.floor(Math.random() * types.length)],
-      tags: ['dummy']
+      tags: ['dummy'],
     })
   }
 
   // Create clusters (hubs)
   const hubs = [0, 20, 40, 60, 80]
-  
+
   for (let i = 0; i < 1000; i++) {
     if (hubs.includes(i)) continue // Skip hubs themselves
-    
+
     // Connect most nodes to a random hub (clustering effect)
     if (Math.random() > 0.3) {
       const randomHub = hubs[Math.floor(Math.random() * hubs.length)]
       edges.push({ source: `node_${i}`, target: `node_${randomHub}` })
     }
-    
+
     // Add some random cross-connections
-    if (Math.random() > 0.95) { // Reduce cross-connection probability to prevent excessive edges
+    if (Math.random() > 0.95) {
+      // Reduce cross-connection probability to prevent excessive edges
       const randomTarget = Math.floor(Math.random() * 1000)
       if (i !== randomTarget) {
         edges.push({ source: `node_${i}`, target: `node_${randomTarget}` })
@@ -1025,33 +1110,45 @@ export function GraphScreen() {
     }
     return ids
   }, [searchQuery, layoutNodes])
-  
+
   const selectedNode = useMemo(
-    () => layoutNodes?.find(n => n.id === selectedNodeId) ?? null,
-    [layoutNodes, selectedNodeId]
+    () => layoutNodes?.find((n) => n.id === selectedNodeId) ?? null,
+    [layoutNodes, selectedNodeId],
   )
 
-  const entityCount = nodes.filter((n) => n.type?.toLowerCase() === 'entity').length
-  const conceptCount = nodes.filter((n) => n.type?.toLowerCase() === 'concept').length
+  const entityCount = nodes.filter(
+    (n) => n.type?.toLowerCase() === 'entity',
+  ).length
+  const conceptCount = nodes.filter(
+    (n) => n.type?.toLowerCase() === 'concept',
+  ).length
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center" style={{ color: 'var(--theme-danger)' }}>
-        <p className="text-sm">Failed to load knowledge graph: {error.message}</p>
+      <div
+        className="flex h-full items-center justify-center"
+        style={{ color: 'var(--theme-danger)' }}
+      >
+        <p className="text-sm">
+          Failed to load knowledge graph: {error.message}
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="relative h-full w-full overflow-hidden" style={{ background: BG_COLOR }}>
+    <div
+      className="relative h-full w-full overflow-hidden"
+      style={{ background: BG_COLOR }}
+    >
       {/* Header / Search Bar */}
-      <div 
+      <div
         className="absolute left-2 right-2 top-2 md:left-4 md:right-auto md:top-4 z-50 flex gap-2"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         {/* Mobile Hamburger Trigger */}
         <HamburgerTrigger className="md:hidden shrink-0 bg-white/10 backdrop-blur-sm border border-white/10 shadow-lg" />
-        
+
         {/* Search Input */}
         <div
           className="flex-1 md:w-[280px] flex items-center gap-2 rounded-lg border px-3 py-2"
@@ -1061,7 +1158,11 @@ export function GraphScreen() {
             backdropFilter: 'blur(12px)',
           }}
         >
-          <HugeiconsIcon icon={Search01Icon} size={14} style={{ color: 'rgba(255, 255, 255, 0.5)' }} />
+          <HugeiconsIcon
+            icon={Search01Icon}
+            size={14}
+            style={{ color: 'rgba(255, 255, 255, 0.5)' }}
+          />
           <input
             type="text"
             placeholder="Search nodes..."
@@ -1075,11 +1176,18 @@ export function GraphScreen() {
               onClick={() => setSearchQuery('')}
               className="rounded p-0.5 hover:bg-white/10 shrink-0"
             >
-              <HugeiconsIcon icon={Cancel01Icon} size={12} style={{ color: 'rgba(255, 255, 255, 0.5)' }} />
+              <HugeiconsIcon
+                icon={Cancel01Icon}
+                size={12}
+                style={{ color: 'rgba(255, 255, 255, 0.5)' }}
+              />
             </button>
           )}
           {searchHighlightIds.size > 0 && (
-            <span className="text-[10px] tabular-nums shrink-0" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+            <span
+              className="text-[10px] tabular-nums shrink-0"
+              style={{ color: 'rgba(255, 255, 255, 0.5)' }}
+            >
               {searchHighlightIds.size} found
             </span>
           )}
@@ -1092,7 +1200,10 @@ export function GraphScreen() {
           <div className="flex flex-col items-center gap-3">
             <div
               className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
-              style={{ borderColor: 'var(--theme-border)', borderTopColor: 'transparent' }}
+              style={{
+                borderColor: 'var(--theme-border)',
+                borderTopColor: 'transparent',
+              }}
             />
             <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
               {isLoading ? 'Loading knowledge graph...' : 'Computing layout...'}
@@ -1106,35 +1217,70 @@ export function GraphScreen() {
         <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
           <div className="flex flex-col items-center gap-4 text-center max-w-sm">
             <div className="flex flex-col gap-1">
-              <p className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
+              <p
+                className="text-sm font-medium"
+                style={{ color: 'var(--theme-text)' }}
+              >
                 No knowledge pages found
               </p>
               <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
                 Your Knowledge Graph is currently empty.
               </p>
             </div>
-            
-            <div 
+
+            <div
               className="rounded-md border p-3 text-left w-full shadow-sm"
               style={{
                 background: 'rgba(255, 255, 255, 0.03)',
                 borderColor: 'rgba(255, 255, 255, 0.1)',
               }}
             >
-              <p className="text-xs font-medium mb-2" style={{ color: 'var(--theme-text)' }}>
+              <p
+                className="text-xs font-medium mb-2"
+                style={{ color: 'var(--theme-text)' }}
+              >
                 How to connect your Second Brain:
               </p>
-              <ol className="text-xs space-y-2 list-decimal pl-4" style={{ color: 'var(--theme-muted)' }}>
-                <li>Go to the <strong style={{ color: 'var(--theme-text)' }}>Memory</strong> page from the sidebar.</li>
-                <li>Click the <strong style={{ color: 'var(--theme-text)' }}>Knowledge Base</strong> tab.</li>
-                <li>Click the <strong style={{ color: 'var(--theme-text)' }}>Settings</strong> (gear) icon.</li>
-                <li>Set the source to <strong style={{ color: 'var(--theme-text)' }}>Local Path</strong> (e.g. <code>~/obsidian/memo</code>) or <strong style={{ color: 'var(--theme-text)' }}>GitHub Repo</strong>.</li>
+              <ol
+                className="text-xs space-y-2 list-decimal pl-4"
+                style={{ color: 'var(--theme-muted)' }}
+              >
+                <li>
+                  Go to the{' '}
+                  <strong style={{ color: 'var(--theme-text)' }}>Memory</strong>{' '}
+                  page from the sidebar.
+                </li>
+                <li>
+                  Click the{' '}
+                  <strong style={{ color: 'var(--theme-text)' }}>
+                    Knowledge Base
+                  </strong>{' '}
+                  tab.
+                </li>
+                <li>
+                  Click the{' '}
+                  <strong style={{ color: 'var(--theme-text)' }}>
+                    Settings
+                  </strong>{' '}
+                  (gear) icon.
+                </li>
+                <li>
+                  Set the source to{' '}
+                  <strong style={{ color: 'var(--theme-text)' }}>
+                    Local Path
+                  </strong>{' '}
+                  (e.g. <code>~/obsidian/memo</code>) or{' '}
+                  <strong style={{ color: 'var(--theme-text)' }}>
+                    GitHub Repo
+                  </strong>
+                  .
+                </li>
               </ol>
             </div>
           </div>
         </div>
       )}
-      
+
       {/* 2D Canvas */}
       {layoutNodes && layoutNodes.length > 0 && (
         <CanvasRenderer

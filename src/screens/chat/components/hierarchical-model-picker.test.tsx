@@ -10,8 +10,16 @@ describe('HierarchicalModelPicker Component', () => {
   let root: ReturnType<typeof createRoot>
 
   const mockModels: HierarchicalModelItem[] = [
-    { id: 'vps/ag/gemini-2.5-flash', name: 'gemini-2.5-flash', provider: 'custom' },
-    { id: 'vps/ag/claude-sonnet-4-6', name: 'claude-sonnet-4-6', provider: 'custom' },
+    {
+      id: 'vps/ag/gemini-2.5-flash',
+      name: 'gemini-2.5-flash',
+      provider: 'custom',
+    },
+    {
+      id: 'vps/ag/claude-sonnet-4-6',
+      name: 'claude-sonnet-4-6',
+      provider: 'custom',
+    },
     { id: 'hb/gemini-pro', name: 'gemini-pro', provider: 'hb' },
     { id: 'gpt-4o', name: 'gpt-4o', provider: 'openai' },
   ]
@@ -78,7 +86,9 @@ describe('HierarchicalModelPicker Component', () => {
 
     // Find gemini-pro button
     const updatedButtons = Array.from(container.querySelectorAll('button'))
-    const geminiButton = updatedButtons.find((b) => b.textContent?.includes('gemini-pro'))
+    const geminiButton = updatedButtons.find((b) =>
+      b.textContent?.includes('gemini-pro'),
+    )
     expect(geminiButton).toBeDefined()
 
     await act(async () => {

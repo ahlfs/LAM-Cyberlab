@@ -68,7 +68,8 @@ export const Route = createFileRoute('/api/projects')({
               typeof body.command === 'string' && body.command.trim()
                 ? body.command.trim()
                 : undefined
-            const isPublic = typeof body.isPublic === 'boolean' ? body.isPublic : false
+            const isPublic =
+              typeof body.isPublic === 'boolean' ? body.isPublic : false
             const result = await startProject(projectPath, command, isPublic)
             return json(result, { status: result.ok ? 200 : 400 })
           }

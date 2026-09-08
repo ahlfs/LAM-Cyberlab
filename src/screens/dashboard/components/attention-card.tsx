@@ -12,13 +12,14 @@ import type {
   DashboardOverview,
 } from '@/server/dashboard-aggregator'
 
-const SOURCE_ICON: Record<DashboardIncident['source'], typeof AlertCircleIcon> = {
-  cron: Time04Icon,
-  platform: AlertCircleIcon,
-  log: ConsoleIcon,
-  config: Settings02Icon,
-  gateway: AlertCircleIcon,
-}
+const SOURCE_ICON: Record<DashboardIncident['source'], typeof AlertCircleIcon> =
+  {
+    cron: Time04Icon,
+    platform: AlertCircleIcon,
+    log: ConsoleIcon,
+    config: Settings02Icon,
+    gateway: AlertCircleIcon,
+  }
 
 /**
  * The "Attention" card — what the operator should look at right now.
@@ -84,10 +85,7 @@ export function AttentionCard({
       </div>
 
       {empty ? (
-        <p
-          className="py-1 text-[11px]"
-          style={{ color: 'var(--theme-muted)' }}
-        >
+        <p className="py-1 text-[11px]" style={{ color: 'var(--theme-muted)' }}>
           Nothing to triage. Gateway healthy, no stale jobs, logs quiet.
         </p>
       ) : (
@@ -131,9 +129,7 @@ export function AttentionCard({
                 <li key={item.id}>
                   <button
                     type="button"
-                    onClick={() =>
-                      navigate({ to: href, search: {} } as never)
-                    }
+                    onClick={() => navigate({ to: href, search: {} } as never)}
                     className="w-full rounded border px-2 py-1.5 text-left transition-colors hover:bg-[var(--theme-card)]/80"
                     style={{ borderColor: 'var(--theme-border)' }}
                   >

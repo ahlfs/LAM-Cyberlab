@@ -29,10 +29,17 @@ async function check9RouterReachable(): Promise<ServiceStatus> {
     return checkHttpReachable('9router', explicitUrl)
   }
 
-  // Default behavior: check port 20128, fallback to 3035
-  const status20128 = await checkHttpReachable('9router', 'http://127.0.0.1:20128')
+  // Default behavior: check port 9898 (LAM-Router), fallback to 20128 and 3035
+  const status9898 = await checkHttpReachable(
+    'lam-router',
+    'http://127.0.0.1:9898/health',
+  )
+  if (status9898.status === 'up') return status9898
+  const status20128 = await checkHttpReachable(
+    '9router',
+    'http://127.0.0.1:20128',
+  )
   if (status20128.status === 'up') return status20128
-
   return checkHttpReachable('9router', 'http://127.0.0.1:3035')
 }
 
@@ -61,7 +68,10 @@ async function checkProcessRunning(
 export async function checkAllServices(): Promise<Array<ServiceStatus>> {
   const results = await Promise.all([
     checkHttpReachable('Hermes Gateway', `${CLAUDE_API}/health`),
-    checkHttpReachable('Hermes Dashboard', `${CLAUDE_DASHBOARD_URL}/api/status`),
+    checkHttpReachable(
+      'Hermes Dashboard',
+      `${CLAUDE_DASHBOARD_URL}/api/status`,
+    ),
     check9RouterReachable(),
     checkProcessRunning('Caddy', 'caddy'),
   ])

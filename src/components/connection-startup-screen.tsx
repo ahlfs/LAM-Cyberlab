@@ -236,7 +236,9 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
         <div
           className={[
             'mt-6 flex flex-col items-center gap-4 text-sm text-white/70 transition-all duration-500',
-            showFailureState ? 'opacity-0 scale-95 h-0 overflow-hidden' : 'opacity-100 scale-100',
+            showFailureState
+              ? 'opacity-0 scale-95 h-0 overflow-hidden'
+              : 'opacity-100 scale-100',
           ].join(' ')}
           aria-hidden={showFailureState}
         >
@@ -245,7 +247,9 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
             <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-[bounce_1.4s_infinite_0.2s]" />
             <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-[bounce_1.4s_infinite_0.4s]" />
           </div>
-          <span className="font-medium tracking-widest uppercase text-[10px] text-indigo-200/70">Connecting to Backend...</span>
+          <span className="font-medium tracking-widest uppercase text-[10px] text-indigo-200/70">
+            Connecting to Backend...
+          </span>
         </div>
 
         {/* Failure state — setup guide */}
@@ -262,9 +266,9 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
               Welcome! Let&apos;s connect your backend
             </p>
             <p className="mt-2 text-sm leading-6 text-white/60">
-              LAM Cyberlab works with any OpenAI-compatible backend. Hermes Agent
-              gateway APIs unlock enhanced features automatically when they are
-              available.
+              LAM Cyberlab works with any OpenAI-compatible backend. Hermes
+              Agent gateway APIs unlock enhanced features automatically when
+              they are available.
             </p>
 
             {/* Auto-start section */}

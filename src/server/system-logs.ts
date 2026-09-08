@@ -75,16 +75,7 @@ export async function getSystemLogs(
   try {
     const { stdout } = await execFileAsync(
       'journalctl',
-      [
-        '-o',
-        'json',
-        '-q',
-        '--no-pager',
-        '-p',
-        'warning',
-        '-n',
-        String(limit),
-      ],
+      ['-o', 'json', '-q', '--no-pager', '-p', 'warning', '-n', String(limit)],
       { timeout: 3000, maxBuffer: 10 * 1024 * 1024 },
     )
     // journalctl -n returns oldest-first within the window; flip so the

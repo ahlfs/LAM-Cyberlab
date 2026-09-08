@@ -34,16 +34,24 @@ export function ConfirmDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </div>
-        <div className="flex justify-end gap-2 border-t p-3" style={{ borderColor: 'var(--theme-border)' }}>
+        <div
+          className="flex justify-end gap-2 border-t p-3"
+          style={{ borderColor: 'var(--theme-border)' }}
+        >
           <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
           {destructive ? (
-            <AlertDialogAction onClick={onConfirm}>{confirmLabel}</AlertDialogAction>
+            <AlertDialogAction onClick={onConfirm}>
+              {confirmLabel}
+            </AlertDialogAction>
           ) : (
             <button
               type="button"
               onClick={onConfirm}
               className="rounded-lg px-3 py-1.5 text-sm font-medium"
-              style={{ background: 'var(--theme-accent)', color: 'var(--theme-bg)' }}
+              style={{
+                background: 'var(--theme-accent)',
+                color: 'var(--theme-bg)',
+              }}
             >
               {confirmLabel}
             </button>

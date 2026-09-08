@@ -11,7 +11,9 @@ export const Route = createFileRoute('/file-manager')({
           Failed to Load File Manager
         </h2>
         <p className="text-sm text-primary-600 dark:text-neutral-400 mb-4 max-w-md">
-          {error instanceof Error ? error.message : 'An unexpected error occurred'}
+          {error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred'}
         </p>
         <button
           onClick={() => window.location.reload()}
@@ -27,7 +29,9 @@ export const Route = createFileRoute('/file-manager')({
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-accent-500 border-r-transparent mb-3" />
-          <p className="text-sm text-primary-500 dark:text-neutral-400">Loading File Manager...</p>
+          <p className="text-sm text-primary-500 dark:text-neutral-400">
+            Loading File Manager...
+          </p>
         </div>
       </div>
     )

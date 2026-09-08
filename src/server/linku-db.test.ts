@@ -46,7 +46,11 @@ describe('folders', () => {
 
   it('deleting a folder soft-trashes its links instead of hard-deleting them, orphaning folder_id', () => {
     const f = createFolder('Reading', '#FFAC02')
-    const link = createLink({ folderId: f.id, url: 'https://a.com', title: 'A' })
+    const link = createLink({
+      folderId: f.id,
+      url: 'https://a.com',
+      title: 'A',
+    })
     deleteFolder(f.id)
     expect(listFolders().find((x) => x.id === f.id)).toBeUndefined()
     const trashed = getLink(link.id)
@@ -57,7 +61,11 @@ describe('folders', () => {
 
   it('deleting a folder does not resurrect links that were already trashed', () => {
     const f = createFolder('Reading', '#FFAC02')
-    const link = createLink({ folderId: f.id, url: 'https://a.com', title: 'A' })
+    const link = createLink({
+      folderId: f.id,
+      url: 'https://a.com',
+      title: 'A',
+    })
     softDeleteLink(link.id)
     deleteFolder(f.id)
     const result = getLink(link.id)
@@ -68,14 +76,18 @@ describe('folders', () => {
 
 describe('links', () => {
   it('rejects creating a link in a nonexistent folder', () => {
-    expect(() => createLink({ folderId: 999, url: 'https://a.com', title: 'A' })).toThrow(
-      LinkuNotFoundError,
-    )
+    expect(() =>
+      createLink({ folderId: 999, url: 'https://a.com', title: 'A' }),
+    ).toThrow(LinkuNotFoundError)
   })
 
   it('folder link_count excludes trashed links', () => {
     const f = createFolder('Reading', '#FFAC02')
-    const link = createLink({ folderId: f.id, url: 'https://a.com', title: 'A' })
+    const link = createLink({
+      folderId: f.id,
+      url: 'https://a.com',
+      title: 'A',
+    })
     expect(listFolders()[0].linkCount).toBe(1)
     softDeleteLink(link.id)
     expect(listFolders()[0].linkCount).toBe(0)
@@ -88,7 +100,11 @@ describe('links', () => {
   })
 
   it('creates a link with an explicit null folderId the same as omitting it', () => {
-    const link = createLink({ folderId: null, url: 'https://unsorted.com', title: 'Unsorted' })
+    const link = createLink({
+      folderId: null,
+      url: 'https://unsorted.com',
+      title: 'Unsorted',
+    })
     expect(link.folderId).toBeNull()
   })
 
@@ -108,7 +124,11 @@ describe('links', () => {
 
   it('update without folderId leaves the existing folder untouched', () => {
     const f = createFolder('Reading', '#FFAC02')
-    const link = createLink({ folderId: f.id, url: 'https://a.com', title: 'A' })
+    const link = createLink({
+      folderId: f.id,
+      url: 'https://a.com',
+      title: 'A',
+    })
     const updated = updateLink(link.id, { title: 'A renamed' })
     expect(updated.folderId).toBe(f.id)
     expect(updated.title).toBe('A renamed')
@@ -116,16 +136,30 @@ describe('links', () => {
 
   it('rejects moving a link into a nonexistent folder', () => {
     const link = createLink({ url: 'https://a.com', title: 'A' })
-    expect(() => updateLink(link.id, { folderId: 999 })).toThrow(LinkuNotFoundError)
+    expect(() => updateLink(link.id, { folderId: 999 })).toThrow(
+      LinkuNotFoundError,
+    )
   })
 })
 
 describe('views', () => {
   function seed() {
     const f = createFolder('Reading', '#FFAC02')
-    const fav = createLink({ folderId: f.id, url: 'https://fav.com', title: 'Favorite' })
-    const archived = createLink({ folderId: f.id, url: 'https://arch.com', title: 'Archived' })
-    const plain = createLink({ folderId: f.id, url: 'https://plain.com', title: 'Plain' })
+    const fav = createLink({
+      folderId: f.id,
+      url: 'https://fav.com',
+      title: 'Favorite',
+    })
+    const archived = createLink({
+      folderId: f.id,
+      url: 'https://arch.com',
+      title: 'Archived',
+    })
+    const plain = createLink({
+      folderId: f.id,
+      url: 'https://plain.com',
+      title: 'Plain',
+    })
     toggleFavorite(fav.id)
     toggleArchive(archived.id)
     return { f, fav, archived, plain }
@@ -133,7 +167,9 @@ describe('views', () => {
 
   it('all view excludes archived and trashed but still includes favorites', () => {
     const { fav, archived, plain } = seed()
-    const ids = listLinks({ view: 'all' }).map((r) => r.id).sort()
+    const ids = listLinks({ view: 'all' })
+      .map((r) => r.id)
+      .sort()
     expect(ids).toEqual([fav.id, plain.id].sort())
     expect(ids).not.toContain(archived.id)
   })
@@ -156,15 +192,27 @@ describe('views', () => {
     const rows = listLinks({ view: 'trash' })
     expect(rows.map((r) => r.id)).toEqual([fav.id])
     expect(listLinks({ view: 'all' }).map((r) => r.id)).not.toContain(fav.id)
-    expect(listLinks({ view: 'favorites' }).map((r) => r.id)).not.toContain(fav.id)
+    expect(listLinks({ view: 'favorites' }).map((r) => r.id)).not.toContain(
+      fav.id,
+    )
   })
 
   it('search matches title or url', () => {
     const f = createFolder('Reading', '#FFAC02')
-    const byTitle = createLink({ folderId: f.id, url: 'https://x.com', title: 'Rocket Science' })
-    const byUrl = createLink({ folderId: f.id, url: 'https://rocket.dev', title: 'Other' })
+    const byTitle = createLink({
+      folderId: f.id,
+      url: 'https://x.com',
+      title: 'Rocket Science',
+    })
+    const byUrl = createLink({
+      folderId: f.id,
+      url: 'https://rocket.dev',
+      title: 'Other',
+    })
     createLink({ folderId: f.id, url: 'https://unrelated.com', title: 'Nope' })
-    const results = listLinks({ view: 'all', search: 'rocket' }).map((r) => r.id).sort()
+    const results = listLinks({ view: 'all', search: 'rocket' })
+      .map((r) => r.id)
+      .sort()
     expect(results).toEqual([byTitle.id, byUrl.id].sort())
   })
 
@@ -177,7 +225,11 @@ describe('views', () => {
 describe('trash lifecycle', () => {
   it('restore takes a link out of trash', () => {
     const f = createFolder('Reading', '#FFAC02')
-    const link = createLink({ folderId: f.id, url: 'https://a.com', title: 'A' })
+    const link = createLink({
+      folderId: f.id,
+      url: 'https://a.com',
+      title: 'A',
+    })
     softDeleteLink(link.id)
     const restored = restoreLink(link.id)
     expect(restored.isTrashed).toBe(false)
@@ -186,7 +238,11 @@ describe('trash lifecycle', () => {
 
   it('permanentlyDeleteLink refuses to delete a non-trashed link', () => {
     const f = createFolder('Reading', '#FFAC02')
-    const link = createLink({ folderId: f.id, url: 'https://a.com', title: 'A' })
+    const link = createLink({
+      folderId: f.id,
+      url: 'https://a.com',
+      title: 'A',
+    })
     permanentlyDeleteLink(link.id)
     // still present because it was never trashed — the DELETE WHERE is_trashed=1 matched nothing
     expect(getLink(link.id)).not.toBeNull()
@@ -207,7 +263,11 @@ describe('trash lifecycle', () => {
 describe('visit vs open counters', () => {
   it('tracks Dikunjungi (visit) and Dibuka (open) independently', () => {
     const f = createFolder('Reading', '#FFAC02')
-    const link = createLink({ folderId: f.id, url: 'https://a.com', title: 'A' })
+    const link = createLink({
+      folderId: f.id,
+      url: 'https://a.com',
+      title: 'A',
+    })
     recordVisit(link.id)
     recordVisit(link.id)
     recordOpen(link.id)

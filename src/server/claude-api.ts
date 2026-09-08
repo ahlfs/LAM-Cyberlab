@@ -357,13 +357,31 @@ export function toChatMessage(
 
   // Parse any text/file attachment tags embedded in message content: <attachment name="...">...</attachment>
   // and media image tags: <media:image id="..." name="...">
-  let extractedAttachments: Array<{ id: string; name: string; url?: string; dataUrl?: string; contentType?: string; size?: number }> | undefined
+  let extractedAttachments:
+    | Array<{
+        id: string
+        name: string
+        url?: string
+        dataUrl?: string
+        contentType?: string
+        size?: number
+      }>
+    | undefined
   if (msg.role === 'user' && msg.content) {
-    const list: Array<{ id: string; name: string; url?: string; dataUrl?: string; contentType?: string; size?: number }> = []
+    const list: Array<{
+      id: string
+      name: string
+      url?: string
+      dataUrl?: string
+      contentType?: string
+      size?: number
+    }> = []
 
     // 1. Image tags <media:image id="..." name="...">
     const mediaImageMatches = Array.from(
-      msg.content.matchAll(/<media:image\s+id="([^"]*)"(?:\s+name="([^"]*)")?[^>]*>/gi),
+      msg.content.matchAll(
+        /<media:image\s+id="([^"]*)"(?:\s+name="([^"]*)")?[^>]*>/gi,
+      ),
     )
     for (const m of mediaImageMatches) {
       const id = m[1]
@@ -380,13 +398,23 @@ export function toChatMessage(
 
     // 2. Legacy [screenshot] fallback if no explicit media tags but contains [screenshot]
     // Pair sequentially based on the order of user messages with screenshot in this session
-    if (mediaImageMatches.length === 0 && msg.content.includes('[screenshot]') && msg.session_id) {
+    if (
+      mediaImageMatches.length === 0 &&
+      msg.content.includes('[screenshot]') &&
+      msg.session_id
+    ) {
       const storedList = getAttachmentsForSession(msg.session_id)
-      const imageAtt = storedList.filter((a) => (a.contentType || '').startsWith('image/'))
-      
-      const sessionHistoryIndex = typeof options?.historyIndex === 'number' ? options.historyIndex : 0
+      const imageAtt = storedList.filter((a) =>
+        (a.contentType || '').startsWith('image/'),
+      )
+
+      const sessionHistoryIndex =
+        typeof options?.historyIndex === 'number' ? options.historyIndex : 0
       // If we have single image attachment and single screenshot turn or multiple
-      const attIndex = Math.min(sessionHistoryIndex, Math.max(0, imageAtt.length - 1))
+      const attIndex = Math.min(
+        sessionHistoryIndex,
+        Math.max(0, imageAtt.length - 1),
+      )
       const targetAtt = imageAtt[attIndex] || imageAtt[0]
       if (targetAtt) {
         list.push({
@@ -401,7 +429,9 @@ export function toChatMessage(
 
     // 3. Text/File attachment tags <attachment name="...">...</attachment>
     const attachmentMatches = Array.from(
-      msg.content.matchAll(/<attachment\s+name="([^"]*)">([\s\S]*?)<\/attachment>/gi),
+      msg.content.matchAll(
+        /<attachment\s+name="([^"]*)">([\s\S]*?)<\/attachment>/gi,
+      ),
     )
     for (let idx = 0; idx < attachmentMatches.length; idx++) {
       const m = attachmentMatches[idx]
@@ -430,7 +460,10 @@ export function toChatMessage(
     role: msg.role,
     content,
     text: msg.content || '',
-    attachments: extractedAttachments && extractedAttachments.length > 0 ? extractedAttachments : undefined,
+    attachments:
+      extractedAttachments && extractedAttachments.length > 0
+        ? extractedAttachments
+        : undefined,
     timestamp: msg.timestamp ? msg.timestamp * 1000 : Date.now(),
     createdAt: msg.timestamp
       ? new Date(msg.timestamp * 1000).toISOString()
@@ -543,13 +576,12 @@ export async function streamChat(
       const os = await import('node:os')
       const dir = path.join(os.tmpdir(), 'hermes-tool-debug')
       fs.mkdirSync(dir, { recursive: true })
-      const file = path.join(
-        dir,
-        `sse-${sessionId}-${Date.now()}.log`,
-      )
+      const file = path.join(dir, `sse-${sessionId}-${Date.now()}.log`)
       toolDebugStream = fs.createWriteStream(file, { flags: 'a' })
       console.log(`[claude-api][tool-debug] writing SSE dump to ${file}`)
-      toolDebugStream.write(`# session=${sessionId} ts=${new Date().toISOString()}\n`)
+      toolDebugStream.write(
+        `# session=${sessionId} ts=${new Date().toISOString()}\n`,
+      )
     } catch (err) {
       console.warn('[claude-api][tool-debug] failed to open dump file:', err)
     }
@@ -576,7 +608,9 @@ export async function streamChat(
         if (toolDebugStream) {
           // Truncate very long payloads so the dump stays human-readable.
           const trimmed =
-            dataStr.length > 4000 ? dataStr.slice(0, 4000) + '...[trunc]' : dataStr
+            dataStr.length > 4000
+              ? dataStr.slice(0, 4000) + '...[trunc]'
+              : dataStr
           toolDebugStream.write(`data: ${trimmed}\n\n`)
         }
         try {
@@ -657,7 +691,9 @@ export async function patchConfig(
     })
     if (!res.ok) {
       const body = await res.text().catch(() => '')
-      throw new Error(`Hermes dashboard PATCH /api/config: ${res.status} ${body}`)
+      throw new Error(
+        `Hermes dashboard PATCH /api/config: ${res.status} ${body}`,
+      )
     }
     return res.json() as Promise<Record<string, unknown>>
   }

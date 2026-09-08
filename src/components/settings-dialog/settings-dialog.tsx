@@ -22,11 +22,18 @@ import type { AccentColor, SettingsThemeMode } from '@/hooks/use-settings'
 import type { LoaderStyle } from '@/hooks/use-chat-settings'
 import type { BrailleSpinnerPreset } from '@/components/ui/braille-spinner'
 import type { ThemeId } from '@/lib/theme'
-import type {LocaleId} from '@/lib/i18n';
+import type { LocaleId } from '@/lib/i18n'
 import { GROQ_STT_MODELS, STT_PROVIDER_OPTIONS } from '@/lib/stt-config'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { AlertDialogRoot, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
+import {
+  AlertDialogRoot,
+  AlertDialogContent,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 import { applyTheme, useSettings } from '@/hooks/use-settings'
 import {
   THEMES,
@@ -61,7 +68,7 @@ import { personas } from '@/lib/personas'
 
 // ── Language ────────────────────────────────────────────────────────────
 
-import { LOCALE_LABELS,  getLocale, setLocale } from '@/lib/i18n'
+import { LOCALE_LABELS, getLocale, setLocale } from '@/lib/i18n'
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -248,10 +255,22 @@ const PROVIDER_CARDS: Array<{
     authType: 'api_key',
     envKey: 'XIAOMI_API_KEY',
   },
-  { id: 'custom', name: 'Custom', logo: '', models: [], authType: 'api_key', envKey: 'CUSTOM_API_KEY' },
+  {
+    id: 'custom',
+    name: 'Custom',
+    logo: '',
+    models: [],
+    authType: 'api_key',
+    envKey: 'CUSTOM_API_KEY',
+  },
 ]
 
-export type ProviderClickAction = 'select' | 'oauth' | 'local' | 'custom' | 'ignore'
+export type ProviderClickAction =
+  | 'select'
+  | 'oauth'
+  | 'local'
+  | 'custom'
+  | 'ignore'
 
 export function getProviderClickAction(input: {
   providerId?: string
@@ -264,10 +283,9 @@ export function getProviderClickAction(input: {
   return input.hasKey ? 'select' : 'ignore'
 }
 
-const LOCAL_PROVIDER_SETUP: Partial<Record<
-  string,
-  { baseUrl: string; unavailableMessage: string }
->> = {
+const LOCAL_PROVIDER_SETUP: Partial<
+  Record<string, { baseUrl: string; unavailableMessage: string }>
+> = {
   ollama: {
     baseUrl: 'http://127.0.0.1:11434/v1',
     unavailableMessage:
@@ -401,7 +419,8 @@ function HermesContent() {
         setConfiguredKeys(keys)
         // Load custom provider config (may be stored as 'custom' or legacy 'manifest')
         const cfgProviders = (d.config?.providers as Record<string, any>) || {}
-        const customCfg = cfgProviders['custom'] || cfgProviders['manifest'] || {}
+        const customCfg =
+          cfgProviders['custom'] || cfgProviders['manifest'] || {}
         if (customCfg.base_url) setCustomBaseUrl(customCfg.base_url)
         if (d.activeProvider === 'custom' && d.activeModel) {
           setCustomModel(d.activeModel)
@@ -567,7 +586,8 @@ function HermesContent() {
         window.open(verificationUri, '_blank', 'noopener,noreferrer')
       }
 
-      const expiresInSeconds = codeData.expires_in || DEFAULT_OAUTH_EXPIRES_SECONDS
+      const expiresInSeconds =
+        codeData.expires_in || DEFAULT_OAUTH_EXPIRES_SECONDS
       const intervalSeconds = Math.max(
         1,
         codeData.interval || DEFAULT_OAUTH_POLL_INTERVAL_SECONDS,
@@ -744,18 +764,24 @@ function HermesContent() {
       {oauthProviderId ? (
         <div className="rounded-xl px-3 py-2.5" style={cardStyle}>
           {(() => {
-            const provider = PROVIDER_CARDS.find((p) => p.id === oauthProviderId)
+            const provider = PROVIDER_CARDS.find(
+              (p) => p.id === oauthProviderId,
+            )
             if (!provider) return null
 
             return (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold">{provider.name} OAuth</p>
+                    <p className="text-sm font-semibold">
+                      {provider.name} OAuth
+                    </p>
                   </div>
                   <Button
                     size="sm"
-                    disabled={oauthStatus === 'starting' || oauthStatus === 'pending'}
+                    disabled={
+                      oauthStatus === 'starting' || oauthStatus === 'pending'
+                    }
                     onClick={() => {
                       void startOAuthFlow()
                     }}
@@ -794,14 +820,17 @@ function HermesContent() {
       {localProviderId ? (
         <div className="rounded-xl px-3 py-2.5" style={cardStyle}>
           {(() => {
-            const provider = PROVIDER_CARDS.find((p) => p.id === localProviderId)
+            const provider = PROVIDER_CARDS.find(
+              (p) => p.id === localProviderId,
+            )
             if (!provider) return null
             const disc = localDiscovery?.providers.find(
               (lp) => lp.id === provider.id,
             )
             const models =
-              localDiscovery?.models.filter((m) => m.provider === provider.id) ||
-              []
+              localDiscovery?.models.filter(
+                (m) => m.provider === provider.id,
+              ) || []
             const setup = LOCAL_PROVIDER_SETUP[provider.id] || {
               baseUrl: 'local OpenAI-compatible endpoint',
               unavailableMessage: 'No local endpoint detected.',
@@ -830,15 +859,18 @@ function HermesContent() {
                   )}
                   {disc?.needsRestart ? (
                     <div className="mt-2 text-yellow-700 dark:text-yellow-200">
-                      Gateway restart may be needed after adding this provider to
-                      config.
+                      Gateway restart may be needed after adding this provider
+                      to config.
                     </div>
                   ) : null}
                 </div>
 
                 {models.length > 0 ? (
                   <div>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider" style={mutedStyle}>
+                    <p
+                      className="mb-2 text-xs font-semibold uppercase tracking-wider"
+                      style={mutedStyle}
+                    >
                       Detected Models
                     </p>
                     <div className="flex flex-wrap gap-2">
@@ -878,7 +910,9 @@ function HermesContent() {
                       <div className="mt-2 flex items-center gap-2">
                         <Button
                           size="sm"
-                          onClick={() => setDefaultModel(provider.id, activeModel)}
+                          onClick={() =>
+                            setDefaultModel(provider.id, activeModel)
+                          }
                         >
                           Set as default: {provider.id} · {activeModel}
                         </Button>
@@ -893,68 +927,77 @@ function HermesContent() {
       ) : null}
 
       {/* Model Selection for active provider */}
-      {!oauthProviderId && !localProviderId && activeProvider && activeProvider !== 'custom' && (
+      {!oauthProviderId &&
+        !localProviderId &&
+        activeProvider &&
+        activeProvider !== 'custom' && (
+          <div>
+            <p
+              className="mb-1 text-xs font-semibold uppercase tracking-wider"
+              style={mutedStyle}
+            >
+              Model — pick one, then confirm below
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(() => {
+                if (availableModels.length > 0) return availableModels
+                // Use auto-discovered models for local providers
+                const discovered = localDiscovery?.models
+                  .filter((m) => m.provider === activeProvider)
+                  .map((m) => m.id)
+                if (discovered && discovered.length > 0) return discovered
+                return (
+                  PROVIDER_CARDS.find((p) => p.id === activeProvider)?.models ||
+                  []
+                )
+              })().map((model) => (
+                <button
+                  key={model}
+                  type="button"
+                  aria-pressed={activeModel === model}
+                  onClick={() => setActiveModel(model)}
+                  className={cn(
+                    'rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
+                    activeModel === model
+                      ? 'ring-2 ring-accent-500'
+                      : 'hover:brightness-110',
+                    defaultProvider === activeProvider &&
+                      defaultModelId === model
+                      ? 'border border-accent-500/40'
+                      : '',
+                  )}
+                  style={cardStyle}
+                >
+                  {model}
+                  {defaultProvider === activeProvider &&
+                  defaultModelId === model
+                    ? ' · default'
+                    : ''}
+                </button>
+              ))}
+            </div>
+            {activeModel &&
+            (activeProvider !== defaultProvider ||
+              activeModel !== defaultModelId) ? (
+              <div className="mt-2 flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => setDefaultModel(activeProvider, activeModel)}
+                >
+                  Set as default: {activeProvider} · {activeModel}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+      {/* Custom OpenAI-compatible endpoint fields — Base URL only; API key lives in API Keys section */}
+      {activeProvider === 'custom' && (
         <div>
           <p
             className="mb-1 text-xs font-semibold uppercase tracking-wider"
             style={mutedStyle}
           >
-            Model — pick one, then confirm below
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {(() => {
-              if (availableModels.length > 0) return availableModels
-              // Use auto-discovered models for local providers
-              const discovered = localDiscovery?.models
-                .filter((m) => m.provider === activeProvider)
-                .map((m) => m.id)
-              if (discovered && discovered.length > 0) return discovered
-              return (
-                PROVIDER_CARDS.find((p) => p.id === activeProvider)?.models ||
-                []
-              )
-            })().map((model) => (
-              <button
-                key={model}
-                type="button"
-                aria-pressed={activeModel === model}
-                onClick={() => setActiveModel(model)}
-                className={cn(
-                  'rounded-lg px-3 py-1.5 text-xs font-medium transition-all',
-                  activeModel === model
-                    ? 'ring-2 ring-accent-500'
-                    : 'hover:brightness-110',
-                  defaultProvider === activeProvider && defaultModelId === model
-                    ? 'border border-accent-500/40'
-                    : '',
-                )}
-                style={cardStyle}
-              >
-                {model}
-                {defaultProvider === activeProvider && defaultModelId === model
-                  ? ' · default'
-                  : ''}
-              </button>
-            ))}
-          </div>
-          {activeModel &&
-          (activeProvider !== defaultProvider || activeModel !== defaultModelId) ? (
-            <div className="mt-2 flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() => setDefaultModel(activeProvider, activeModel)}
-              >
-                Set as default: {activeProvider} · {activeModel}
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      )}
-
-      {/* Custom OpenAI-compatible endpoint fields — Base URL only; API key lives in API Keys section */}
-      {activeProvider === 'custom' && (
-        <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wider" style={mutedStyle}>
             Custom Endpoint
           </p>
           <div className="space-y-1.5">
@@ -962,7 +1005,10 @@ function HermesContent() {
               const isEditing = editingKey === 'custom_base_url'
               const hasValue = !!customBaseUrl
               return (
-                <div className="flex items-center gap-3 rounded-xl px-3 py-2.5" style={cardStyle}>
+                <div
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                  style={cardStyle}
+                >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium">Base URL</div>
                     <div className="text-[11px] font-mono" style={mutedStyle}>
@@ -977,24 +1023,74 @@ function HermesContent() {
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              save({ config: { model: { provider: 'manifest' }, providers: { manifest: { type: 'openai', base_url: customBaseUrl, key_env: 'CUSTOM_API_KEY' } } } })
-                                .then(() => setEditingKey(null))
+                              save({
+                                config: {
+                                  model: { provider: 'manifest' },
+                                  providers: {
+                                    manifest: {
+                                      type: 'openai',
+                                      base_url: customBaseUrl,
+                                      key_env: 'CUSTOM_API_KEY',
+                                    },
+                                  },
+                                },
+                              }).then(() => setEditingKey(null))
                             }
                             if (e.key === 'Escape') setEditingKey(null)
                           }}
                         />
-                      ) : hasValue ? customBaseUrl : 'Not configured'}
+                      ) : hasValue ? (
+                        customBaseUrl
+                      ) : (
+                        'Not configured'
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn('size-2 rounded-full', hasValue ? 'bg-green-500' : 'bg-neutral-500')} />
+                    <span
+                      className={cn(
+                        'size-2 rounded-full',
+                        hasValue ? 'bg-green-500' : 'bg-neutral-500',
+                      )}
+                    />
                     {isEditing ? (
                       <>
-                        <button type="button" onClick={() => { save({ config: { model: { provider: 'manifest' }, providers: { manifest: { type: 'openai', base_url: customBaseUrl, key_env: 'CUSTOM_API_KEY' } } } }).then(() => setEditingKey(null)) }} className="text-xs font-medium text-green-400">Save</button>
-                        <button type="button" onClick={() => setEditingKey(null)} className="text-xs" style={mutedStyle}>Cancel</button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            save({
+                              config: {
+                                model: { provider: 'manifest' },
+                                providers: {
+                                  manifest: {
+                                    type: 'openai',
+                                    base_url: customBaseUrl,
+                                    key_env: 'CUSTOM_API_KEY',
+                                  },
+                                },
+                              },
+                            }).then(() => setEditingKey(null))
+                          }}
+                          className="text-xs font-medium text-green-400"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingKey(null)}
+                          className="text-xs"
+                          style={mutedStyle}
+                        >
+                          Cancel
+                        </button>
                       </>
                     ) : (
-                      <button type="button" onClick={() => setEditingKey('custom_base_url')} className="text-xs font-medium" style={{ color: 'var(--theme-accent)' }}>
+                      <button
+                        type="button"
+                        onClick={() => setEditingKey('custom_base_url')}
+                        className="text-xs font-medium"
+                        style={{ color: 'var(--theme-accent)' }}
+                      >
                         {hasValue ? 'Edit' : 'Add'}
                       </button>
                     )}
@@ -1012,10 +1108,7 @@ function HermesContent() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium">Model</div>
-                    <div
-                      className="text-[11px] font-mono"
-                      style={mutedStyle}
-                    >
+                    <div className="text-[11px] font-mono" style={mutedStyle}>
                       {isEditing ? (
                         <input
                           type="text"
@@ -1582,84 +1675,210 @@ const ENTERPRISE_THEMES = THEMES.map((theme) => ({
                     text: '#16315F',
                   }
                 : theme.id === 'claude-classic'
-              ? {
-                  bg: '#0d0f12',
-                  panel: '#1a1f26',
-                  border: '#2a313b',
-                  accent: '#b98a44',
-                  text: '#eceff4',
-                }
-              : theme.id === 'claude-classic-light'
-                ? {
-                    bg: '#F5F2ED',
-                    panel: '#FCFAF7',
-                    border: '#D8CCBC',
-                    accent: '#b98a44',
-                    text: '#1a1f26',
-                  }
-                : theme.id === 'claude-slate'
                   ? {
-                      bg: '#0d1117',
-                      panel: '#1c2128',
-                      border: '#30363d',
-                      accent: '#7eb8f6',
-                      text: '#c9d1d9',
+                      bg: '#0d0f12',
+                      panel: '#1a1f26',
+                      border: '#2a313b',
+                      accent: '#b98a44',
+                      text: '#eceff4',
                     }
-                  : theme.id === 'dracula'
+                  : theme.id === 'claude-classic-light'
                     ? {
-                        bg: '#282A36',
-                        panel: '#343746',
-                        border: '#44475A',
-                        accent: '#BF9EEE',
-                        text: '#F6F6F4',
+                        bg: '#F5F2ED',
+                        panel: '#FCFAF7',
+                        border: '#D8CCBC',
+                        accent: '#b98a44',
+                        text: '#1a1f26',
                       }
-                    : theme.id === 'discord-nitro'
+                    : theme.id === 'claude-slate'
                       ? {
-                          bg: '#313338',
-                          panel: '#2b2d31',
-                          border: 'rgba(255, 255, 255, 0.06)',
-                          accent: '#5865f2',
-                          text: '#f2f3f5',
+                          bg: '#0d1117',
+                          panel: '#1c2128',
+                          border: '#30363d',
+                          accent: '#7eb8f6',
+                          text: '#c9d1d9',
                         }
-                      : theme.id === 'discord-nitro-light'
+                      : theme.id === 'dracula'
                         ? {
-                            bg: '#ffffff',
-                            panel: '#f2f3f5',
-                            border: 'rgba(0, 0, 0, 0.08)',
-                            accent: '#5865f2',
-                            text: '#060607',
+                            bg: '#282A36',
+                            panel: '#343746',
+                            border: '#44475A',
+                            accent: '#BF9EEE',
+                            text: '#F6F6F4',
                           }
-                        : theme.id === 'dracula-light'
-                      ? {
-                          bg: '#FFFBEB',
-                          panel: '#FFFDF5',
-                          border: '#DDD6BD',
-                          accent: '#644AC9',
-                          text: '#1F1F1F',
-                        }
-                      : theme.id === 'arctic' ? { bg: '#0B1120', panel: '#111827', border: 'rgba(56, 189, 248, 0.2)', accent: '#38BDF8', text: '#F3F4F6' }
-                      : theme.id === 'arctic-light' ? { bg: '#F1F5F9', panel: '#F8FAFC', border: '#CBD5E1', accent: '#0284C7', text: '#0F172A' }
-                      : theme.id === 'synthwave' ? { bg: '#2b213a', panel: '#241b2f', border: '#ff71ce', accent: '#01cdfe', text: '#fdf6e3' }
-                      : theme.id === 'synthwave-light' ? { bg: '#FAFAFA', panel: '#F4F4F5', border: '#ff71ce', accent: '#01cdfe', text: '#18181b' }
-                      : theme.id === 'biolab' ? { bg: '#121413', panel: '#1a1d1b', border: '#3f6212', accent: '#84cc16', text: '#e5e7eb' }
-                      : theme.id === 'biolab-light' ? { bg: '#F3F4F6', panel: '#FFFFFF', border: '#b4ced6', accent: '#65a30d', text: '#111827' }
-                      : theme.id === 'monokai' ? { bg: '#222222', panel: '#2d2a2e', border: '#5b595c', accent: '#ffd866', text: '#fcfcfa' }
-                      : theme.id === 'monokai-light' ? { bg: '#FAFAFA', panel: '#FFFFFF', border: '#e4e4e7', accent: '#d97706', text: '#27272a' }
-                      : theme.id === 'tokyonight' ? { bg: '#1a1b26', panel: '#24283b', border: '#414868', accent: '#7aa2f7', text: '#c0caf5' }
-                      : theme.id === 'tokyonight-light' ? { bg: '#FAFAFA', panel: '#FFFFFF', border: '#e4e4e7', accent: '#2563eb', text: '#1e293b' }
-                      : theme.id === 'crimson' ? { bg: '#0a0a0a', panel: '#171717', border: '#dc2626', accent: '#ef4444', text: '#a3a3a3' }
-                      : theme.id === 'crimson-light' ? { bg: '#FAFAFA', panel: '#FFFFFF', border: '#fca5a5', accent: '#dc2626', text: '#171717' }
-                      : theme.id === 'deusex' ? { bg: '#000000', panel: '#111100', border: '#664400', accent: '#ffb000', text: '#ffb000' }
-                      : theme.id === 'deusex-light' ? { bg: '#FFFBEB', panel: '#FEF3C7', border: '#FDE68A', accent: '#D97706', text: '#78350F' }
-                      : theme.id === 'highcontrast' ? { bg: '#000000', panel: '#111111', border: '#666666', accent: '#FFFFFF', text: '#FFFFFF' }
-                      : theme.id === 'highcontrast-light' ? { bg: '#FFFFFF', panel: '#F4F4F5', border: '#A1A1AA', accent: '#000000', text: '#000000' }
-                      : {
-                          bg: '#F6F8FA',
-                          panel: '#FFFFFF',
-                          border: '#D0D7DE',
-                          accent: '#3b82f6',
-                          text: '#24292f',
-                        },
+                        : theme.id === 'discord-nitro'
+                          ? {
+                              bg: '#313338',
+                              panel: '#2b2d31',
+                              border: 'rgba(255, 255, 255, 0.06)',
+                              accent: '#5865f2',
+                              text: '#f2f3f5',
+                            }
+                          : theme.id === 'discord-nitro-light'
+                            ? {
+                                bg: '#ffffff',
+                                panel: '#f2f3f5',
+                                border: 'rgba(0, 0, 0, 0.08)',
+                                accent: '#5865f2',
+                                text: '#060607',
+                              }
+                            : theme.id === 'dracula-light'
+                              ? {
+                                  bg: '#FFFBEB',
+                                  panel: '#FFFDF5',
+                                  border: '#DDD6BD',
+                                  accent: '#644AC9',
+                                  text: '#1F1F1F',
+                                }
+                              : theme.id === 'arctic'
+                                ? {
+                                    bg: '#0B1120',
+                                    panel: '#111827',
+                                    border: 'rgba(56, 189, 248, 0.2)',
+                                    accent: '#38BDF8',
+                                    text: '#F3F4F6',
+                                  }
+                                : theme.id === 'arctic-light'
+                                  ? {
+                                      bg: '#F1F5F9',
+                                      panel: '#F8FAFC',
+                                      border: '#CBD5E1',
+                                      accent: '#0284C7',
+                                      text: '#0F172A',
+                                    }
+                                  : theme.id === 'synthwave'
+                                    ? {
+                                        bg: '#2b213a',
+                                        panel: '#241b2f',
+                                        border: '#ff71ce',
+                                        accent: '#01cdfe',
+                                        text: '#fdf6e3',
+                                      }
+                                    : theme.id === 'synthwave-light'
+                                      ? {
+                                          bg: '#FAFAFA',
+                                          panel: '#F4F4F5',
+                                          border: '#ff71ce',
+                                          accent: '#01cdfe',
+                                          text: '#18181b',
+                                        }
+                                      : theme.id === 'biolab'
+                                        ? {
+                                            bg: '#121413',
+                                            panel: '#1a1d1b',
+                                            border: '#3f6212',
+                                            accent: '#84cc16',
+                                            text: '#e5e7eb',
+                                          }
+                                        : theme.id === 'biolab-light'
+                                          ? {
+                                              bg: '#F3F4F6',
+                                              panel: '#FFFFFF',
+                                              border: '#b4ced6',
+                                              accent: '#65a30d',
+                                              text: '#111827',
+                                            }
+                                          : theme.id === 'monokai'
+                                            ? {
+                                                bg: '#222222',
+                                                panel: '#2d2a2e',
+                                                border: '#5b595c',
+                                                accent: '#ffd866',
+                                                text: '#fcfcfa',
+                                              }
+                                            : theme.id === 'monokai-light'
+                                              ? {
+                                                  bg: '#FAFAFA',
+                                                  panel: '#FFFFFF',
+                                                  border: '#e4e4e7',
+                                                  accent: '#d97706',
+                                                  text: '#27272a',
+                                                }
+                                              : theme.id === 'tokyonight'
+                                                ? {
+                                                    bg: '#1a1b26',
+                                                    panel: '#24283b',
+                                                    border: '#414868',
+                                                    accent: '#7aa2f7',
+                                                    text: '#c0caf5',
+                                                  }
+                                                : theme.id ===
+                                                    'tokyonight-light'
+                                                  ? {
+                                                      bg: '#FAFAFA',
+                                                      panel: '#FFFFFF',
+                                                      border: '#e4e4e7',
+                                                      accent: '#2563eb',
+                                                      text: '#1e293b',
+                                                    }
+                                                  : theme.id === 'crimson'
+                                                    ? {
+                                                        bg: '#0a0a0a',
+                                                        panel: '#171717',
+                                                        border: '#dc2626',
+                                                        accent: '#ef4444',
+                                                        text: '#a3a3a3',
+                                                      }
+                                                    : theme.id ===
+                                                        'crimson-light'
+                                                      ? {
+                                                          bg: '#FAFAFA',
+                                                          panel: '#FFFFFF',
+                                                          border: '#fca5a5',
+                                                          accent: '#dc2626',
+                                                          text: '#171717',
+                                                        }
+                                                      : theme.id === 'deusex'
+                                                        ? {
+                                                            bg: '#000000',
+                                                            panel: '#111100',
+                                                            border: '#664400',
+                                                            accent: '#ffb000',
+                                                            text: '#ffb000',
+                                                          }
+                                                        : theme.id ===
+                                                            'deusex-light'
+                                                          ? {
+                                                              bg: '#FFFBEB',
+                                                              panel: '#FEF3C7',
+                                                              border: '#FDE68A',
+                                                              accent: '#D97706',
+                                                              text: '#78350F',
+                                                            }
+                                                          : theme.id ===
+                                                              'highcontrast'
+                                                            ? {
+                                                                bg: '#000000',
+                                                                panel:
+                                                                  '#111111',
+                                                                border:
+                                                                  '#666666',
+                                                                accent:
+                                                                  '#FFFFFF',
+                                                                text: '#FFFFFF',
+                                                              }
+                                                            : theme.id ===
+                                                                'highcontrast-light'
+                                                              ? {
+                                                                  bg: '#FFFFFF',
+                                                                  panel:
+                                                                    '#F4F4F5',
+                                                                  border:
+                                                                    '#A1A1AA',
+                                                                  accent:
+                                                                    '#000000',
+                                                                  text: '#000000',
+                                                                }
+                                                              : {
+                                                                  bg: '#F6F8FA',
+                                                                  panel:
+                                                                    '#FFFFFF',
+                                                                  border:
+                                                                    '#D0D7DE',
+                                                                  accent:
+                                                                    '#3b82f6',
+                                                                  text: '#24292f',
+                                                                },
 }))
 
 function ThemeSwatch({
@@ -2243,7 +2462,7 @@ function PersonaContent() {
   const [activePersonaId, setActivePersonaId] = useState<string>('default')
   const [confirmPersona, setConfirmPersona] = useState<any | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
-  
+
   useEffect(() => {
     fetch('/api/persona')
       .then((r) => r.json())
@@ -2302,14 +2521,14 @@ function PersonaContent() {
                 'relative flex flex-col overflow-hidden rounded-xl border transition-all text-left group',
                 isActive
                   ? 'border-accent-500 ring-1 ring-accent-500 shadow-md'
-                  : 'border-[var(--theme-border)] hover:border-primary-400 hover:shadow-sm'
+                  : 'border-[var(--theme-border)] hover:border-primary-400 hover:shadow-sm',
               )}
               style={{ backgroundColor: 'var(--theme-card)' }}
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-primary-100 dark:bg-neutral-800">
-                <img 
-                  src={p.image} 
-                  alt={p.name} 
+                <img
+                  src={p.image}
+                  alt={p.name}
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 {isActive && (
@@ -2334,16 +2553,29 @@ function PersonaContent() {
           )
         })}
       </div>
-      <AlertDialogRoot open={!!confirmPersona} onOpenChange={(open) => !open && setConfirmPersona(null)}>
+      <AlertDialogRoot
+        open={!!confirmPersona}
+        onOpenChange={(open) => !open && setConfirmPersona(null)}
+      >
         <AlertDialogContent className="p-6">
-          <AlertDialogTitle className="mb-2 text-xl font-semibold">Switch Persona</AlertDialogTitle>
+          <AlertDialogTitle className="mb-2 text-xl font-semibold">
+            Switch Persona
+          </AlertDialogTitle>
           <AlertDialogDescription className="text-[var(--theme-muted)] leading-relaxed">
             Are you sure you want to switch your active AI persona to{' '}
-            <span className="font-bold text-[var(--theme-text)]">{confirmPersona?.name}</span>?
+            <span className="font-bold text-[var(--theme-text)]">
+              {confirmPersona?.name}
+            </span>
+            ?
           </AlertDialogDescription>
           <div className="mt-8 flex justify-end gap-3">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button onClick={() => { if (confirmPersona) savePersona(confirmPersona.id) }} variant="default">
+            <Button
+              onClick={() => {
+                if (confirmPersona) savePersona(confirmPersona.id)
+              }}
+              variant="default"
+            >
               Confirm Switch
             </Button>
           </div>
@@ -2404,8 +2636,7 @@ function VoiceContent() {
 
   const ttsProvider = String(tts.provider || 'edge')
   const sttProvider = String(stt.provider || 'local')
-  const sttGroq =
-    (stt.groq as Record<string, unknown> | undefined) || {}
+  const sttGroq = (stt.groq as Record<string, unknown> | undefined) || {}
 
   return (
     <div className="space-y-4">
@@ -2509,7 +2740,10 @@ function VoiceContent() {
                 ))}
               </select>
             </Row>
-            <Row label="Language" description="Optional BCP-47 code, e.g. en or en-US.">
+            <Row
+              label="Language"
+              description="Optional BCP-47 code, e.g. en or en-US."
+            >
               <Input
                 value={String(stt.language || '')}
                 onChange={(e) => saveStt('language', e.target.value)}
@@ -2780,7 +3014,8 @@ export function SettingsDialog({
           </SettingsErrorBoundary>
 
           <div className="sticky bottom-0 z-10 border-t border-primary-200 bg-primary-50/60 px-4 py-3 text-xs text-primary-500 dark:text-neutral-400 md:rounded-b-2xl md:px-5">
-            Most changes save automatically; the default model commits only when you click Set as default.{' '}
+            Most changes save automatically; the default model commits only when
+            you click Set as default.{' '}
             <a
               href="/settings"
               className="ml-2 font-medium underline underline-offset-2 hover:text-primary-700 dark:hover:text-neutral-200"

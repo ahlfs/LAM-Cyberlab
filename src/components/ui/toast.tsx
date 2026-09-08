@@ -6,11 +6,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { 
-  InformationCircleIcon, 
-  CheckmarkCircle02Icon, 
-  Alert01Icon, 
-  CancelCircleIcon 
+import {
+  InformationCircleIcon,
+  CheckmarkCircle02Icon,
+  Alert01Icon,
+  CancelCircleIcon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 
@@ -43,9 +43,12 @@ export function toast(
 
 const typeStyles: Record<ToastType, string> = {
   info: 'border-blue-500/30 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.15)] text-blue-200',
-  success: 'border-emerald-500/30 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] text-emerald-200',
-  warning: 'border-amber-500/30 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.15)] text-amber-200',
-  error: 'border-rose-500/30 bg-rose-500/10 shadow-[0_0_20px_rgba(225,29,72,0.15)] text-rose-200',
+  success:
+    'border-emerald-500/30 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.15)] text-emerald-200',
+  warning:
+    'border-amber-500/30 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.15)] text-amber-200',
+  error:
+    'border-rose-500/30 bg-rose-500/10 shadow-[0_0_20px_rgba(225,29,72,0.15)] text-rose-200',
 }
 
 const defaultIcons: Record<ToastType, any> = {
@@ -100,7 +103,11 @@ export function Toaster() {
                 <span className="text-xl drop-shadow-md">{t.icon}</span>
               )
             ) : (
-              <HugeiconsIcon icon={defaultIcons[t.type]} size={20} className="drop-shadow-md" />
+              <HugeiconsIcon
+                icon={defaultIcons[t.type]}
+                size={20}
+                className="drop-shadow-md"
+              />
             )}
           </div>
           <span className="min-w-0 flex-1 break-words leading-relaxed drop-shadow-sm text-[var(--theme-text)]">
@@ -108,10 +115,25 @@ export function Toaster() {
           </span>
           <button
             type="button"
-            onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+            onClick={() =>
+              setToasts((prev) => prev.filter((x) => x.id !== t.id))
+            }
             className="ml-2 shrink-0 rounded-full p-1.5 opacity-60 transition-all hover:bg-black/20 hover:opacity-100"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
           </button>
         </div>
       ))}

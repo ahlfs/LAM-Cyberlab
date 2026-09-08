@@ -45,7 +45,8 @@ export function LinksScreen() {
     | { open: false }
     | { open: true; link: LinkuLink | null; defaultFolderId: number | null }
   >({ open: false })
-  const [deleteFolderTarget, setDeleteFolderTarget] = useState<LinkuFolder | null>(null)
+  const [deleteFolderTarget, setDeleteFolderTarget] =
+    useState<LinkuFolder | null>(null)
   const [confirmEmptyTrash, setConfirmEmptyTrash] = useState(false)
 
   const foldersQuery = useFolders()
@@ -105,11 +106,16 @@ export function LinksScreen() {
           const payload = JSON.parse(ev.target?.result as string)
           importLinks.mutate(payload, {
             onSuccess: (res) => {
-              toast(`Imported ${res.importedFolders} folders and ${res.importedLinks} links`, { type: 'success' })
+              toast(
+                `Imported ${res.importedFolders} folders and ${res.importedLinks} links`,
+                { type: 'success' },
+              )
             },
             onError: (err) => {
-              toast(err instanceof Error ? err.message : 'Import failed', { type: 'error' })
-            }
+              toast(err instanceof Error ? err.message : 'Import failed', {
+                type: 'error',
+              })
+            },
           })
         } catch (err) {
           toast('Invalid JSON file', { type: 'error' })
@@ -127,7 +133,8 @@ export function LinksScreen() {
           className="flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between"
           style={{
             borderColor: 'var(--theme-border)',
-            background: 'color-mix(in srgb, var(--theme-panel) 85%, transparent)',
+            background:
+              'color-mix(in srgb, var(--theme-panel) 85%, transparent)',
           }}
         >
           <div className="relative flex-1 sm:max-w-sm">
@@ -160,16 +167,26 @@ export function LinksScreen() {
               onClick={handleImport}
               disabled={importLinks.isPending}
               className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-              style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-text)' }}
+              style={{
+                borderColor: 'var(--theme-border)',
+                color: 'var(--theme-text)',
+              }}
               title="Import links from JSON"
             >
-              <HugeiconsIcon icon={Upload01Icon} size={16} className={importLinks.isPending ? "animate-bounce" : ""} />
+              <HugeiconsIcon
+                icon={Upload01Icon}
+                size={16}
+                className={importLinks.isPending ? 'animate-bounce' : ''}
+              />
             </button>
             <button
               type="button"
               onClick={handleExport}
               className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-              style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-text)' }}
+              style={{
+                borderColor: 'var(--theme-border)',
+                color: 'var(--theme-text)',
+              }}
               title="Export links to JSON"
             >
               <HugeiconsIcon icon={Download01Icon} size={16} />
@@ -179,7 +196,10 @@ export function LinksScreen() {
               type="button"
               onClick={() => setFolderDialog({ open: true, folder: null })}
               className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium"
-              style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-text)' }}
+              style={{
+                borderColor: 'var(--theme-border)',
+                color: 'var(--theme-text)',
+              }}
             >
               <HugeiconsIcon icon={Add01Icon} size={16} />
               New folder
@@ -188,7 +208,10 @@ export function LinksScreen() {
               type="button"
               onClick={handleCreateLink}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium"
-              style={{ background: 'var(--theme-accent)', color: 'var(--theme-bg)' }}
+              style={{
+                background: 'var(--theme-accent)',
+                color: 'var(--theme-bg)',
+              }}
             >
               <HugeiconsIcon icon={Add01Icon} size={16} />
               New link
@@ -226,12 +249,17 @@ export function LinksScreen() {
                   {search.trim() ? `Search: "${search.trim()}"` : title}
                 </h1>
               </div>
-              {mode.kind === 'view' && mode.view === 'trash' && linksQuery.data?.length ? (
+              {mode.kind === 'view' &&
+              mode.view === 'trash' &&
+              linksQuery.data?.length ? (
                 <button
                   type="button"
                   onClick={() => setConfirmEmptyTrash(true)}
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[13px] font-medium"
-                  style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-danger)' }}
+                  style={{
+                    borderColor: 'var(--theme-border)',
+                    color: 'var(--theme-danger)',
+                  }}
                 >
                   <HugeiconsIcon icon={Delete02Icon} size={14} />
                   Empty trash
@@ -247,7 +275,11 @@ export function LinksScreen() {
                 isSearching={search.trim().length > 0}
                 onEdit={(link) => {
                   recordLinkOpened(link.id)
-                  setLinkDialog({ open: true, link, defaultFolderId: link.folderId })
+                  setLinkDialog({
+                    open: true,
+                    link,
+                    defaultFolderId: link.folderId,
+                  })
                 }}
                 onCreateLink={handleCreateLink}
               />
@@ -256,9 +288,13 @@ export function LinksScreen() {
                 folders={foldersQuery.data}
                 isLoading={foldersQuery.isLoading}
                 onOpenFolder={(id) => setMode({ kind: 'folder', folderId: id })}
-                onEditFolder={(folder) => setFolderDialog({ open: true, folder })}
+                onEditFolder={(folder) =>
+                  setFolderDialog({ open: true, folder })
+                }
                 onDeleteFolder={(folder) => setDeleteFolderTarget(folder)}
-                onCreateFolder={() => setFolderDialog({ open: true, folder: null })}
+                onCreateFolder={() =>
+                  setFolderDialog({ open: true, folder: null })
+                }
               />
             )}
           </div>
@@ -301,7 +337,12 @@ export function LinksScreen() {
                   setMode({ kind: 'folders' })
                 }
               },
-              onError: (err) => toast(err instanceof Error ? err.message : 'Failed to delete folder'),
+              onError: (err) =>
+                toast(
+                  err instanceof Error
+                    ? err.message
+                    : 'Failed to delete folder',
+                ),
             })
             setDeleteFolderTarget(null)
           }}
@@ -317,8 +358,14 @@ export function LinksScreen() {
           onCancel={() => setConfirmEmptyTrash(false)}
           onConfirm={() => {
             emptyTrash.mutate(undefined, {
-              onSuccess: (r) => toast(`Permanently deleted ${r.deleted} link${r.deleted === 1 ? '' : 's'}`),
-              onError: (err) => toast(err instanceof Error ? err.message : 'Failed to empty trash'),
+              onSuccess: (r) =>
+                toast(
+                  `Permanently deleted ${r.deleted} link${r.deleted === 1 ? '' : 's'}`,
+                ),
+              onError: (err) =>
+                toast(
+                  err instanceof Error ? err.message : 'Failed to empty trash',
+                ),
             })
             setConfirmEmptyTrash(false)
           }}

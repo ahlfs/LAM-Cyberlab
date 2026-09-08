@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -46,15 +52,27 @@ describe('createBackupZip / restoreBackupZip round trip', () => {
     // Skills: one bundled (excluded), one custom (included)
     const skillsDir = join(hermesHome, 'skills')
     mkdirSync(join(skillsDir, 'bundled-one'), { recursive: true })
-    writeFileSync(join(skillsDir, 'bundled-one', 'SKILL.md'), 'bundled skill body')
+    writeFileSync(
+      join(skillsDir, 'bundled-one', 'SKILL.md'),
+      'bundled skill body',
+    )
     mkdirSync(join(skillsDir, 'my-custom-skill'), { recursive: true })
-    writeFileSync(join(skillsDir, 'my-custom-skill', 'SKILL.md'), 'custom skill body')
+    writeFileSync(
+      join(skillsDir, 'my-custom-skill', 'SKILL.md'),
+      'custom skill body',
+    )
     writeFileSync(join(skillsDir, '.bundled_manifest'), 'bundled-one:abc123\n')
-    writeFileSync(join(skillsDir, '.usage.json'), '{"bundled-one":{"pinned":true}}')
+    writeFileSync(
+      join(skillsDir, '.usage.json'),
+      '{"bundled-one":{"pinned":true}}',
+    )
 
     // Local sessions
     mkdirSync(join(root, '.runtime'), { recursive: true })
-    writeFileSync(join(root, '.runtime', 'local-sessions.json'), '{"new":{"title":"hi"}}')
+    writeFileSync(
+      join(root, '.runtime', 'local-sessions.json'),
+      '{"new":{"title":"hi"}}',
+    )
 
     const zipBuffer = await import('./backup').then((m) =>
       m.createBackupZip({ 'claude-settings': '{"theme":"dark"}' }),
@@ -105,14 +123,20 @@ describe('createBackupZip / restoreBackupZip round trip', () => {
 
   it('excludes sensitive agent files even if present alongside workspace data', async () => {
     // These live in the same HERMES_HOME but must never be read/zipped by backup.ts.
-    writeFileSync(join(hermesHome, 'config.yaml'), 'anthropic_api_key: sk-should-not-leak')
+    writeFileSync(
+      join(hermesHome, 'config.yaml'),
+      'anthropic_api_key: sk-should-not-leak',
+    )
     writeFileSync(join(hermesHome, 'auth.json'), '{"token":"should-not-leak"}')
     mkdirSync(join(hermesHome, 'sessions'), { recursive: true })
     writeFileSync(
       join(hermesHome, 'sessions', 'request_dump.json'),
       '{"headers":{"Authorization":"Bearer should-not-leak"}}',
     )
-    writeFileSync(join(hermesHome, 'workspace-sessions.json'), '{"token":"should-not-leak"}')
+    writeFileSync(
+      join(hermesHome, 'workspace-sessions.json'),
+      '{"token":"should-not-leak"}',
+    )
 
     const { createBackupZip } = await import('./backup')
     const zipBuffer = await createBackupZip({})
@@ -152,7 +176,10 @@ describe('restoreBackupZip validation', () => {
   it('rejects a manifest with the wrong kind', async () => {
     const JSZip = (await import('jszip')).default
     const zip = new JSZip()
-    zip.file('manifest.json', JSON.stringify({ kind: 'something-else', version: 1 }))
+    zip.file(
+      'manifest.json',
+      JSON.stringify({ kind: 'something-else', version: 1 }),
+    )
     const buffer = await zip.generateAsync({ type: 'nodebuffer' })
 
     const { restoreBackupZip } = await import('./backup')
@@ -166,7 +193,12 @@ describe('restoreBackupZip validation', () => {
     const zip = new JSZip()
     zip.file(
       'manifest.json',
-      JSON.stringify({ kind: BACKUP_KIND, version: 999, createdAt: '', includes: [] }),
+      JSON.stringify({
+        kind: BACKUP_KIND,
+        version: 999,
+        createdAt: '',
+        includes: [],
+      }),
     )
     const buffer = await zip.generateAsync({ type: 'nodebuffer' })
 

@@ -20,7 +20,10 @@ export const Route = createFileRoute('/api/system-stats')({
           return Response.json(await collectSystemStats())
         } catch (err) {
           return json(
-            { error: err instanceof Error ? err.message : 'stats collection failed' },
+            {
+              error:
+                err instanceof Error ? err.message : 'stats collection failed',
+            },
             { status: 500 },
           )
         }

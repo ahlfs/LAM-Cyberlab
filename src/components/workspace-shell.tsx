@@ -209,7 +209,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const isOnEditorRoute = pathname.startsWith('/editor')
   const isOnFileManagerRoute = pathname.startsWith('/file-manager')
   const isEmbeddedSurface =
-    (search as any)?.embed === '1' || (search as any)?.embed === 'true' || (search as any)?.mode === 'embed'
+    (search as any)?.embed === '1' ||
+    (search as any)?.embed === 'true' ||
+    (search as any)?.mode === 'embed'
   const isChromeFreeSurface = isEmbeddedSurface
   const hideChatSidebar = isOnChatRoute && chatFocusMode
   const showDesktopSidebarBackdrop =
@@ -363,7 +365,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
         <div
           className={cn(
             'grid h-full grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden',
-            hideChatSidebar || isChromeFreeSurface ? 'md:grid-cols-1' : 'md:grid-cols-[auto_1fr]',
+            hideChatSidebar || isChromeFreeSurface
+              ? 'md:grid-cols-1'
+              : 'md:grid-cols-[auto_1fr]',
           )}
         >
           {/* Activity ticker bar */}
@@ -433,7 +437,9 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
                 </Suspense>
               </div>
               {/* Mobile / Touch accessory bar — mounted on the terminal route for phones, iPads, and touch tablets. */}
-              {(isMobile || isTouch) && isOnTerminalRoute && <MobileTerminalInput />}
+              {(isMobile || isTouch) && isOnTerminalRoute && (
+                <MobileTerminalInput />
+              )}
             </div>
 
             <div
@@ -456,15 +462,23 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           </main>
 
           {/* Chat panel — visible on non-chat, non-editor, and non-file-manager routes */}
-          {!isOnChatRoute && !isOnEditorRoute && !isOnFileManagerRoute && !isChromeFreeSurface && !isMobile && (
-            <Suspense fallback={null}>
-              <ChatPanel />
-            </Suspense>
-          )}
+          {!isOnChatRoute &&
+            !isOnEditorRoute &&
+            !isOnFileManagerRoute &&
+            !isChromeFreeSurface &&
+            !isMobile && (
+              <Suspense fallback={null}>
+                <ChatPanel />
+              </Suspense>
+            )}
         </div>
 
         {/* Floating chat toggle — visible on non-chat, non-editor, and non-file-manager routes */}
-        {!isChromeFreeSurface && !isOnChatRoute && !isOnEditorRoute && !isOnFileManagerRoute && !isMobile && <ChatPanelToggle />}
+        {!isChromeFreeSurface &&
+          !isOnChatRoute &&
+          !isOnEditorRoute &&
+          !isOnFileManagerRoute &&
+          !isMobile && <ChatPanelToggle />}
 
         {showDesktopSidebarBackdrop ? (
           <button
@@ -481,10 +495,15 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
       </div>
 
       {!isChromeFreeSurface ? <MobileHamburgerMenu /> : null}
-      {!isChromeFreeSurface && !isMobile && !isOnChatRoute && settings.showSystemMetricsFooter ? (
+      {!isChromeFreeSurface &&
+      !isMobile &&
+      !isOnChatRoute &&
+      settings.showSystemMetricsFooter ? (
         <SystemMetricsFooter leftOffsetPx={sidebarCollapsed ? 48 : 300} />
       ) : null}
-      {!isChromeFreeSurface ? <CommandPalette pathname={pathname} sessions={sessions} /> : null}
+      {!isChromeFreeSurface ? (
+        <CommandPalette pathname={pathname} sessions={sessions} />
+      ) : null}
     </>
   )
 }

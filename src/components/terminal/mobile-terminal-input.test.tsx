@@ -48,9 +48,11 @@ describe('MobileTerminalInput', () => {
     await act(async () => {
       root.render(<MobileTerminalInput />)
     })
-    const toggleBtn = container.querySelector('button[aria-label="Toggle Extra Keys"]') as HTMLButtonElement
+    const toggleBtn = container.querySelector(
+      'button[aria-label="Toggle Extra Keys"]',
+    ) as HTMLButtonElement
     expect(container.textContent).toContain('ESC')
-    
+
     await act(async () => {
       toggleBtn.click()
     })

@@ -12,7 +12,13 @@ import {
   type LinkuView,
 } from '../../server/linku-db'
 
-const VALID_VIEWS = new Set<LinkuView>(['all', 'recent', 'favorites', 'archive', 'trash'])
+const VALID_VIEWS = new Set<LinkuView>([
+  'all',
+  'recent',
+  'favorites',
+  'archive',
+  'trash',
+])
 
 export const Route = createFileRoute('/api/links')({
   server: {
@@ -37,7 +43,10 @@ export const Route = createFileRoute('/api/links')({
           return json({ links })
         } catch (err) {
           return json(
-            { error: err instanceof Error ? err.message : 'failed to list links' },
+            {
+              error:
+                err instanceof Error ? err.message : 'failed to list links',
+            },
             { status: 500 },
           )
         }
@@ -75,7 +84,10 @@ export const Route = createFileRoute('/api/links')({
             return json({ error: err.message }, { status: 404 })
           }
           return json(
-            { error: err instanceof Error ? err.message : 'failed to create link' },
+            {
+              error:
+                err instanceof Error ? err.message : 'failed to create link',
+            },
             { status: 500 },
           )
         }

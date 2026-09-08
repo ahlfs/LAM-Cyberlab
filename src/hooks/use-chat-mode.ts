@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 
-export type ChatMode = 'enhanced-claude' | 'responses' | 'portable' | 'disconnected'
+export type ChatMode =
+  | 'enhanced-claude'
+  | 'responses'
+  | 'portable'
+  | 'disconnected'
 
 interface GatewayStatus {
   capabilities: Record<string, boolean>

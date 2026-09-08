@@ -14,24 +14,43 @@ async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   const body = await res.json().catch(() => ({}))
   if (!res.ok) {
     throw new Error(
-      typeof body?.error === 'string' ? body.error : `Request failed (${res.status})`,
+      typeof body?.error === 'string'
+        ? body.error
+        : `Request failed (${res.status})`,
     )
   }
   return body as T
 }
 
 const FOLDERS_KEY = ['linku', 'folders'] as const
-const linksKey = (params: { view?: LinkuView; folderId?: number; search?: string }) =>
-  ['linku', 'links', params.view ?? 'all', params.folderId ?? null, params.search ?? ''] as const
+const linksKey = (params: {
+  view?: LinkuView
+  folderId?: number
+  search?: string
+}) =>
+  [
+    'linku',
+    'links',
+    params.view ?? 'all',
+    params.folderId ?? null,
+    params.search ?? '',
+  ] as const
 
 export function useFolders() {
   return useQuery({
     queryKey: FOLDERS_KEY,
-    queryFn: () => apiJson<{ folders: LinkuFolder[] }>('/api/links/folders').then((r) => r.folders),
+    queryFn: () =>
+      apiJson<{ folders: LinkuFolder[] }>('/api/links/folders').then(
+        (r) => r.folders,
+      ),
   })
 }
 
-export function useLinks(params: { view?: LinkuView; folderId?: number; search?: string }) {
+export function useLinks(params: {
+  view?: LinkuView
+  folderId?: number
+  search?: string
+}) {
   const qs = new URLSearchParams()
   if (params.view) qs.set('view', params.view)
   if (params.folderId != null) qs.set('folderId', String(params.folderId))
@@ -39,7 +58,9 @@ export function useLinks(params: { view?: LinkuView; folderId?: number; search?:
   return useQuery({
     queryKey: linksKey(params),
     queryFn: () =>
-      apiJson<{ links: LinkuLink[] }>(`/api/links?${qs.toString()}`).then((r) => r.links),
+      apiJson<{ links: LinkuLink[] }>(`/api/links?${qs.toString()}`).then(
+        (r) => r.links,
+      ),
   })
 }
 
@@ -65,7 +86,14 @@ export function useCreateFolder() {
 export function useUpdateFolder() {
   const invalidate = useInvalidateAll()
   return useMutation({
-    mutationFn: ({ id, ...patch }: { id: number; name?: string; color?: string }) =>
+    mutationFn: ({
+      id,
+      ...patch
+    }: {
+      id: number
+      name?: string
+      color?: string
+    }) =>
       apiJson<{ folder: LinkuFolder }>(`/api/links/folders/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(patch),
@@ -77,7 +105,8 @@ export function useUpdateFolder() {
 export function useDeleteFolder() {
   const invalidate = useInvalidateAll()
   return useMutation({
-    mutationFn: (id: number) => apiJson(`/api/links/folders/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) =>
+      apiJson(`/api/links/folders/${id}`, { method: 'DELETE' }),
     onSuccess: invalidate,
   })
 }
@@ -126,9 +155,9 @@ export function useToggleFavorite() {
   const invalidate = useInvalidateAll()
   return useMutation({
     mutationFn: (id: number) =>
-      apiJson<{ link: LinkuLink }>(`/api/links/item/${id}/favorite`, { method: 'POST' }).then(
-        (r) => r.link,
-      ),
+      apiJson<{ link: LinkuLink }>(`/api/links/item/${id}/favorite`, {
+        method: 'POST',
+      }).then((r) => r.link),
     onSuccess: invalidate,
   })
 }
@@ -137,9 +166,9 @@ export function useToggleArchive() {
   const invalidate = useInvalidateAll()
   return useMutation({
     mutationFn: (id: number) =>
-      apiJson<{ link: LinkuLink }>(`/api/links/item/${id}/archive`, { method: 'POST' }).then(
-        (r) => r.link,
-      ),
+      apiJson<{ link: LinkuLink }>(`/api/links/item/${id}/archive`, {
+        method: 'POST',
+      }).then((r) => r.link),
     onSuccess: invalidate,
   })
 }
@@ -147,7 +176,8 @@ export function useToggleArchive() {
 export function useTrashLink() {
   const invalidate = useInvalidateAll()
   return useMutation({
-    mutationFn: (id: number) => apiJson(`/api/links/item/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) =>
+      apiJson(`/api/links/item/${id}`, { method: 'DELETE' }),
     onSuccess: invalidate,
   })
 }
@@ -156,9 +186,9 @@ export function useRestoreLink() {
   const invalidate = useInvalidateAll()
   return useMutation({
     mutationFn: (id: number) =>
-      apiJson<{ link: LinkuLink }>(`/api/links/item/${id}/restore`, { method: 'POST' }).then(
-        (r) => r.link,
-      ),
+      apiJson<{ link: LinkuLink }>(`/api/links/item/${id}/restore`, {
+        method: 'POST',
+      }).then((r) => r.link),
     onSuccess: invalidate,
   })
 }
@@ -166,7 +196,8 @@ export function useRestoreLink() {
 export function usePermanentlyDeleteLink() {
   const invalidate = useInvalidateAll()
   return useMutation({
-    mutationFn: (id: number) => apiJson(`/api/links/item/${id}?permanent=true`, { method: 'DELETE' }),
+    mutationFn: (id: number) =>
+      apiJson(`/api/links/item/${id}?permanent=true`, { method: 'DELETE' }),
     onSuccess: invalidate,
   })
 }
@@ -174,7 +205,10 @@ export function usePermanentlyDeleteLink() {
 export function useEmptyTrash() {
   const invalidate = useInvalidateAll()
   return useMutation({
-    mutationFn: () => apiJson<{ deleted: number }>('/api/links/trash-empty', { method: 'POST' }),
+    mutationFn: () =>
+      apiJson<{ deleted: number }>('/api/links/trash-empty', {
+        method: 'POST',
+      }),
     onSuccess: invalidate,
   })
 }
@@ -183,10 +217,13 @@ export function useImportLinks() {
   const invalidate = useInvalidateAll()
   return useMutation({
     mutationFn: (payload: any) =>
-      apiJson<{ importedFolders: number; importedLinks: number }>('/api/links/import', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      }),
+      apiJson<{ importedFolders: number; importedLinks: number }>(
+        '/api/links/import',
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        },
+      ),
     onSuccess: invalidate,
   })
 }
@@ -199,9 +236,12 @@ export function recordLinkOpened(id: number): void {
 export function useScrapeUrl() {
   return useMutation({
     mutationFn: (url: string) =>
-      apiJson<{ title: string; faviconUrl: string | null }>('/api/links/scrape', {
-        method: 'POST',
-        body: JSON.stringify({ url }),
-      }),
+      apiJson<{ title: string; faviconUrl: string | null }>(
+        '/api/links/scrape',
+        {
+          method: 'POST',
+          body: JSON.stringify({ url }),
+        },
+      ),
   })
 }

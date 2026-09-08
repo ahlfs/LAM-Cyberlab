@@ -38,7 +38,11 @@ export const EXT_ICON_MAP: Record<string, string> = {
 export function getFileIconClass(name: string): string | null {
   const lower = name.toLowerCase()
   // Check special filenames
-  if (lower === 'dockerfile' || lower === 'docker-compose.yml' || lower === 'docker-compose.yaml') {
+  if (
+    lower === 'dockerfile' ||
+    lower === 'docker-compose.yml' ||
+    lower === 'docker-compose.yaml'
+  ) {
     return 'devicon-docker-plain colored'
   }
   if (lower === 'package.json' || lower === 'package-lock.json') {

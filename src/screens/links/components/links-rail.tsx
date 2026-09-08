@@ -17,8 +17,16 @@ const ITEMS: Array<{
   { mode: { kind: 'folders' }, label: 'Folders', icon: Folder01Icon },
   { mode: { kind: 'view', view: 'all' }, label: 'All Links', icon: Link01Icon },
   { mode: { kind: 'view', view: 'recent' }, label: 'Recent', icon: Time01Icon },
-  { mode: { kind: 'view', view: 'favorites' }, label: 'Favorites', icon: StarIcon },
-  { mode: { kind: 'view', view: 'archive' }, label: 'Archive', icon: Archive01Icon },
+  {
+    mode: { kind: 'view', view: 'favorites' },
+    label: 'Favorites',
+    icon: StarIcon,
+  },
+  {
+    mode: { kind: 'view', view: 'archive' },
+    label: 'Archive',
+    icon: Archive01Icon,
+  },
   { mode: { kind: 'view', view: 'trash' }, label: 'Trash', icon: Delete02Icon },
 ]
 
@@ -49,20 +57,27 @@ export function LinksRail({
             onClick={() => onSelect(item.mode)}
             className="flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors motion-safe:duration-150"
             style={{
-              background: active
-                ? 'var(--theme-accent-subtle)'
-                : 'transparent',
+              background: active ? 'var(--theme-accent-subtle)' : 'transparent',
               color: active ? 'var(--theme-accent)' : 'var(--theme-muted)',
             }}
             onMouseEnter={(e) => {
-              if (!active) (e.currentTarget as HTMLElement).style.background = 'var(--theme-card)'
+              if (!active)
+                (e.currentTarget as HTMLElement).style.background =
+                  'var(--theme-card)'
             }}
             onMouseLeave={(e) => {
-              if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'
+              if (!active)
+                (e.currentTarget as HTMLElement).style.background =
+                  'transparent'
             }}
             aria-current={active ? 'page' : undefined}
           >
-            <HugeiconsIcon icon={item.icon} size={17} strokeWidth={1.75} className="shrink-0" />
+            <HugeiconsIcon
+              icon={item.icon}
+              size={17}
+              strokeWidth={1.75}
+              className="shrink-0"
+            />
             <span className="whitespace-nowrap">{item.label}</span>
           </button>
         )

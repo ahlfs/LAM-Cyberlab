@@ -34,17 +34,52 @@
   /* Accent ramp follows Tailwind's 50=lightest → 950=darkest convention,
      derived from the live theme accent; 400/500/600 defer to the theme
      vars the remap blocks target. */
-  --color-accent-50: color-mix(in srgb, var(--theme-accent, #8a8f98) 10%, white);
-  --color-accent-100: color-mix(in srgb, var(--theme-accent, #8a8f98) 20%, white);
-  --color-accent-200: color-mix(in srgb, var(--theme-accent, #8a8f98) 35%, white);
-  --color-accent-300: color-mix(in srgb, var(--theme-accent, #8a8f98) 55%, white);
-  --color-accent-400: var(--theme-accent-secondary, var(--theme-accent, #8a8f98));
+  --color-accent-50: color-mix(
+    in srgb,
+    var(--theme-accent, #8a8f98) 10%,
+    white
+  );
+  --color-accent-100: color-mix(
+    in srgb,
+    var(--theme-accent, #8a8f98) 20%,
+    white
+  );
+  --color-accent-200: color-mix(
+    in srgb,
+    var(--theme-accent, #8a8f98) 35%,
+    white
+  );
+  --color-accent-300: color-mix(
+    in srgb,
+    var(--theme-accent, #8a8f98) 55%,
+    white
+  );
+  --color-accent-400: var(
+    --theme-accent-secondary,
+    var(--theme-accent, #8a8f98)
+  );
   --color-accent-500: var(--theme-accent, #8a8f98);
   --color-accent-600: var(--theme-accent, #8a8f98);
-  --color-accent-700: color-mix(in srgb, var(--theme-accent, #8a8f98) 70%, black);
-  --color-accent-800: color-mix(in srgb, var(--theme-accent, #8a8f98) 55%, black);
-  --color-accent-900: color-mix(in srgb, var(--theme-accent, #8a8f98) 40%, black);
-  --color-accent-950: color-mix(in srgb, var(--theme-accent, #8a8f98) 25%, black);
+  --color-accent-700: color-mix(
+    in srgb,
+    var(--theme-accent, #8a8f98) 70%,
+    black
+  );
+  --color-accent-800: color-mix(
+    in srgb,
+    var(--theme-accent, #8a8f98) 55%,
+    black
+  );
+  --color-accent-900: color-mix(
+    in srgb,
+    var(--theme-accent, #8a8f98) 40%,
+    black
+  );
+  --color-accent-950: color-mix(
+    in srgb,
+    var(--theme-accent, #8a8f98) 25%,
+    black
+  );
 }
 
 :root {
@@ -234,20 +269,27 @@
 }
 
 :root {
-  --interface-font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --interface-font-family:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
   --interface-density-scale: 1;
 }
 
 [data-interface-font='inter'] {
-  --interface-font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --interface-font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
 }
 
 [data-interface-font='serif'] {
-  --interface-font-family: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+  --interface-font-family:
+    ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 }
 
 [data-interface-font='mono'] {
-  --interface-font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  --interface-font-family:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', monospace;
 }
 
 [data-interface-density='compact'] {
@@ -1343,31 +1385,31 @@ code {
 }
 
 [data-theme='arctic'] {
-  --theme-bg: #0B1120;
+  --theme-bg: #0b1120;
   --theme-sidebar: #060914;
   --theme-panel: #111827;
   --theme-card: #1e293b;
   --theme-card2: #334155;
   --theme-border: rgba(56, 189, 248, 0.2);
   --theme-border-subtle: rgba(56, 189, 248, 0.1);
-  --theme-text: #F3F4F6;
+  --theme-text: #f3f4f6;
   --theme-muted: #94a3b8;
   --theme-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
   --theme-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.5);
   --theme-shadow-3: 0 12px 24px rgba(0, 0, 0, 0.6);
   --theme-glass: rgba(11, 17, 32, 0.85);
-  --theme-focus: #38BDF8;
-  --theme-accent: #38BDF8;
-  --theme-accent-secondary: #818CF8;
+  --theme-focus: #38bdf8;
+  --theme-accent: #38bdf8;
+  --theme-accent-secondary: #818cf8;
   --theme-accent-subtle: rgba(56, 189, 248, 0.15);
   --theme-accent-border: rgba(56, 189, 248, 0.3);
-  --theme-active: #818CF8;
-  --theme-link: #38BDF8;
+  --theme-active: #818cf8;
+  --theme-link: #38bdf8;
   --theme-success: #10b981;
   --theme-warning: #f59e0b;
   --theme-danger: #ef4444;
   --code-bg: rgba(0, 0, 0, 0.3);
-  --code-text: #F3F4F6;
+  --code-text: #f3f4f6;
   --code-border: rgba(56, 189, 248, 0.2);
   --theme-input: #111827;
 }
@@ -1560,24 +1602,24 @@ code {
   --theme-card2: #333333;
   --theme-border: #666666;
   --theme-border-subtle: #444444;
-  --theme-text: #FFFFFF;
+  --theme-text: #ffffff;
   --theme-muted: #999999;
   --theme-shadow-1: 0 0 0 1px rgba(255, 255, 255, 0.1);
   --theme-shadow-2: 0 0 0 1px rgba(255, 255, 255, 0.2);
   --theme-shadow-3: 0 0 0 1px rgba(255, 255, 255, 0.3);
   --theme-glass: rgba(0, 0, 0, 0.85);
-  --theme-focus: #FFFFFF;
-  --theme-accent: #FFFFFF;
-  --theme-accent-secondary: #CCCCCC;
+  --theme-focus: #ffffff;
+  --theme-accent: #ffffff;
+  --theme-accent-secondary: #cccccc;
   --theme-accent-subtle: rgba(255, 255, 255, 0.15);
   --theme-accent-border: rgba(255, 255, 255, 0.4);
-  --theme-active: #CCCCCC;
-  --theme-link: #FFFFFF;
-  --theme-success: #FFFFFF;
-  --theme-warning: #FFFFFF;
-  --theme-danger: #FFFFFF;
+  --theme-active: #cccccc;
+  --theme-link: #ffffff;
+  --theme-success: #ffffff;
+  --theme-warning: #ffffff;
+  --theme-danger: #ffffff;
   --code-bg: rgba(0, 0, 0, 0.8);
-  --code-text: #FFFFFF;
+  --code-text: #ffffff;
   --code-border: #666666;
   --theme-input: #111111;
 }

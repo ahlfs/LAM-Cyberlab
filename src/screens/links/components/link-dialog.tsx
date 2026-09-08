@@ -34,8 +34,12 @@ export function LinkDialog({
   const isEdit = link != null
   const [url, setUrl] = useState(link?.url ?? '')
   const [title, setTitle] = useState(link?.title ?? '')
-  const [faviconUrl, setFaviconUrl] = useState<string | null>(link?.faviconUrl ?? null)
-  const [folderId, setFolderId] = useState<number | null>(link?.folderId ?? defaultFolderId)
+  const [faviconUrl, setFaviconUrl] = useState<string | null>(
+    link?.faviconUrl ?? null,
+  )
+  const [folderId, setFolderId] = useState<number | null>(
+    link?.folderId ?? defaultFolderId,
+  )
   const [scrapeError, setScrapeError] = useState<string | null>(null)
 
   const scrape = useScrapeUrl()
@@ -52,7 +56,9 @@ export function LinkDialog({
         if (result.faviconUrl) setFaviconUrl(result.faviconUrl)
       },
       onError: (err) => {
-        setScrapeError(err instanceof Error ? err.message : 'Could not fetch title/favicon')
+        setScrapeError(
+          err instanceof Error ? err.message : 'Could not fetch title/favicon',
+        )
       },
     })
   }
@@ -71,7 +77,9 @@ export function LinkDialog({
     }
     const effectiveTitle = title.trim() || trimmedUrl
     const onSuccess = () => {
-      toast(isEdit ? `Updated "${effectiveTitle}"` : `Saved "${effectiveTitle}"`)
+      toast(
+        isEdit ? `Updated "${effectiveTitle}"` : `Saved "${effectiveTitle}"`,
+      )
       onClose()
     }
     const onError = (err: unknown) =>
@@ -79,7 +87,13 @@ export function LinkDialog({
 
     if (isEdit) {
       updateLink.mutate(
-        { id: link.id, folderId, url: trimmedUrl, title: effectiveTitle, faviconUrl },
+        {
+          id: link.id,
+          folderId,
+          url: trimmedUrl,
+          title: effectiveTitle,
+          faviconUrl,
+        },
         { onSuccess, onError },
       )
     } else {
@@ -98,11 +112,17 @@ export function LinkDialog({
       }}
     >
       <DialogContent className="w-[min(460px,92vw)]">
-        <form onSubmit={handleSubmit} className="flex max-h-[85vh] flex-col gap-4 overflow-y-auto p-5">
+        <form
+          onSubmit={handleSubmit}
+          className="flex max-h-[85vh] flex-col gap-4 overflow-y-auto p-5"
+        >
           <DialogTitle>{isEdit ? 'Edit link' : 'New link'}</DialogTitle>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium" style={{ color: 'var(--theme-text)' }}>
+            <span
+              className="text-[13px] font-medium"
+              style={{ color: 'var(--theme-text)' }}
+            >
               URL
             </span>
             <div className="flex items-center gap-2">
@@ -131,29 +151,46 @@ export function LinkDialog({
                 title="Fetch title and favicon"
                 aria-label="Fetch title and favicon"
                 className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border disabled:pointer-events-none disabled:opacity-40"
-                style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+                style={{
+                  borderColor: 'var(--theme-border)',
+                  color: 'var(--theme-muted)',
+                }}
               >
                 <HugeiconsIcon
                   icon={RefreshIcon}
                   size={15}
-                  className={scrape.isPending ? 'motion-safe:animate-spin' : undefined}
+                  className={
+                    scrape.isPending ? 'motion-safe:animate-spin' : undefined
+                  }
                 />
               </button>
             </div>
             {scrapeError ? (
-              <span className="text-[12px]" style={{ color: 'var(--theme-warning)' }}>
+              <span
+                className="text-[12px]"
+                style={{ color: 'var(--theme-warning)' }}
+              >
                 {scrapeError} — you can still fill in the title yourself.
               </span>
             ) : null}
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium" style={{ color: 'var(--theme-text)' }}>
+            <span
+              className="text-[13px] font-medium"
+              style={{ color: 'var(--theme-text)' }}
+            >
               Title
             </span>
             <div className="flex items-center gap-2">
               {faviconUrl ? (
-                <img src={faviconUrl} alt="" width={18} height={18} className="size-[18px] shrink-0 rounded-sm" />
+                <img
+                  src={faviconUrl}
+                  alt=""
+                  width={18}
+                  height={18}
+                  className="size-[18px] shrink-0 rounded-sm"
+                />
               ) : null}
               <input
                 type="text"
@@ -174,12 +211,17 @@ export function LinkDialog({
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium" style={{ color: 'var(--theme-text)' }}>
+            <span
+              className="text-[13px] font-medium"
+              style={{ color: 'var(--theme-text)' }}
+            >
               Folder
             </span>
             <select
               value={folderId ?? ''}
-              onChange={(e) => setFolderId(e.target.value ? Number(e.target.value) : null)}
+              onChange={(e) =>
+                setFolderId(e.target.value ? Number(e.target.value) : null)
+              }
               className="rounded-lg border px-3 py-2 text-sm outline-none focus-visible:ring-2"
               style={
                 {
@@ -205,7 +247,10 @@ export function LinkDialog({
               type="submit"
               disabled={pending || !isLikelyUrl(url)}
               className="rounded-lg px-3 py-1.5 text-sm font-medium disabled:pointer-events-none disabled:opacity-50"
-              style={{ background: 'var(--theme-accent)', color: 'var(--theme-bg)' }}
+              style={{
+                background: 'var(--theme-accent)',
+                color: 'var(--theme-bg)',
+              }}
             >
               {pending ? 'Saving…' : isEdit ? 'Save' : 'Add link'}
             </button>

@@ -49,18 +49,24 @@ export type ContextMenuState = {
   entry: FileEntry | null
 }
 
-function useLongPress(callback: (e: React.TouchEvent | React.MouseEvent) => void, ms = 500) {
+function useLongPress(
+  callback: (e: React.TouchEvent | React.MouseEvent) => void,
+  ms = 500,
+) {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const isLongPress = useRef(false)
 
-  const start = useCallback((e: React.TouchEvent | React.MouseEvent) => {
-    isLongPress.current = false
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => {
-      isLongPress.current = true
-      callback(e)
-    }, ms)
-  }, [callback, ms])
+  const start = useCallback(
+    (e: React.TouchEvent | React.MouseEvent) => {
+      isLongPress.current = false
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => {
+        isLongPress.current = true
+        callback(e)
+      }, ms)
+    },
+    [callback, ms],
+  )
 
   const stop = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -98,7 +104,10 @@ function TreeNode({
   depth: number
   selectedPath: string | null
   onSelect: (entry: FileEntry) => void
-  onContextMenu: (e: React.MouseEvent | React.TouchEvent, entry: FileEntry | null) => void
+  onContextMenu: (
+    e: React.MouseEvent | React.TouchEvent,
+    entry: FileEntry | null,
+  ) => void
   clipboard: { type: 'copy' | 'cut'; entry: FileEntry } | null
   onCopy?: (entry: FileEntry) => void
   onCut?: (entry: FileEntry) => void
@@ -162,7 +171,8 @@ function TreeNode({
         className={cn(
           'group flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-[12px] transition-colors',
           'hover:bg-[var(--theme-card2)]',
-          isSelected && 'bg-[var(--theme-accent)]/15 text-[var(--theme-accent)]',
+          isSelected &&
+            'bg-[var(--theme-accent)]/15 text-[var(--theme-accent)]',
           !isSelected && 'text-[var(--theme-text)]',
           isCut && 'opacity-50',
         )}
@@ -180,7 +190,12 @@ function TreeNode({
         )}
 
         {/* Icon */}
-        <FileIcon name={entry.name} type={entry.type} size={14} className="shrink-0" />
+        <FileIcon
+          name={entry.name}
+          type={entry.type}
+          size={14}
+          className="shrink-0"
+        />
 
         {/* Name */}
         <span className="min-w-0 truncate font-mono">{entry.name}</span>
@@ -248,11 +263,17 @@ export function FileTree({
   const [entries, setEntries] = useState<FileEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [contextMenu, setContextMenu] = useState<ContextMenuState>({ isOpen: false, x: 0, y: 0, entry: null })
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    isOpen: false,
+    x: 0,
+    y: 0,
+    entry: null,
+  })
 
   // Close context menu on outside click/touch
   useEffect(() => {
-    const handleClose = () => setContextMenu((prev) => ({ ...prev, isOpen: false }))
+    const handleClose = () =>
+      setContextMenu((prev) => ({ ...prev, isOpen: false }))
     window.addEventListener('click', handleClose)
     window.addEventListener('touchstart', handleClose)
     return () => {
@@ -261,22 +282,27 @@ export function FileTree({
     }
   }, [])
 
-  const handleContextMenu = useCallback((e: React.MouseEvent | React.TouchEvent, entry: FileEntry | null) => {
-    e.preventDefault()
-    e.stopPropagation()
-    let x = 0
-    let y = 0
-    if ('touches' in e) {
-      x = e.touches[0].clientX
-      y = e.touches[0].clientY
-    } else {
-      x = e.clientX
-      y = e.clientY
-    }
-    setContextMenu({ isOpen: true, x, y, entry })
-  }, [])
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent | React.TouchEvent, entry: FileEntry | null) => {
+      e.preventDefault()
+      e.stopPropagation()
+      let x = 0
+      let y = 0
+      if ('touches' in e) {
+        x = e.touches[0].clientX
+        y = e.touches[0].clientY
+      } else {
+        x = e.clientX
+        y = e.clientY
+      }
+      setContextMenu({ isOpen: true, x, y, entry })
+    },
+    [],
+  )
 
-  const { handlers: rootHandlers } = useLongPress((e) => handleContextMenu(e, null))
+  const { handlers: rootHandlers } = useLongPress((e) =>
+    handleContextMenu(e, null),
+  )
 
   const fetchTree = useCallback(async () => {
     setLoading(true)
@@ -302,7 +328,11 @@ export function FileTree({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-12 text-[var(--theme-muted)]">
-        <HugeiconsIcon icon={Loading03Icon} size={20} className="animate-spin" />
+        <HugeiconsIcon
+          icon={Loading03Icon}
+          size={20}
+          className="animate-spin"
+        />
         <span className="text-xs">Loading files…</span>
       </div>
     )
@@ -332,7 +362,7 @@ export function FileTree({
   }
 
   return (
-    <div 
+    <div
       className="flex flex-col gap-0.5 overflow-y-auto py-1"
       onContextMenu={(e) => handleContextMenu(e, null)}
       {...rootHandlers}
@@ -355,13 +385,14 @@ export function FileTree({
       ))}
 
       {contextMenu.isOpen && (
-        <div 
+        <div
           className="fixed z-[100000] flex w-48 flex-col rounded-md border bg-[var(--theme-card)] p-1 shadow-lg text-[var(--theme-text)] text-sm"
-          style={{ 
-            top: contextMenu.y, 
-            left: contextMenu.x, 
+          style={{
+            top: contextMenu.y,
+            left: contextMenu.x,
             borderColor: 'var(--theme-border)',
-            transform: 'translate(min(0px, calc(100vw - 100% - 10px)), min(0px, calc(100vh - 100% - 10px)))'
+            transform:
+              'translate(min(0px, calc(100vw - 100% - 10px)), min(0px, calc(100vh - 100% - 10px)))',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -372,10 +403,14 @@ export function FileTree({
                 className="flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-[var(--theme-card2)] transition-colors"
                 onClick={() => {
                   onCut?.(contextMenu.entry!)
-                  setContextMenu(prev => ({ ...prev, isOpen: false }))
+                  setContextMenu((prev) => ({ ...prev, isOpen: false }))
                 }}
               >
-                <HugeiconsIcon icon={Scissor01Icon} size={14} className="opacity-70" />
+                <HugeiconsIcon
+                  icon={Scissor01Icon}
+                  size={14}
+                  className="opacity-70"
+                />
                 <span>Cut</span>
               </button>
               <button
@@ -383,53 +418,76 @@ export function FileTree({
                 className="flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-[var(--theme-card2)] transition-colors"
                 onClick={() => {
                   onCopy?.(contextMenu.entry!)
-                  setContextMenu(prev => ({ ...prev, isOpen: false }))
+                  setContextMenu((prev) => ({ ...prev, isOpen: false }))
                 }}
               >
-                <HugeiconsIcon icon={Copy01Icon} size={14} className="opacity-70" />
+                <HugeiconsIcon
+                  icon={Copy01Icon}
+                  size={14}
+                  className="opacity-70"
+                />
                 <span>Copy</span>
               </button>
-              <div className="my-1 border-t opacity-30" style={{ borderColor: 'var(--theme-border)' }} />
+              <div
+                className="my-1 border-t opacity-30"
+                style={{ borderColor: 'var(--theme-border)' }}
+              />
               <button
                 type="button"
                 className="flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-[var(--theme-card2)] transition-colors"
                 onClick={() => {
                   onRename?.(contextMenu.entry!)
-                  setContextMenu(prev => ({ ...prev, isOpen: false }))
+                  setContextMenu((prev) => ({ ...prev, isOpen: false }))
                 }}
               >
-                <HugeiconsIcon icon={Edit02Icon} size={14} className="opacity-70" />
+                <HugeiconsIcon
+                  icon={Edit02Icon}
+                  size={14}
+                  className="opacity-70"
+                />
                 <span>Rename</span>
               </button>
             </>
           )}
 
-          {(!contextMenu.entry || contextMenu.entry.type === 'folder') && clipboard && (
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-[var(--theme-card2)] transition-colors text-[var(--theme-accent)]"
-              onClick={() => {
-                onPaste?.(contextMenu.entry)
-                setContextMenu(prev => ({ ...prev, isOpen: false }))
-              }}
-            >
-              <HugeiconsIcon icon={ClipboardIcon} size={14} className="opacity-70" />
-              <span>Paste</span>
-            </button>
-          )}
+          {(!contextMenu.entry || contextMenu.entry.type === 'folder') &&
+            clipboard && (
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-[var(--theme-card2)] transition-colors text-[var(--theme-accent)]"
+                onClick={() => {
+                  onPaste?.(contextMenu.entry)
+                  setContextMenu((prev) => ({ ...prev, isOpen: false }))
+                }}
+              >
+                <HugeiconsIcon
+                  icon={ClipboardIcon}
+                  size={14}
+                  className="opacity-70"
+                />
+                <span>Paste</span>
+              </button>
+            )}
 
           {contextMenu.entry && onDelete && (
             <>
-              <div className="my-1 border-t opacity-30" style={{ borderColor: 'var(--theme-border)' }} />
+              <div
+                className="my-1 border-t opacity-30"
+                style={{ borderColor: 'var(--theme-border)' }}
+              />
               <button
                 type="button"
                 className="flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-red-500/10 text-red-500 transition-colors"
                 onClick={() => {
                   onDelete(contextMenu.entry!)
-                  setContextMenu(prev => ({ ...prev, isOpen: false }))
+                  setContextMenu((prev) => ({ ...prev, isOpen: false }))
                 }}
               >
-                <HugeiconsIcon icon={Delete02Icon} size={14} className="opacity-70" />
+                <HugeiconsIcon
+                  icon={Delete02Icon}
+                  size={14}
+                  className="opacity-70"
+                />
                 <span>Delete</span>
               </button>
             </>

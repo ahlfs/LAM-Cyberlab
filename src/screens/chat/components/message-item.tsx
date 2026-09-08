@@ -1,6 +1,10 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowDown01Icon, Cancel01Icon, Idea01Icon } from '@hugeicons/core-free-icons'
+import {
+  ArrowDown01Icon,
+  Cancel01Icon,
+  Idea01Icon,
+} from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   getMessageTimestamp,
@@ -13,7 +17,12 @@ import {
   shouldAutoExpandHermesActivityCard,
 } from './streaming-activity-ui'
 import { TuiActivityCard } from './tui-activity-card'
-import type { ChatAttachment, ChatMessage, SelectionCardContent, ToolCallContent } from '../types'
+import type {
+  ChatAttachment,
+  ChatMessage,
+  SelectionCardContent,
+  ToolCallContent,
+} from '../types'
 import type { ToolPart } from '@/components/prompt-kit/tool'
 import { AssistantAvatar, UserAvatar } from '@/components/avatars'
 import { CodeBlock } from '@/components/prompt-kit/code-block'
@@ -188,7 +197,9 @@ function InteractiveSelectionCard({ card }: { card: SelectionCardContent }) {
           {card.title || 'Choose an option'}
         </div>
         {card.body ? (
-          <div className="mt-1 text-xs text-[var(--theme-muted)]">{card.body}</div>
+          <div className="mt-1 text-xs text-[var(--theme-muted)]">
+            {card.body}
+          </div>
         ) : null}
       </div>
       <div className="space-y-1.5 p-2">
@@ -1274,7 +1285,10 @@ function attachmentSource(attachment: ChatAttachment | undefined): string {
     }
   }
   // If attachment is a named document/file (e.g. PDF or code), provide fallback #attachment anchor
-  if (typeof attachment.name === 'string' && attachment.name.trim().length > 0) {
+  if (
+    typeof attachment.name === 'string' &&
+    attachment.name.trim().length > 0
+  ) {
     return `#attachment-${encodeURIComponent(attachment.name)}`
   }
   return ''
@@ -1479,7 +1493,9 @@ type InlineArtifactParseResult = {
   artifacts: Array<InlineArtifact>
 }
 
-function parseArtifactAttributes(rawAttributes: string): Record<string, string> {
+function parseArtifactAttributes(
+  rawAttributes: string,
+): Record<string, string> {
   const attributes: Record<string, string> = {}
   const attributeRegex = /(\w+)=(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g
 
@@ -1577,14 +1593,17 @@ function InlineArtifactCard({ artifact }: { artifact: InlineArtifact }) {
         className="rounded-xl border p-3"
         style={{
           borderColor: 'var(--chat-assistant-border)',
-          background: 'color-mix(in srgb, var(--chat-assistant-bg) 85%, white 15%)',
+          background:
+            'color-mix(in srgb, var(--chat-assistant-bg) 85%, white 15%)',
         }}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span aria-hidden="true">🧩</span>
-              <span className="truncate text-sm font-semibold">{artifact.title}</span>
+              <span className="truncate text-sm font-semibold">
+                {artifact.title}
+              </span>
               <span
                 className="rounded-full px-1.5 py-0.5 text-[10px] uppercase tracking-wide"
                 style={{
@@ -1606,10 +1625,17 @@ function InlineArtifactCard({ artifact }: { artifact: InlineArtifact }) {
       </div>
       <DialogRoot open={open} onOpenChange={setOpen}>
         <DialogContent className="w-[min(1100px,96vw)] max-h-[92vh]">
-          <div className="flex items-center justify-between gap-3 border-b px-4 py-3" style={{ borderColor: 'var(--theme-border)' }}>
+          <div
+            className="flex items-center justify-between gap-3 border-b px-4 py-3"
+            style={{ borderColor: 'var(--theme-border)' }}
+          >
             <div className="min-w-0">
-              <DialogTitle className="truncate text-base">{artifact.title}</DialogTitle>
-              <div className="text-xs uppercase tracking-wide opacity-70">{artifact.type}</div>
+              <DialogTitle className="truncate text-base">
+                {artifact.title}
+              </DialogTitle>
+              <div className="text-xs uppercase tracking-wide opacity-70">
+                {artifact.type}
+              </div>
             </div>
             <DialogClose>Close</DialogClose>
           </div>
@@ -1733,9 +1759,12 @@ function InlineToolSectionItem({
     toolSection.input && Object.keys(toolSection.input).length > 0
   const hasOutputData = !!(toolSection.outputText || toolSection.errorText)
   const isArtifact = toolSection.type.startsWith('artifact:')
-  const artifactKind = isArtifact ? toolSection.type.slice('artifact:'.length) : null
+  const artifactKind = isArtifact
+    ? toolSection.type.slice('artifact:'.length)
+    : null
   const artifactTitle =
-    typeof toolSection.input?.title === 'string' && toolSection.input.title.trim()
+    typeof toolSection.input?.title === 'string' &&
+    toolSection.input.title.trim()
       ? toolSection.input.title.trim()
       : 'Artifact'
   const artifactPath =
@@ -1757,14 +1786,18 @@ function InlineToolSectionItem({
         style={{
           background: 'color-mix(in srgb, var(--theme-card2) 76%, transparent)',
           borderColor: 'var(--theme-border)',
-          boxShadow: isRunning ? '0 0 0 1px color-mix(in srgb, var(--theme-accent) 18%, transparent)' : undefined,
+          boxShadow: isRunning
+            ? '0 0 0 1px color-mix(in srgb, var(--theme-accent) 18%, transparent)'
+            : undefined,
         }}
         onClick={() => setOpen((v) => !v)}
         role="button"
         tabIndex={0}
       >
         <div className="flex items-center gap-2 px-3 py-2">
-          <span className="text-sm leading-none shrink-0 opacity-80">{icon}</span>
+          <span className="text-sm leading-none shrink-0 opacity-80">
+            {icon}
+          </span>
           <span className="font-medium text-[12px] text-[var(--theme-text)]">
             {toolDisplayLabel}
           </span>
@@ -1814,7 +1847,9 @@ function InlineToolSectionItem({
               <div className="flex items-start justify-between gap-3 px-3 py-2.5">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm" aria-hidden="true">📄</span>
+                    <span className="text-sm" aria-hidden="true">
+                      📄
+                    </span>
                     <span className="truncate text-sm font-semibold text-[var(--theme-text)]">
                       {artifactTitle}
                     </span>
@@ -2117,7 +2152,10 @@ function MessageItemComponent({
     ? (remoteStreamingText ?? fullText)
     : fullText
   const [displayText, setDisplayText] = useState(() => initialDisplayText)
-  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null)
+  const [previewImage, setPreviewImage] = useState<{
+    url: string
+    name: string
+  } | null>(null)
   const [revealedWordCount, setRevealedWordCount] = useState(() =>
     remoteStreamingActive || _simulateStreaming
       ? 0
@@ -2604,7 +2642,9 @@ function MessageItemComponent({
       }
       className={cn(
         'group relative flex flex-col',
-        hasText || hasAttachments || hasSelectionCards ? 'gap-0.5 md:gap-1' : 'gap-0',
+        hasText || hasAttachments || hasSelectionCards
+          ? 'gap-0.5 md:gap-1'
+          : 'gap-0',
         wrapperClassName,
         isUser ? 'items-end' : 'items-start',
         !isUser && isNew && 'animate-[message-fade-in_0.4s_ease-out]',
@@ -2633,7 +2673,8 @@ function MessageItemComponent({
               />
             ) : (
               <span className="inline-block text-[11px] text-primary-400 dark:text-primary-500 py-0.5 opacity-60">
-                {finalToolSections.length} tool{finalToolSections.length !== 1 ? 's' : ''} used
+                {finalToolSections.length} tool
+                {finalToolSections.length !== 1 ? 's' : ''} used
               </span>
             )}
           </div>
@@ -2811,7 +2852,10 @@ function MessageItemComponent({
               <div className="flex flex-col gap-2">
                 {selectionCards.map((card, index) => (
                   <InteractiveSelectionCard
-                    key={card.id || `${wrapperDataMessageId ?? 'selection'}-${index}`}
+                    key={
+                      card.id ||
+                      `${wrapperDataMessageId ?? 'selection'}-${index}`
+                    }
                     card={card}
                   />
                 ))}
@@ -2854,12 +2898,14 @@ function MessageItemComponent({
                   ) : null}
                   {parsedInlineArtifacts.artifacts.length > 0 ? (
                     <div className="mt-3 flex flex-col gap-3">
-                      {parsedInlineArtifacts.artifacts.map((artifact, index) => (
-                        <InlineArtifactCard
-                          key={`${artifact.title}-${artifact.type}-${index}`}
-                          artifact={artifact}
-                        />
-                      ))}
+                      {parsedInlineArtifacts.artifacts.map(
+                        (artifact, index) => (
+                          <InlineArtifactCard
+                            key={`${artifact.title}-${artifact.type}-${index}`}
+                            artifact={artifact}
+                          />
+                        ),
+                      )}
                     </div>
                   ) : null}
                   {effectiveIsStreaming && parsedInlineArtifacts.cleanedText ? (
