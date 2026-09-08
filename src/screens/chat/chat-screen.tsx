@@ -3088,7 +3088,15 @@ export function ChatScreen({
             <ChatComposer
               onSubmit={send}
               onAbort={handleAbortStreaming}
-              isLoading={sending || waitingForResponse}
+              isLoading={
+                sending ||
+                waitingForResponse ||
+                activeIsRealtimeStreaming ||
+                derivedStreamingInfo.isStreaming ||
+                liveToolActivity.length > 0 ||
+                activeToolCalls.length > 0 ||
+                hasPendingGeneration()
+              }
               disabled={sending || hideUi}
               sessionKey={
                 isNewChat
