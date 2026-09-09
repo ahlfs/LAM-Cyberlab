@@ -1078,9 +1078,34 @@ export function EditorScreen() {
   /* ── Select folder ────────────────────────────────────────────────── */
 
   const handleSelectFolder = (path: string) => {
+    // 1. Clear Monaco decorations & phantom zones
+    if (editorRef.current) {
+      try {
+        for (const zoneId of viewZonesRef.current) {
+          editorRef.current.changeViewZones((changeAccessor: any) => {
+            changeAccessor.removeZone(zoneId)
+          })
+        }
+      } catch {}
+      viewZonesRef.current = []
+      if (decorationsRef.current.length > 0) {
+        editorRef.current.deltaDecorations(decorationsRef.current, [])
+        decorationsRef.current = []
+      }
+    }
+
+    // 2. Clear open tabs & state from previous workspace
+    setTabs([])
+    setActiveTab(null)
+    setDiffMode(false)
+    setChangedFiles([])
+    setGitStatusFiles([])
+
+    // 3. Set new active workspace
     setSelectedFolder(path)
     setFolderModalOpen(false)
-    // Reset terminal to new cwd
+
+    // 4. Reset terminal to new cwd
     if (terminalOpen) {
       setTerminalKey((k) => k + 1)
     }

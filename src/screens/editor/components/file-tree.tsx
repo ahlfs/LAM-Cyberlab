@@ -116,7 +116,7 @@ function TreeNode({
   onRename?: (entry: FileEntry) => void
   onDelete?: (entry: FileEntry) => void
 }) {
-  const [expanded, setExpanded] = useState(depth < 1)
+  const [expanded, setExpanded] = useState(false)
   const isFolder = entry.type === 'folder'
   const isSelected = selectedPath === entry.path
   const isCut = clipboard?.type === 'cut' && clipboard.entry.path === entry.path
