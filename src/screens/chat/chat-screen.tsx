@@ -600,6 +600,19 @@ export function ChatScreen({
     isNewChat: routeIsNewChat,
     forcedSessionKey,
   })
+
+  // Filter out editor/workspace tasks when on the general chat page
+  const filteredChatSessions = useMemo(() => {
+    if (embedded) return sessions
+    return sessions.filter((s) => {
+      const title = s.title || ''
+      const isWorkspaceSession =
+        title.startsWith('[Workspace:') ||
+        title.startsWith('Code:') ||
+        s.key.startsWith('editor-')
+      return !isWorkspaceSession
+    })
+  }, [sessions, embedded])
   const effectiveActiveSessionKey = activeSessionKeyProp || activeSessionKey
   const {
     historyQuery,
@@ -2948,7 +2961,7 @@ export function ChatScreen({
               renamingTitle={renamingSessionTitle}
               wrapperRef={headerRef}
               onOpenSessions={() => setSessionsOpen(true)}
-              sessions={sessions ?? []}
+              sessions={filteredChatSessions}
               activeFriendlyId={activeFriendlyId}
               onSelectSession={(key) =>
                 void navigate({
@@ -3138,7 +3151,7 @@ export function ChatScreen({
         <MobileSessionsPanel
           open={sessionsOpen}
           onClose={() => setSessionsOpen(false)}
-          sessions={sessions}
+          sessions={filteredChatSessions}
           activeFriendlyId={activeFriendlyId}
           onSelectSession={(friendlyId) => {
             setSessionsOpen(false)

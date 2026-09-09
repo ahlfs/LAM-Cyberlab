@@ -17,6 +17,8 @@ type WorkspaceState = {
   activeWorkspacePath: string | null
   /** File path currently open in the Code Editor — used for breadcrumb context injection */
   activeEditorFile: string | null
+  /** Favorite / Starred project folder paths */
+  favoriteProjectPaths: string[]
   /** Mobile keyboard / composer focus — hides tab bar */
   mobileKeyboardOpen: boolean
   mobileKeyboardInset: number
@@ -34,6 +36,7 @@ type WorkspaceState = {
   setEditorSessionKey: (key: string) => void
   setActiveWorkspacePath: (path: string | null) => void
   setActiveEditorFile: (path: string | null) => void
+  toggleFavoriteProject: (path: string) => void
   setMobileKeyboardOpen: (open: boolean) => void
   setMobileKeyboardInset: (inset: number) => void
   setMobileComposerFocused: (focused: boolean) => void
@@ -51,6 +54,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       editorSessionKey: 'new',
       activeWorkspacePath: null,
       activeEditorFile: null,
+      favoriteProjectPaths: [],
       mobileKeyboardOpen: false,
       mobileKeyboardInset: 0,
       mobileComposerFocused: false,
@@ -71,6 +75,12 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setEditorSessionKey: (key) => set({ editorSessionKey: key }),
       setActiveWorkspacePath: (path) => set({ activeWorkspacePath: path }),
       setActiveEditorFile: (path) => set({ activeEditorFile: path }),
+      toggleFavoriteProject: (path) =>
+        set((s) => ({
+          favoriteProjectPaths: s.favoriteProjectPaths.includes(path)
+            ? s.favoriteProjectPaths.filter((p) => p !== path)
+            : [...s.favoriteProjectPaths, path],
+        })),
       setMobileKeyboardOpen: (open) => set({ mobileKeyboardOpen: open }),
       setMobileKeyboardInset: (inset) => set({ mobileKeyboardInset: inset }),
       setMobileComposerFocused: (focused) =>
@@ -85,6 +95,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         chatPanelSessionKey: state.chatPanelSessionKey,
         editorSessionKey: state.editorSessionKey,
         activeWorkspacePath: state.activeWorkspacePath,
+        favoriteProjectPaths: state.favoriteProjectPaths,
       }),
     },
   ),

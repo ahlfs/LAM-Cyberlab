@@ -2,7 +2,7 @@
  * FileTree — recursive file/folder explorer for the Code Editor.
  * Fetches entries from GET /api/files and renders them as a collapsible tree.
  */
-import { useCallback, useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowDown01Icon,
@@ -28,6 +28,7 @@ export interface FileEntry {
   type: 'file' | 'folder'
   size?: number
   modifiedAt?: string
+  gitStatus?: string
   children?: FileEntry[]
 }
 
@@ -198,10 +199,35 @@ function TreeNode({
         />
 
         {/* Name */}
-        <span className="min-w-0 truncate font-mono">{entry.name}</span>
+        <span
+          className={cn(
+            'min-w-0 truncate font-mono',
+            entry.gitStatus === 'M' && 'text-amber-400',
+            entry.gitStatus === 'U' && 'text-emerald-400',
+            entry.gitStatus === 'D' && 'text-red-400 line-through opacity-70',
+          )}
+        >
+          {entry.name}
+        </span>
+
+        {/* Git status indicator */}
+        {entry.gitStatus && (
+          <span
+            className={cn(
+              'ml-1 text-[10px] font-bold font-mono px-1 rounded shrink-0',
+              entry.gitStatus === 'M' && 'text-amber-400 bg-amber-400/15',
+              entry.gitStatus === 'U' && 'text-emerald-400 bg-emerald-400/15',
+              entry.gitStatus === 'D' && 'text-red-400 bg-red-400/15',
+              entry.gitStatus === 'R' && 'text-blue-400 bg-blue-400/15',
+            )}
+            title={`Git Status: ${entry.gitStatus}`}
+          >
+            {entry.gitStatus}
+          </span>
+        )}
 
         {/* Size on hover */}
-        {!isFolder && entry.size != null && (
+        {!isFolder && entry.size != null && !entry.gitStatus && (
           <div className="ml-auto flex shrink-0 items-center gap-1 opacity-100 lg:opacity-0 transition-opacity lg:group-hover:opacity-100">
             <span className="text-[10px] text-[var(--theme-muted)]">
               {formatSize(entry.size)}
@@ -248,6 +274,7 @@ export function FileTree({
   onCut,
   onPaste,
   onRename,
+  changedFiles = [],
 }: {
   selectedPath: string | null
   onSelect: (entry: FileEntry) => void
@@ -259,6 +286,7 @@ export function FileTree({
   onCut?: (entry: FileEntry) => void
   onPaste?: (target: FileEntry | null) => void
   onRename?: (entry: FileEntry) => void
+  changedFiles?: Array<{ path: string; status: string; staged: boolean }>
 }) {
   const [entries, setEntries] = useState<FileEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -304,8 +332,10 @@ export function FileTree({
     handleContextMenu(e, null),
   )
 
-  const fetchTree = useCallback(async () => {
-    setLoading(true)
+  const fetchTree = useCallback(async (isBackground = false) => {
+    if (!isBackground) {
+      setLoading(true)
+    }
     setError(null)
     try {
       const params = new URLSearchParams({ action: 'list', maxDepth: '3' })
@@ -315,15 +345,35 @@ export function FileTree({
       const data = (await res.json()) as { entries?: FileEntry[] }
       setEntries(data.entries ?? [])
     } catch (err: any) {
-      setError(err?.message ?? 'Failed to load files')
+      if (!isBackground) {
+        setError(err?.message ?? 'Failed to load files')
+      }
     } finally {
-      setLoading(false)
+      if (!isBackground) {
+        setLoading(false)
+      }
     }
   }, [rootPath])
 
   useEffect(() => {
-    void fetchTree()
+    void fetchTree(false)
   }, [fetchTree, refreshVersion])
+
+  // Decorate entries reactively with gitStatus without triggering tree re-fetching
+  const decoratedEntries = useMemo(() => {
+    const decorateGitStatus = (list: FileEntry[]): FileEntry[] => {
+      return list.map((item) => {
+        const match = changedFiles.find((cf) => cf.path === item.path)
+        const children = item.children ? decorateGitStatus(item.children) : undefined
+        return {
+          ...item,
+          gitStatus: match ? match.status : undefined,
+          children,
+        }
+      })
+    }
+    return decorateGitStatus(entries)
+  }, [entries, changedFiles])
 
   if (loading) {
     return (
@@ -353,21 +403,21 @@ export function FileTree({
     )
   }
 
-  if (!entries.length) {
+  if (!decoratedEntries.length) {
     return (
       <div className="px-4 py-12 text-center text-xs text-[var(--theme-muted)]">
-        No files found in workspace.
+        No files in workspace
       </div>
     )
   }
 
   return (
     <div
-      className="flex flex-col gap-0.5 overflow-y-auto py-1"
+      className="p-1 min-w-full inline-block"
       onContextMenu={(e) => handleContextMenu(e, null)}
       {...rootHandlers}
     >
-      {entries.map((entry) => (
+      {decoratedEntries.map((entry) => (
         <TreeNode
           key={entry.path}
           entry={entry}

@@ -19,6 +19,7 @@ import {
   safeErrorMessage,
 } from '../../server/rate-limit'
 import { loadWorkspaceCatalog } from './workspace'
+import { baselineSnapshots } from './file-diff'
 
 const execFileAsync = promisify(execFile)
 
@@ -198,16 +199,27 @@ async function readDirectory(
         const children = await readDirectory(fullPath, depth + 1, options)
         mapped.push({
           name: entry.name,
-          path: relativePath,
+          path: fullPath,
           type: 'folder',
           size: stats.size,
           modifiedAt: stats.mtime.toISOString(),
           children,
         })
       } else {
+        // Auto-register initial snapshot if not present
+        if (!baselineSnapshots.has(fullPath)) {
+          try {
+            const initialText = await fs.readFile(fullPath, 'utf-8')
+            baselineSnapshots.set(fullPath, {
+              content: initialText,
+              mtime: stats.mtimeMs,
+            })
+          } catch {}
+        }
+
         mapped.push({
           name: entry.name,
-          path: relativePath,
+          path: fullPath,
           type: 'file',
           size: stats.size,
           modifiedAt: stats.mtime.toISOString(),
@@ -939,6 +951,24 @@ export const Route = createFileRoute('/api/files')({
             ? ensureBrowsePath(String(body.path || ''))
             : ensureWorkspacePath(String(body.path || ''), workspaceRoot)
           const content = typeof body.content === 'string' ? body.content : ''
+
+          // If baseline snapshot does not exist yet and file exists on disk, snapshot initial state
+          if (!baselineSnapshots.has(filePath)) {
+            try {
+              const old = await fs.readFile(filePath, 'utf8')
+              baselineSnapshots.set(filePath, {
+                content: old,
+                mtime: Date.now(),
+              })
+            } catch {
+              // File is new
+              baselineSnapshots.set(filePath, {
+                content: '',
+                mtime: Date.now(),
+              })
+            }
+          }
+
           await fs.mkdir(path.dirname(filePath), { recursive: true })
           await fs.writeFile(filePath, content, 'utf8')
           return json({

@@ -41,7 +41,9 @@ import {
   Menu01Icon,
   PlusSignIcon,
   ReloadIcon,
+  Search01Icon,
   SidebarLeft01Icon,
+  StarIcon,
   Message02Icon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
@@ -181,22 +183,32 @@ export function EditorScreen() {
   })
 
   // Filter sessions specifically relevant to Code Editor / active workspace
-  const editorSessions = useMemo(() => {
-    return sessions.filter((s) => {
-      if (s.key === 'main') return false
+  const { currentFolderSessions, allOtherCodeSessions } = useMemo(() => {
+    const current: typeof sessions = []
+    const other: typeof sessions = []
+
+    const folderName = selectedFolder ? selectedFolder.split('/').filter(Boolean).pop() : ''
+
+    for (const s of sessions) {
+      if (s.key === 'main') continue
       const title = s.title || ''
       const isExplicitEditor =
         title.startsWith('[Workspace:') ||
         title.startsWith('Code:') ||
         s.key.startsWith('editor-')
+
       if (isExplicitEditor) {
-        if (!selectedFolder) return true
-        // If workspace is selected, match folder name in title
-        const folderName = selectedFolder.split('/').filter(Boolean).pop()
-        return folderName ? title.includes(folderName) : true
+        if (!folderName) {
+          current.push(s)
+        } else if (title.includes(folderName)) {
+          current.push(s)
+        } else {
+          other.push(s)
+        }
       }
-      return false
-    })
+    }
+
+    return { currentFolderSessions: current, allOtherCodeSessions: other }
   }, [sessions, selectedFolder])
 
   const editorRef = useRef<any>(null)
@@ -205,9 +217,18 @@ export function EditorScreen() {
   const viewZonesRef = useRef<string[]>([])
 
   const [folderModalOpen, setFolderModalOpen] = useState(false)
+  const [folderSearchQuery, setFolderSearchQuery] = useState('')
+  const favoriteProjectPaths = useWorkspaceStore(
+    (s) => s.favoriteProjectPaths,
+  )
+  const toggleFavoriteProject = useWorkspaceStore(
+    (s) => s.toggleFavoriteProject,
+  )
   const [fileTreeVersion, setFileTreeVersion] = useState(0)
   const [editorVersion, setEditorVersion] = useState(0)
   const [changedFiles, setChangedFiles] = useState<Array<{ path: string; status: string; staged: boolean }>>([])
+  const [gitStatusFiles, setGitStatusFiles] = useState<Array<{ path: string; status: string; staged: boolean }>>([])
+  const [isGitRepo, setIsGitRepo] = useState(false)
   const [loadingChanges, setLoadingChanges] = useState(false)
 
   // New File/Folder
@@ -226,16 +247,19 @@ export function EditorScreen() {
     try {
       const folderParam = selectedFolder ? `&path=${encodeURIComponent(selectedFolder)}` : ''
       const res = await fetch(`/api/file-diff?action=changed-files${folderParam}`)
+      let allFiles: Array<{ path: string; status: string; staged: boolean }> = []
       let gitFiles: Array<{ path: string; status: string; staged: boolean }> = []
       if (res.ok) {
         const data = await res.json()
-        if (data.ok && Array.isArray(data.files)) {
-          gitFiles = data.files
+        if (data.ok) {
+          allFiles = Array.isArray(data.files) ? data.files : []
+          gitFiles = Array.isArray(data.gitFiles) ? data.gitFiles : []
+          setIsGitRepo(Boolean(data.isGit))
+          setGitStatusFiles(gitFiles)
         }
       }
 
       // Merge with unsaved dirty tabs in memory
-      const allFiles = [...gitFiles]
       for (const tab of tabs) {
         if (tab.dirty && !allFiles.some((f) => f.path === tab.path)) {
           allFiles.push({
@@ -715,6 +739,98 @@ export function EditorScreen() {
     }
   }, [activeFile, fetchChangedFiles])
 
+  const handleAcceptAllChanges = useCallback(async () => {
+    if (changedFiles.length === 0) return
+    setDiffActionLoading(true)
+    try {
+      const res = await fetch('/api/file-diff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'accept-all',
+          path: selectedFolder || '/',
+          files: changedFiles,
+        }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      // Reset all tabs dirty states & baselines
+      setTabs((prev) =>
+        prev.map((t) => ({
+          ...t,
+          dirty: false,
+          originalContent: t.content,
+          gitOriginalContent: t.content,
+        })),
+      )
+      setDiffMode(false)
+      setEditorVersion((v) => v + 1)
+      toast(`Accepted all ${changedFiles.length} changed files`, {
+        type: 'success',
+      })
+      void fetchChangedFiles()
+    } catch (err: any) {
+      toast(`Accept all failed: ${err?.message ?? 'Unknown error'}`, {
+        type: 'error',
+      })
+    } finally {
+      setDiffActionLoading(false)
+    }
+  }, [changedFiles, selectedFolder, fetchChangedFiles])
+
+  const handleDeclineAllChanges = useCallback(async () => {
+    if (changedFiles.length === 0) return
+    setDiffActionLoading(true)
+    try {
+      const res = await fetch('/api/file-diff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'decline-all',
+          path: selectedFolder || '/',
+          files: changedFiles,
+        }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      // Reload active file content if affected
+      if (activeFile) {
+        const diskRes = await fetch(
+          `/api/files?action=read&path=${encodeURIComponent(activeFile.path)}`,
+        )
+        if (diskRes.ok) {
+          const diskData = await diskRes.json()
+          if (typeof diskData.content === 'string') {
+            setTabs((prev) =>
+              prev.map((t) =>
+                t.path === activeFile.path
+                  ? {
+                      ...t,
+                      content: diskData.content,
+                      dirty: false,
+                      originalContent: diskData.content,
+                      gitOriginalContent: diskData.content,
+                    }
+                  : t,
+              ),
+            )
+          }
+        }
+      }
+
+      setDiffMode(false)
+      setEditorVersion((v) => v + 1)
+      toast(`Reverted all ${changedFiles.length} files`, { type: 'info' })
+      void fetchChangedFiles()
+    } catch (err: any) {
+      toast(`Decline all failed: ${err?.message ?? 'Unknown error'}`, {
+        type: 'error',
+      })
+    } finally {
+      setDiffActionLoading(false)
+    }
+  }, [changedFiles, selectedFolder, activeFile, fetchChangedFiles])
+
   const handleDeclineDiff = useCallback(async () => {
     if (!activeFile) return
     const original = activeFile.gitOriginalContent ?? activeFile.originalContent
@@ -1096,58 +1212,61 @@ export function EditorScreen() {
       {/* Folder Selection Modal */}
       <DialogRoot open={folderModalOpen} onOpenChange={setFolderModalOpen}>
         <DialogContent>
-          <div className="p-5 flex flex-col max-h-[80vh]">
+          <div className="p-5 flex flex-col max-h-[85vh] w-full max-w-lg">
             <DialogTitle className="mb-1">Open Folder</DialogTitle>
-            <DialogDescription className="mb-4">
+            <DialogDescription className="mb-3">
               Select a workspace or project folder to open in the editor.
             </DialogDescription>
 
+            {/* Search project bar */}
+            <div className="relative mb-3">
+              <HugeiconsIcon
+                icon={Search01Icon}
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400"
+              />
+              <input
+                type="text"
+                value={folderSearchQuery}
+                onChange={(e) => setFolderSearchQuery(e.target.value)}
+                placeholder="Search projects by name or path..."
+                className="w-full rounded-lg border bg-white/5 pl-9 pr-3 py-1.5 text-xs outline-none transition-colors focus:border-[var(--theme-accent)]"
+                style={{
+                  borderColor: 'var(--theme-border)',
+                  color: 'var(--theme-text)',
+                }}
+              />
+              {folderSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setFolderSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-white/10"
+                >
+                  <HugeiconsIcon
+                    icon={Cancel01Icon}
+                    size={12}
+                    className="text-primary-400"
+                  />
+                </button>
+              )}
+            </div>
+
             <div
-              className="flex-1 overflow-y-auto rounded-lg border bg-primary-50/50 p-1"
+              className="flex-1 overflow-y-auto rounded-lg border bg-primary-50/50 p-1 divide-y divide-primary-100"
               style={{ borderColor: 'var(--theme-border)' }}
             >
-              {/* Root workspace option */}
-              <button
-                type="button"
-                onClick={() => handleSelectFolder('')}
-                className={cn(
-                  'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary-100',
-                  selectedFolder === '' && 'bg-primary-100/80 font-medium',
-                )}
-                style={{
-                  color:
-                    selectedFolder === ''
-                      ? 'var(--theme-accent)'
-                      : 'var(--theme-text)',
-                }}
-              >
-                <HugeiconsIcon
-                  icon={Folder01Icon}
-                  size={16}
-                  style={{ color: 'var(--theme-warning, #f59e0b)' }}
-                />
-                Root Workspace
-              </button>
-
-              {/* Divider */}
-              {projects.length > 0 && (
-                <div className="mx-2 my-1 border-t border-primary-200" />
-              )}
-
-              {/* Projects */}
-              {projects.map((project) => (
+              {/* Root workspace option (only if matching search) */}
+              {(!folderSearchQuery || 'root workspace'.includes(folderSearchQuery.toLowerCase())) && (
                 <button
-                  key={project.path}
                   type="button"
-                  onClick={() => handleSelectFolder(project.path)}
+                  onClick={() => handleSelectFolder('')}
                   className={cn(
                     'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary-100',
-                    selectedFolder === project.path &&
-                      'bg-primary-100/80 font-medium',
+                    selectedFolder === '' && 'bg-primary-100/80 font-medium',
                   )}
                   style={{
                     color:
-                      selectedFolder === project.path
+                      selectedFolder === ''
                         ? 'var(--theme-accent)'
                         : 'var(--theme-text)',
                   }}
@@ -1158,19 +1277,89 @@ export function EditorScreen() {
                     style={{ color: 'var(--theme-warning, #f59e0b)' }}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate">{project.name}</div>
-                    <div className="truncate font-mono text-[10px] text-primary-500">
-                      {project.path}
+                    <div className="font-semibold text-xs">Root Workspace</div>
+                    <div className="font-mono text-[10px] text-primary-500">
+                      /home/ahlfs/workspace
                     </div>
                   </div>
-                  <span className="shrink-0 rounded-md border border-primary-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-primary-600">
-                    {project.frameworkLabel}
-                  </span>
                 </button>
-              ))}
+              )}
+
+              {/* Projects (sorted with Favorites first, then alphabetized) */}
+              {projects
+                .filter((project) => {
+                  if (!folderSearchQuery.trim()) return true
+                  const q = folderSearchQuery.toLowerCase()
+                  return (
+                    project.name.toLowerCase().includes(q) ||
+                    project.path.toLowerCase().includes(q) ||
+                    project.frameworkLabel.toLowerCase().includes(q)
+                  )
+                })
+                .sort((a, b) => {
+                  const aFav = favoriteProjectPaths.includes(a.path) ? 1 : 0
+                  const bFav = favoriteProjectPaths.includes(b.path) ? 1 : 0
+                  if (aFav !== bFav) return bFav - aFav
+                  return a.name.localeCompare(b.name)
+                })
+                .map((project) => {
+                  const isFav = favoriteProjectPaths.includes(project.path)
+                  return (
+                    <div
+                      key={project.path}
+                      className={cn(
+                        'flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-primary-100/80 group',
+                        selectedFolder === project.path && 'bg-primary-100 font-medium',
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleFavoriteProject(project.path)
+                        }}
+                        className="p-1 rounded text-primary-400 hover:text-amber-400 transition-colors"
+                        title={isFav ? 'Remove from favorites' : 'Mark as favorite'}
+                      >
+                        <HugeiconsIcon
+                          icon={StarIcon}
+                          size={14}
+                          className={cn(isFav ? 'text-amber-400 fill-amber-400' : 'text-primary-300')}
+                        />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSelectFolder(project.path)}
+                        className="flex-1 flex items-center gap-2.5 text-left min-w-0"
+                        style={{
+                          color:
+                            selectedFolder === project.path
+                              ? 'var(--theme-accent)'
+                              : 'var(--theme-text)',
+                        }}
+                      >
+                        <HugeiconsIcon
+                          icon={Folder01Icon}
+                          size={16}
+                          style={{ color: 'var(--theme-warning, #f59e0b)' }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-xs font-semibold">{project.name}</div>
+                          <div className="truncate font-mono text-[10px] text-primary-500">
+                            {project.path}
+                          </div>
+                        </div>
+                        <span className="shrink-0 rounded-md border border-primary-200 bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-500">
+                          {project.frameworkLabel}
+                        </span>
+                      </button>
+                    </div>
+                  )
+                })}
 
               {projects.length === 0 && (
-                <div className="px-3 py-4 text-center text-sm text-primary-500">
+                <div className="px-3 py-6 text-center text-sm text-primary-500">
                   No projects detected.
                 </div>
               )}
@@ -1182,7 +1371,7 @@ export function EditorScreen() {
       {/* Changed Files (Antigravity Review Panel) */}
       {changedFiles.length > 0 && (
         <div
-          className="border-b px-2 py-2 flex flex-col gap-1 shrink-0 max-h-48 overflow-y-auto"
+          className="border-b px-2 py-2 flex flex-col gap-1.5 shrink-0 max-h-56 overflow-y-auto"
           style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card2)' }}
         >
           <div className="flex items-center justify-between px-1.5 py-0.5">
@@ -1192,13 +1381,33 @@ export function EditorScreen() {
                 Changes ({changedFiles.length})
               </span>
             </div>
-            {loadingChanges && (
-              <HugeiconsIcon
-                icon={Loading03Icon}
-                size={12}
-                className="animate-spin text-[var(--theme-muted)]"
-              />
-            )}
+            <div className="flex items-center gap-1">
+              {loadingChanges && (
+                <HugeiconsIcon
+                  icon={Loading03Icon}
+                  size={12}
+                  className="animate-spin text-[var(--theme-muted)]"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => void handleDeclineAllChanges()}
+                disabled={diffActionLoading}
+                className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                title="Decline and revert all changes"
+              >
+                Revert All
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleAcceptAllChanges()}
+                disabled={diffActionLoading}
+                className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/15 hover:bg-emerald-500/25 transition-colors disabled:opacity-50"
+                title="Accept all changes"
+              >
+                Accept All
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-0.5">
@@ -1257,6 +1466,7 @@ export function EditorScreen() {
           onCut={handleCut}
           onPaste={handlePaste}
           onRename={handleRename}
+          changedFiles={isGitRepo ? gitStatusFiles : []}
         />
       </div>
     </div>
@@ -1429,45 +1639,135 @@ export function EditorScreen() {
                 }}
               />
             ) : (
-              /* Empty state */
-              <div className="flex h-full flex-col items-center justify-center gap-4">
-                <div
-                  className="flex size-20 items-center justify-center rounded-2xl border"
-                  style={{
-                    borderColor: 'var(--theme-border)',
-                    background: 'var(--theme-card)',
-                  }}
-                >
-                  <i className="devicon-vscode-plain colored text-4xl opacity-60" />
-                </div>
-                <div className="text-center">
-                  <h2
-                    className="text-lg font-bold"
-                    style={{ color: 'var(--theme-text)' }}
+              /* Empty state (or Pending Changes Review Hero) */
+              changedFiles.length > 0 ? (
+                <div className="flex h-full flex-col items-center justify-center gap-5 p-6 text-center">
+                  <div
+                    className="flex size-16 items-center justify-center rounded-2xl border"
+                    style={{
+                      borderColor: 'var(--theme-border)',
+                      background: 'var(--theme-card2)',
+                    }}
                   >
-                    LAM Code Editor
-                  </h2>
-                  <p
-                    className="mt-1 max-w-xs text-sm"
-                    style={{ color: 'var(--theme-muted)' }}
+                    <span className="flex size-4 rounded-full bg-amber-400 animate-ping" />
+                  </div>
+                  <div className="max-w-md">
+                    <h2
+                      className="text-base font-bold flex items-center justify-center gap-2"
+                      style={{ color: 'var(--theme-text)' }}
+                    >
+                      <span>Pending AI Review</span>
+                      <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs text-amber-400 font-mono">
+                        {changedFiles.length} {changedFiles.length === 1 ? 'file' : 'files'} modified
+                      </span>
+                    </h2>
+                    <p
+                      className="mt-1 text-xs"
+                      style={{ color: 'var(--theme-muted)' }}
+                    >
+                      AI Agent has generated or modified files in this workspace. You can review and accept them individually from the sidebar, or review all changes here.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleDeclineAllChanges()}
+                      disabled={diffActionLoading}
+                      className="flex items-center gap-1.5 rounded-lg border border-red-500/40 bg-red-500/10 px-3.5 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                    >
+                      <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                      <span>Decline All</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleAcceptAllChanges()}
+                      disabled={diffActionLoading}
+                      className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-4 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+                    >
+                      <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} />
+                      <span>Accept All Changes</span>
+                    </button>
+                  </div>
+
+                  <div
+                    className="mt-2 w-full max-w-sm rounded-lg border p-2 text-left divide-y divide-[var(--theme-border)] max-h-48 overflow-y-auto"
+                    style={{
+                      borderColor: 'var(--theme-border)',
+                      background: 'var(--theme-card)',
+                    }}
                   >
-                    Select a file from the Explorer to start editing.
-                    <br />
-                    <span className="text-xs opacity-70">
-                      Press{' '}
-                      <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">
-                        Ctrl+S
-                      </kbd>{' '}
-                      to save
-                      {' · '}
-                      <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">
-                        Ctrl+`
-                      </kbd>{' '}
-                      to toggle terminal
-                    </span>
-                  </p>
+                    {changedFiles.map((f) => {
+                      const fName = f.path.split('/').pop() || f.path
+                      return (
+                        <button
+                          key={f.path}
+                          type="button"
+                          onClick={() =>
+                            openFile({
+                              name: fName,
+                              path: f.path,
+                              type: 'file',
+                            })
+                          }
+                          className="flex w-full items-center justify-between py-1.5 px-2 text-xs font-mono hover:bg-[var(--theme-card2)] rounded transition-colors"
+                        >
+                          <span className="truncate text-[var(--theme-text)]">{fName}</span>
+                          <span
+                            className={cn(
+                              'ml-2 rounded px-1 text-[10px] font-bold shrink-0',
+                              f.status === 'M' && 'bg-amber-500/20 text-amber-400',
+                              f.status === 'U' && 'bg-emerald-500/20 text-emerald-400',
+                              f.status === 'D' && 'bg-red-500/20 text-red-400',
+                            )}
+                          >
+                            {f.status}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-4">
+                  <div
+                    className="flex size-20 items-center justify-center rounded-2xl border"
+                    style={{
+                      borderColor: 'var(--theme-border)',
+                      background: 'var(--theme-card)',
+                    }}
+                  >
+                    <i className="devicon-vscode-plain colored text-4xl opacity-60" />
+                  </div>
+                  <div className="text-center">
+                    <h2
+                      className="text-lg font-bold"
+                      style={{ color: 'var(--theme-text)' }}
+                    >
+                      LAM Code Editor
+                    </h2>
+                    <p
+                      className="mt-1 max-w-xs text-sm"
+                      style={{ color: 'var(--theme-muted)' }}
+                    >
+                      Select a file from the Explorer to start editing.
+                      <br />
+                      <span className="text-xs opacity-70">
+                        Press{' '}
+                        <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">
+                          Ctrl+S
+                        </kbd>{' '}
+                        to save
+                        {' · '}
+                        <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">
+                          Ctrl+`
+                        </kbd>{' '}
+                        to toggle terminal
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              )
             )}
           </div>
 
@@ -1699,7 +1999,7 @@ export function EditorScreen() {
                 setChatSessionId(e.target.value)
               }
             }}
-            className="max-w-[160px] truncate rounded border px-2 py-1 text-[11px] outline-none transition-colors"
+            className="max-w-[170px] truncate rounded border px-2 py-1 text-[11px] outline-none transition-colors"
             style={{
               borderColor: 'var(--theme-border)',
               background: 'var(--theme-bg)',
@@ -1707,13 +2007,30 @@ export function EditorScreen() {
             }}
           >
             {chatSessionId === 'new' && <option value="new">New Task Session</option>}
-            {editorSessions.length > 0 ? (
-              editorSessions.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.title || 'Untitled Session'}
-                </option>
-              ))
-            ) : (
+            
+            {/* Active Folder Tasks */}
+            {currentFolderSessions.length > 0 && (
+              <optgroup label="This Project">
+                {currentFolderSessions.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.title || 'Untitled Task'}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+
+            {/* Other Workspace Tasks (Fallback if folder renamed or looking across projects) */}
+            {allOtherCodeSessions.length > 0 && (
+              <optgroup label="Other Code Tasks">
+                {allOtherCodeSessions.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.title || 'Untitled Task'}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+
+            {currentFolderSessions.length === 0 && allOtherCodeSessions.length === 0 && (
               <option disabled>No workspace tasks yet</option>
             )}
           </select>

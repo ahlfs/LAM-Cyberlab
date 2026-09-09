@@ -18,38 +18,19 @@ function ensureWorkspacePath(input: string, workspaceRoot: string) {
   return resolved
 }
 
-// In-memory shadow baseline cache for non-git files to track AI changes
-const baselineSnapshots = new Map<string, { content: string; mtime: number }>()
+/**
+ * 1. AI Review Buffer (Shadow Baseline Snapshots)
+ * Independent from Git commits. Used for Monaco Diff highlighting
+ * and granular / bulk Accept & Decline.
+ */
+export const baselineSnapshots = new Map<string, { content: string; mtime: number }>()
 
-async function getGitOriginalContent(filePath: string): Promise<{ isGit: boolean; content: string | null }> {
-  try {
-    const fileDir = path.dirname(filePath)
-    // 1. Find git root
-    const { stdout: gitRootRaw } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], {
-      cwd: fileDir,
-    })
-    const gitRoot = gitRootRaw.trim()
-    if (!gitRoot) return { isGit: false, content: null }
-
-    // 2. Get relative path to git root
-    const relativePath = path.relative(gitRoot, filePath)
-
-    // 3. Extract content from HEAD
-    const { stdout: originalContent } = await execFileAsync('git', ['show', `HEAD:${relativePath}`], {
-      cwd: gitRoot,
-    })
-    return { isGit: true, content: originalContent }
-  } catch (error: any) {
-    // If file is untracked in git, HEAD:<path> fails with fatal/error
-    // But repository might still be git
-    if (error?.message && !error.message.includes('not a git repository')) {
-      return { isGit: true, content: '' }
-    }
-    return { isGit: false, content: null }
-  }
-}
-
-async function getGitChangedFiles(dirPath: string): Promise<Array<{ path: string; status: string; staged: boolean }>> {
+/**
+ * 2. File Explorer Git SCM Provider (Same as VS Code / Cursor)
+ * Reads actual `git status` when inside a Git repo.
+ * When not in a Git repo, does not pollute file tree with synthetic git badges.
+ */
+async function getGitScmStatus(dirPath: string): Promise<{ isGit: boolean; files: Array<{ path: string; status: string; staged: boolean }> }> {
   try {
     let checkDir = dirPath
     try {
@@ -69,8 +50,7 @@ async function getGitChangedFiles(dirPath: string): Promise<Array<{ path: string
       })
       gitRoot = gitRootRaw.trim()
     } catch {
-      // If checkDir is not a git repo (e.g. root workspace folder containing multiple repos),
-      // scan subdirectories for git repositories
+      // If checkDir has sub-repos, scan direct subdirectories
       try {
         const entries = await fs.readdir(checkDir, { withFileTypes: true })
         const results: Array<{ path: string; status: string; staged: boolean }> = []
@@ -78,45 +58,25 @@ async function getGitChangedFiles(dirPath: string): Promise<Array<{ path: string
           if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules' && entry.name !== 'vendor') {
             const subDir = path.join(checkDir, entry.name)
             try {
-              // Direct check if subDir has .git folder
-              const gitDirStat = await fs.stat(path.join(subDir, '.git')).catch(() => null)
-              if (gitDirStat) {
-                const subFiles = await getGitChangedFiles(subDir)
-                results.push(...subFiles)
+              const subRes = await getGitScmStatus(subDir)
+              if (subRes.isGit) {
+                results.push(...subRes.files)
               }
-            } catch {
-              // ignore
-            }
+            } catch {}
           }
         }
-
-        // Also check baselineSnapshots for modified non-git files under checkDir
-        for (const [filePath, snap] of baselineSnapshots.entries()) {
-          if (filePath.startsWith(checkDir)) {
-            try {
-              const cur = await fs.readFile(filePath, 'utf-8')
-              if (cur !== snap.content && !results.some((r) => r.path === filePath)) {
-                results.push({
-                  path: filePath,
-                  status: 'M',
-                  staged: false,
-                })
-              }
-            } catch {
-              // file deleted
-            }
-          }
+        if (results.length > 0) {
+          return { isGit: true, files: results }
         }
-
-        return results
-      } catch {
-        return []
-      }
+      } catch {}
+      return { isGit: false, files: [] }
     }
 
-    if (!gitRoot) return []
+    if (!gitRoot) {
+      return { isGit: false, files: [] }
+    }
 
-    const { stdout: statusOutput } = await execFileAsync('git', ['status', '--porcelain'], {
+    const { stdout: statusOutput } = await execFileAsync('git', ['status', '--porcelain', '-uall'], {
       cwd: gitRoot,
     })
 
@@ -125,23 +85,67 @@ async function getGitChangedFiles(dirPath: string): Promise<Array<{ path: string
 
     for (const line of lines) {
       if (line.length < 4) continue
-      const statusCode = line.slice(0, 2).trim()
+      const rawStatus = line.slice(0, 2).trim()
       let relPath = line.slice(3).trim()
-      // If renamed (R  old -> new), extract new
       if (relPath.includes(' -> ')) {
         relPath = relPath.split(' -> ')[1].trim()
       }
       const fullPath = path.resolve(gitRoot, relPath)
-      results.push({
-        path: fullPath,
-        status: statusCode || 'M',
-        staged: line[0] !== ' ' && line[0] !== '?',
-      })
+
+      let status = 'M'
+      if (rawStatus.includes('?') || rawStatus.includes('A')) {
+        status = 'U' // Untracked / Added
+      } else if (rawStatus.includes('D')) {
+        status = 'D' // Deleted
+      } else if (rawStatus.includes('M')) {
+        status = 'M' // Modified
+      } else if (rawStatus.includes('R')) {
+        status = 'R' // Renamed
+      }
+
+      if (fullPath.startsWith(dirPath)) {
+        results.push({
+          path: fullPath,
+          status,
+          staged: line[0] !== ' ' && line[0] !== '?',
+        })
+      }
     }
-    return results
+
+    return { isGit: true, files: results }
   } catch {
-    return []
+    return { isGit: false, files: [] }
   }
+}
+
+/**
+ * Scan AI modified files from in-memory shadow baseline
+ */
+async function getAiModifiedFiles(dirPath: string): Promise<Array<{ path: string; status: string; staged: boolean }>> {
+  const results: Array<{ path: string; status: string; staged: boolean }> = []
+
+  for (const [filePath, snap] of baselineSnapshots.entries()) {
+    if (filePath.startsWith(dirPath)) {
+      try {
+        const cur = await fs.readFile(filePath, 'utf-8')
+        if (cur !== snap.content) {
+          results.push({
+            path: filePath,
+            status: snap.content === '' ? 'U' : 'M',
+            staged: false,
+          })
+        }
+      } catch {
+        results.push({
+          path: filePath,
+          status: 'D',
+          staged: false,
+        })
+      }
+    }
+  }
+
+  return results
 }
 
 export const Route = createFileRoute('/api/file-diff')({
@@ -168,8 +172,29 @@ export const Route = createFileRoute('/api/file-diff')({
 
           if (action === 'changed-files') {
             const targetDir = inputPath ? ensureWorkspacePath(inputPath, workspaceRoot) : workspaceRoot
-            const files = await getGitChangedFiles(targetDir)
-            return json({ ok: true, files })
+            
+            // 1. Get real Git SCM status (for file tree M/U/D badges like VS Code/Cursor)
+            const gitStatus = await getGitScmStatus(targetDir)
+            
+            // 2. Get AI modified files from shadow baseline (for AI diff review & accept buttons)
+            const aiFiles = await getAiModifiedFiles(targetDir)
+
+            // Merge for review panel
+            const mergedMap = new Map<string, { path: string; status: string; staged: boolean }>()
+            for (const f of gitStatus.files) {
+              mergedMap.set(f.path, f)
+            }
+            for (const f of aiFiles) {
+              mergedMap.set(f.path, f)
+            }
+
+            return json({
+              ok: true,
+              isGit: gitStatus.isGit,
+              gitFiles: gitStatus.files,
+              aiFiles,
+              files: Array.from(mergedMap.values()),
+            })
           }
 
           if (!inputPath) {
@@ -186,22 +211,10 @@ export const Route = createFileRoute('/api/file-diff')({
             return json({ ok: false, error: 'File not found' }, { status: 404 })
           }
 
-          // Try git original
-          const gitResult = await getGitOriginalContent(resolvedPath)
-          if (gitResult.isGit && gitResult.content !== null) {
-            return json({
-              ok: true,
-              isGit: true,
-              source: 'git-head',
-              originalContent: gitResult.content,
-              currentContent,
-            })
-          }
-
-          // Fallback: non-git baseline snapshot mechanism
+          // Universal Shadow Baseline Snapshot lookup
           const existingSnapshot = baselineSnapshots.get(resolvedPath)
           if (!existingSnapshot) {
-            // First time this file is observed: store as baseline
+            // First time this file is observed: register as baseline
             baselineSnapshots.set(resolvedPath, {
               content: currentContent,
               mtime: Date.now(),
@@ -215,7 +228,7 @@ export const Route = createFileRoute('/api/file-diff')({
             })
           }
 
-          // If file changed on disk compared to baseline, return baseline as originalContent!
+          // Return baseline snapshot as original content for Monaco diff
           return json({
             ok: true,
             isGit: false,
@@ -233,10 +246,11 @@ export const Route = createFileRoute('/api/file-diff')({
         }
         try {
           const body = (await request.json()) as {
-            action?: 'accept' | 'decline'
+            action?: 'accept' | 'decline' | 'accept-all' | 'decline-all'
             path?: string
             originalContent?: string
             modifiedContent?: string
+            files?: Array<{ path: string }>
           }
 
           const inputPath = body.path?.trim()
@@ -256,8 +270,39 @@ export const Route = createFileRoute('/api/file-diff')({
 
           const resolvedPath = ensureWorkspacePath(inputPath, workspaceRoot)
 
+          if (body.action === 'accept-all') {
+            // Bulk accept all changes: update baseline snapshots to current disk content
+            const files = Array.isArray(body.files) ? body.files : []
+            for (const f of files) {
+              const fPath = ensureWorkspacePath(f.path || (f as any), workspaceRoot)
+              try {
+                const cur = await fs.readFile(fPath, 'utf-8')
+                baselineSnapshots.set(fPath, {
+                  content: cur,
+                  mtime: Date.now(),
+                })
+              } catch {}
+            }
+            return json({ ok: true, action: 'accepted-all' })
+          }
+
+          if (body.action === 'decline-all') {
+            // Bulk decline all changes: revert disk files back to baseline snapshots
+            const files = Array.isArray(body.files) ? body.files : []
+            for (const f of files) {
+              const fPath = ensureWorkspacePath(f.path || (f as any), workspaceRoot)
+              try {
+                const snap = baselineSnapshots.get(fPath)
+                if (snap) {
+                  await fs.writeFile(fPath, snap.content, 'utf-8')
+                }
+              } catch {}
+            }
+            return json({ ok: true, action: 'declined-all' })
+          }
+
           if (body.action === 'decline' && typeof body.originalContent === 'string') {
-            // Revert file to original content
+            // Revert file to baseline content
             await fs.writeFile(resolvedPath, body.originalContent, 'utf-8')
             return json({ ok: true, action: 'reverted' })
           }
@@ -266,26 +311,11 @@ export const Route = createFileRoute('/api/file-diff')({
             // Confirm saving current modified content
             await fs.writeFile(resolvedPath, body.modifiedContent, 'utf-8')
 
-            // Update baseline snapshot for non-git files
+            // Update universal baseline snapshot
             baselineSnapshots.set(resolvedPath, {
               content: body.modifiedContent,
               mtime: Date.now(),
             })
-
-            // If it's a git repo, stage/commit changes to HEAD so diff disappears
-            try {
-              const fileDir = path.dirname(resolvedPath)
-              const { stdout: gitRootRaw } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], {
-                cwd: fileDir,
-              })
-              const gitRoot = gitRootRaw.trim()
-              if (gitRoot) {
-                await execFileAsync('git', ['add', resolvedPath], { cwd: gitRoot })
-                await execFileAsync('git', ['-c', 'user.name=LAM Cyberlab', '-c', 'user.email=editor@cyberlab.internal', 'commit', '-m', `Accept changes for ${path.basename(resolvedPath)}`], { cwd: gitRoot })
-              }
-            } catch {
-              // fallback
-            }
 
             return json({ ok: true, action: 'saved' })
           }
