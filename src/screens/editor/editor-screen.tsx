@@ -25,14 +25,17 @@ import {
   Separator as PanelResizeHandle,
 } from 'react-resizable-panels'
 import Editor, { type OnMount } from '@monaco-editor/react'
+import * as Diff from 'diff'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowDown01Icon,
   Cancel01Icon,
+  CheckmarkCircle01Icon,
   ComputerTerminal01Icon,
   File01Icon,
   FloppyDiskIcon,
   Folder01Icon,
+  GitBranchIcon,
   Loading03Icon,
   Menu01Icon,
   PlusSignIcon,
@@ -116,6 +119,8 @@ interface OpenTab {
   name: string
   content: string
   originalContent: string
+  gitOriginalContent?: string | null
+  isGit?: boolean
   language: string
   dirty: boolean
 }
@@ -143,6 +148,8 @@ export function EditorScreen() {
   const [saving, setSaving] = useState(false)
   const [loadingFile, setLoadingFile] = useState(false)
   const [terminalOpen, setTerminalOpen] = useState(false)
+  const [diffMode, setDiffMode] = useState(false)
+  const [diffActionLoading, setDiffActionLoading] = useState(false)
   const [chatOpen, setChatOpen] = useState(true)
   const chatSessionId = useWorkspaceStore((s) => s.chatPanelSessionKey)
   const setChatSessionId = useWorkspaceStore((s) => s.setChatPanelSessionKey)
@@ -163,6 +170,9 @@ export function EditorScreen() {
     isNewChat: false,
   })
   const editorRef = useRef<any>(null)
+  const monacoRef = useRef<any>(null)
+  const decorationsRef = useRef<any[]>([])
+  const viewZonesRef = useRef<string[]>([])
 
   const [projects, setProjects] = useState<ProjectInfo[]>([])
   const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath)
@@ -175,6 +185,9 @@ export function EditorScreen() {
 
   const [folderModalOpen, setFolderModalOpen] = useState(false)
   const [fileTreeVersion, setFileTreeVersion] = useState(0)
+  const [editorVersion, setEditorVersion] = useState(0)
+  const [changedFiles, setChangedFiles] = useState<Array<{ path: string; status: string; staged: boolean }>>([])
+  const [loadingChanges, setLoadingChanges] = useState(false)
 
   // New File/Folder
   const [promptState, setPromptState] = useState<PromptState | null>(null)
@@ -186,7 +199,246 @@ export function EditorScreen() {
 
   const activeFile = tabs.find((t) => t.path === activeTab) ?? null
 
-  /* ── Sync active file path to global store (breadcrumb injection) ── */
+  /* ── Fetch Changed Files List (Git Status + Unsaved Dirty Files) ────── */
+  const fetchChangedFiles = useCallback(async () => {
+    setLoadingChanges(true)
+    try {
+      const folderParam = selectedFolder ? `&path=${encodeURIComponent(selectedFolder)}` : ''
+      const res = await fetch(`/api/file-diff?action=changed-files${folderParam}`)
+      let gitFiles: Array<{ path: string; status: string; staged: boolean }> = []
+      if (res.ok) {
+        const data = await res.json()
+        if (data.ok && Array.isArray(data.files)) {
+          gitFiles = data.files
+        }
+      }
+
+      // Merge with unsaved dirty tabs in memory
+      const allFiles = [...gitFiles]
+      for (const tab of tabs) {
+        if (tab.dirty && !allFiles.some((f) => f.path === tab.path)) {
+          allFiles.push({
+            path: tab.path,
+            status: 'M',
+            staged: false,
+          })
+        }
+      }
+
+      setChangedFiles(allFiles)
+    } catch {
+      // silently fallback
+    } finally {
+      setLoadingChanges(false)
+    }
+  }, [selectedFolder, tabs])
+
+  /* ── Auto-poll Disk & Git changes every 2 seconds ─────────────────── */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      void fetchChangedFiles()
+
+      // Also background poll active tab disk/git status if not modified locally
+      if (activeFile && !activeFile.dirty) {
+        void (async () => {
+          try {
+            const res = await fetch(
+              `/api/file-diff?path=${encodeURIComponent(activeFile.path)}`,
+            )
+            if (!res.ok) return
+            const data = await res.json()
+            if (data.ok) {
+              const diskContent = data.currentContent ?? ''
+              const original = data.originalContent !== null && data.originalContent !== undefined
+                ? data.originalContent
+                : activeFile.originalContent
+
+              if (diskContent !== activeFile.content || Boolean(data.isGit) !== activeFile.isGit || original !== activeFile.gitOriginalContent) {
+                setTabs((prev) =>
+                  prev.map((t) =>
+                    t.path === activeFile.path
+                      ? {
+                          ...t,
+                          content: diskContent,
+                          isGit: Boolean(data.isGit),
+                          gitOriginalContent: original,
+                          originalContent: t.originalContent || diskContent,
+                        }
+                      : t,
+                  ),
+                )
+                setEditorVersion((v) => v + 1)
+              }
+            }
+          } catch {
+            // ignore
+          }
+        })()
+      }
+    }, 2000)
+
+    return () => clearInterval(timer)
+  }, [fetchChangedFiles, activeFile])
+
+  /* ── Auto-fetch diff & Auto-enable Diff Mode when opening file ─────── */
+  useEffect(() => {
+    if (!activeFile) return
+    let active = true
+
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/file-diff?path=${encodeURIComponent(activeFile.path)}`,
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.ok && active) {
+          const original = data.originalContent !== null && data.originalContent !== undefined
+            ? data.originalContent
+            : activeFile.originalContent
+          const hasDiffChanges = original !== null && original !== undefined && original !== activeFile.content
+
+          setTabs((prev) =>
+            prev.map((t) =>
+              t.path === activeFile.path
+                ? {
+                    ...t,
+                    isGit: Boolean(data.isGit),
+                    gitOriginalContent: original,
+                  }
+                : t,
+            ),
+          )
+
+          // Auto-enable diff highlight if changes exist
+          if (hasDiffChanges) {
+            setDiffMode(true)
+          }
+        }
+      } catch {
+        // silently fallback
+      }
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [activeFile?.path, selectedFolder])
+
+  // Watch for active file content edits (e.g. user typing in editor or dirty changes)
+  useEffect(() => {
+    if (!activeFile) return
+    const original = activeFile.gitOriginalContent ?? activeFile.originalContent
+    if (original !== null && original !== undefined && original !== activeFile.content) {
+      setDiffMode(true)
+    }
+  }, [activeFile?.content, activeFile?.dirty])
+
+  /* ── Stabilo Diff Highlight + Deleted ViewZones (Antigravity Style) ── */
+  useEffect(() => {
+    const editor = editorRef.current
+    const monaco = monacoRef.current
+    if (!editor || !monaco) return
+
+    // Clean up previous viewZones
+    editor.changeViewZones((changeAccessor: any) => {
+      for (const zoneId of viewZonesRef.current) {
+        changeAccessor.removeZone(zoneId)
+      }
+      viewZonesRef.current = []
+    })
+
+    if (!diffMode || !activeFile) {
+      if (decorationsRef.current.length > 0) {
+        decorationsRef.current = editor.deltaDecorations(decorationsRef.current, [])
+      }
+      return
+    }
+
+    const original = activeFile.gitOriginalContent ?? activeFile.originalContent ?? ''
+    const current = activeFile.content ?? ''
+
+    // Compute line diff
+    const diffs = Diff.diffLines(original, current)
+    const newDecorations: any[] = []
+    const pendingZones: Array<{ afterLineNumber: number; heightInLines: number; domNode: HTMLElement }> = []
+
+    let currentLine = 1
+    for (const part of diffs) {
+      const lineCount = part.count || 1
+      if (part.added) {
+        newDecorations.push({
+          range: new monaco.Range(
+            currentLine,
+            1,
+            currentLine + lineCount - 1,
+            1,
+          ),
+          options: {
+            isWholeLine: true,
+            className: 'diff-line-added',
+            inlineClassName: 'diff-inline-added',
+            linesDecorationsClassName: 'diff-gutter-added',
+            overviewRuler: {
+              color: '#22c55e',
+              position: monaco.editor.OverviewRulerLane.Left,
+            },
+          },
+        })
+        currentLine += lineCount
+      } else if (part.removed) {
+        // Render Phantom Deleted Code Block (Antigravity / Cursor ViewZone)
+        const deletedLines = part.value.split('\n').filter((_, idx, arr) => idx < arr.length - 1 || _ !== '')
+        const zoneHeight = Math.max(1, deletedLines.length)
+        const targetLine = Math.max(0, currentLine - 1)
+
+        const container = document.createElement('div')
+        container.className = 'diff-deleted-viewzone'
+        deletedLines.forEach((textLine) => {
+          const lineDiv = document.createElement('div')
+          lineDiv.className = 'diff-deleted-viewzone-line'
+          const prefix = document.createElement('span')
+          prefix.className = 'diff-deleted-viewzone-prefix'
+          prefix.textContent = '-'
+          const textSpan = document.createElement('span')
+          textSpan.textContent = textLine
+          lineDiv.appendChild(prefix)
+          lineDiv.appendChild(textSpan)
+          container.appendChild(lineDiv)
+        })
+
+        pendingZones.push({
+          afterLineNumber: targetLine,
+          heightInLines: zoneHeight,
+          domNode: container,
+        })
+      } else {
+        currentLine += lineCount
+      }
+    }
+
+    // Apply decorations directly to editor
+    try {
+      decorationsRef.current = editor.deltaDecorations(decorationsRef.current, newDecorations)
+    } catch {
+      // ignore
+    }
+
+    // Apply viewzones to editor
+    if (pendingZones.length > 0) {
+      editor.changeViewZones((changeAccessor: any) => {
+        for (const zone of pendingZones) {
+          const id = changeAccessor.addZone({
+            afterLineNumber: zone.afterLineNumber,
+            heightInLines: zone.heightInLines,
+            domNode: zone.domNode,
+            suppressMouseDown: false,
+          })
+          viewZonesRef.current.push(id)
+        }
+      })
+    }
+  }, [diffMode, editorVersion, activeFile?.path, activeFile?.content, activeFile?.gitOriginalContent, activeFile?.originalContent])
   const setActiveEditorFile = useWorkspaceStore((s) => s.setActiveEditorFile)
 
   useEffect(() => {
@@ -225,10 +477,16 @@ export function EditorScreen() {
       setLoadingFile(true)
       try {
         const res = await fetch(
-          `/api/files?action=read&path=${encodeURIComponent(entry.path)}`,
+          `/api/files?action=read&mode=browse&path=${encodeURIComponent(entry.path)}`,
         )
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = (await res.json()) as {
+        if (!res.ok) {
+          // Fallback without mode=browse
+          const fallbackRes = await fetch(
+            `/api/files?action=read&path=${encodeURIComponent(entry.path)}`,
+          )
+          if (!fallbackRes.ok) throw new Error(`HTTP ${res.status}`)
+        }
+        const data = (await (res.ok ? res : await fetch(`/api/files?action=read&path=${encodeURIComponent(entry.path)}`)).json()) as {
           type?: string
           content?: string
         }
@@ -241,17 +499,46 @@ export function EditorScreen() {
         const content = data.content ?? ''
         const language = extToLanguage(entry.name)
 
+        // Fetch diff original baseline content in background
+        let gitOriginalContent: string | null = null
+        let isGit = false
+        try {
+          const diffRes = await fetch(
+            `/api/file-diff?path=${encodeURIComponent(entry.path)}`,
+          )
+          if (diffRes.ok) {
+            const diffData = await diffRes.json()
+            if (diffData.ok) {
+              isGit = Boolean(diffData.isGit)
+              gitOriginalContent = diffData.originalContent
+            }
+          }
+        } catch {
+          // silently fallback
+        }
+
+        const baseline = gitOriginalContent !== null && gitOriginalContent !== undefined
+          ? gitOriginalContent
+          : content
+
+        const hasDiff = baseline !== content
+
         const newTab: OpenTab = {
           path: entry.path,
           name: entry.name,
           content,
-          originalContent: content,
+          originalContent: baseline,
+          gitOriginalContent,
+          isGit,
           language,
-          dirty: false,
+          dirty: hasDiff,
         }
 
         setTabs((prev) => [...prev, newTab])
         setActiveTab(entry.path)
+        if (hasDiff) {
+          setDiffMode(true)
+        }
       } catch (err: any) {
         toast(`Failed to open file: ${err?.message ?? 'Unknown error'}`, {
           type: 'error',
@@ -351,6 +638,100 @@ export function EditorScreen() {
   }, [])
 
   /* ── Save ─────────────────────────────────────────────────────────── */
+
+  /* ── Accept / Decline Diff Changes ─────────────────────────────── */
+
+  const handleAcceptDiff = useCallback(async () => {
+    if (!activeFile) return
+    setDiffActionLoading(true)
+    try {
+      // 1. Fetch current disk content
+      const diskRes = await fetch(
+        `/api/files?action=read&path=${encodeURIComponent(activeFile.path)}`,
+      )
+      let diskContent = activeFile.content
+      if (diskRes.ok) {
+        const diskData = await diskRes.json()
+        if (typeof diskData.content === 'string') {
+          diskContent = diskData.content
+        }
+      }
+
+      const res = await fetch('/api/file-diff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'accept',
+          path: activeFile.path,
+          modifiedContent: diskContent,
+        }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.path === activeFile.path
+            ? {
+                ...t,
+                content: diskContent,
+                dirty: false,
+                originalContent: diskContent,
+                gitOriginalContent: diskContent,
+              }
+            : t,
+        ),
+      )
+      setDiffMode(false)
+      setEditorVersion((v) => v + 1)
+      toast(`Accepted changes for ${activeFile.name}`, { type: 'success' })
+      void fetchChangedFiles()
+    } catch (err: any) {
+      toast(`Accept failed: ${err?.message ?? 'Unknown error'}`, {
+        type: 'error',
+      })
+    } finally {
+      setDiffActionLoading(false)
+    }
+  }, [activeFile, fetchChangedFiles])
+
+  const handleDeclineDiff = useCallback(async () => {
+    if (!activeFile) return
+    const original = activeFile.gitOriginalContent ?? activeFile.originalContent
+    setDiffActionLoading(true)
+    try {
+      const res = await fetch('/api/file-diff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'decline',
+          path: activeFile.path,
+          originalContent: original,
+        }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.path === activeFile.path
+            ? {
+                ...t,
+                content: original,
+                dirty: false,
+              }
+            : t,
+        ),
+      )
+      setDiffMode(false)
+      toast(`Reverted changes for ${activeFile.name}`, { type: 'info' })
+      void fetchChangedFiles()
+    } catch (err: any) {
+      toast(`Decline failed: ${err?.message ?? 'Unknown error'}`, {
+        type: 'error',
+      })
+    } finally {
+      setDiffActionLoading(false)
+    }
+  }, [activeFile, fetchChangedFiles])
 
   const saveFile = useCallback(async () => {
     if (!activeFile || !activeFile.dirty) return
@@ -515,16 +896,18 @@ export function EditorScreen() {
     (value: string | undefined) => {
       if (!activeTab || value == null) return
       setTabs((prev) =>
-        prev.map((t) =>
-          t.path === activeTab
-            ? {
-                ...t,
-                content: value,
-                dirty: value !== t.originalContent,
-              }
-            : t,
-        ),
+        prev.map((t) => {
+          if (t.path !== activeTab) return t
+          const baseline = t.gitOriginalContent ?? t.originalContent
+          const isDirty = value !== baseline
+          return {
+            ...t,
+            content: value,
+            dirty: isDirty,
+          }
+        }),
       )
+      setEditorVersion((v) => v + 1)
     },
     [activeTab],
   )
@@ -548,9 +931,11 @@ export function EditorScreen() {
 
   /* ── Monaco onMount ───────────────────────────────────────────────── */
 
-  const handleEditorMount: OnMount = (editor, _monaco) => {
+  const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
-    // Removed editor.focus() so it doesn't steal focus from file tree
+    monacoRef.current = monaco
+    // Trigger decoration calculation immediately after mounting
+    setEditorVersion((v) => v + 1)
   }
 
   /* ── Select folder ────────────────────────────────────────────────── */
@@ -773,6 +1158,71 @@ export function EditorScreen() {
         </DialogContent>
       </DialogRoot>
 
+      {/* Changed Files (Antigravity Review Panel) */}
+      {changedFiles.length > 0 && (
+        <div
+          className="border-b px-2 py-2 flex flex-col gap-1 shrink-0 max-h-48 overflow-y-auto"
+          style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card2)' }}
+        >
+          <div className="flex items-center justify-between px-1.5 py-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="flex size-2 rounded-full bg-amber-400" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--theme-text)]">
+                Changes ({changedFiles.length})
+              </span>
+            </div>
+            {loadingChanges && (
+              <HugeiconsIcon
+                icon={Loading03Icon}
+                size={12}
+                className="animate-spin text-[var(--theme-muted)]"
+              />
+            )}
+          </div>
+
+          <div className="flex flex-col gap-0.5">
+            {changedFiles.map((file) => {
+              const fileName = file.path.split('/').pop() || file.path
+              const isActive = activeTab === file.path
+              return (
+                <button
+                  key={file.path}
+                  type="button"
+                  onClick={() =>
+                    openFile({
+                      name: fileName,
+                      path: file.path,
+                      type: 'file',
+                    })
+                  }
+                  className={cn(
+                    'flex items-center justify-between rounded px-2 py-1 text-left text-xs font-mono transition-colors',
+                    isActive
+                      ? 'bg-[var(--theme-accent)]/20 text-[var(--theme-accent)] font-semibold'
+                      : 'text-[var(--theme-text)] hover:bg-[var(--theme-card)]',
+                  )}
+                  title={file.path}
+                >
+                  <span className="truncate max-w-[170px]">{fileName}</span>
+                  <span
+                    className={cn(
+                      'ml-1 shrink-0 rounded px-1 text-[10px] font-bold',
+                      file.status.includes('M')
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : file.status.includes('A') || file.status.includes('?')
+                          ? 'bg-emerald-500/20 text-emerald-400'
+                          : 'bg-red-500/20 text-red-400',
+                    )}
+                  >
+                    {file.status}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* File tree */}
       <div className="flex-1 overflow-y-auto">
         <FileTree
@@ -855,38 +1305,6 @@ export function EditorScreen() {
           {/* Spacer + actions */}
           <div className="flex-1" />
 
-          {/* Chat toggle */}
-          <button
-            type="button"
-            onClick={() => setChatOpen((p) => !p)}
-            className={cn(
-              'mr-1 flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
-              chatOpen
-                ? 'bg-[var(--theme-accent)]/15 text-[var(--theme-accent)]'
-                : 'text-[var(--theme-muted)] hover:bg-[var(--theme-card2)]',
-            )}
-            title={chatOpen ? 'Hide Agent' : 'Show Agent'}
-          >
-            <HugeiconsIcon icon={Message02Icon} size={14} />
-            <span className="hidden sm:inline">Agent</span>
-          </button>
-
-          {/* Terminal toggle */}
-          <button
-            type="button"
-            onClick={toggleTerminal}
-            className={cn(
-              'mr-1 flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
-              terminalOpen
-                ? 'bg-[var(--theme-accent)]/15 text-[var(--theme-accent)]'
-                : 'text-[var(--theme-muted)] hover:bg-[var(--theme-card2)]',
-            )}
-            title={terminalOpen ? 'Hide Terminal' : 'Show Terminal'}
-          >
-            <HugeiconsIcon icon={ComputerTerminal01Icon} size={14} />
-            <span className="hidden sm:inline">Terminal</span>
-          </button>
-
           {/* Save button */}
           {activeFile?.dirty && (
             <button
@@ -895,26 +1313,60 @@ export function EditorScreen() {
               disabled={saving}
               className="mr-2 flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors hover:opacity-80 disabled:opacity-50"
               style={{
-                borderColor: 'var(--theme-accent, #60a5fa)',
-                color: 'var(--theme-accent, #60a5fa)',
+                borderColor: 'var(--theme-border)',
+                background: 'var(--theme-card)',
+                color: 'var(--theme-ink)',
               }}
             >
-              {saving ? (
-                <HugeiconsIcon
-                  icon={Loading03Icon}
-                  size={12}
-                  className="animate-spin"
-                />
-              ) : (
-                <HugeiconsIcon icon={FloppyDiskIcon} size={12} />
-              )}
-              Save
+              <HugeiconsIcon icon={FloppyDiskIcon} size={14} />
+              <span>{saving ? 'Saving…' : 'Save'}</span>
             </button>
           )}
         </div>
 
         {/* ── Editor + Terminal split ─────────────────────────────── */}
         <div className="flex flex-1 flex-col overflow-hidden">
+          {/* Diff Action Toolbar banner */}
+          {diffMode && activeFile && (
+            <div
+              className="flex items-center justify-between border-b px-3 py-1.5 text-xs font-medium"
+              style={{
+                borderColor: 'var(--theme-border)',
+                background: 'var(--theme-card)',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="flex size-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="font-semibold text-amber-400">Inline Diff View:</span>
+                <span className="text-[var(--theme-muted)]">
+                  {activeFile.isGit ? 'Comparing with Git HEAD' : 'Comparing with initial baseline'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleDeclineDiff()}
+                  disabled={diffActionLoading}
+                  className="flex items-center gap-1 rounded border border-red-500/40 bg-red-500/10 px-2.5 py-1 text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-50"
+                  title="Revert modified changes back to original baseline"
+                >
+                  <HugeiconsIcon icon={Cancel01Icon} size={13} />
+                  <span>Decline / Revert</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleAcceptDiff()}
+                  disabled={diffActionLoading}
+                  className="flex items-center gap-1 rounded border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 text-emerald-400 transition-colors hover:bg-emerald-500/20 disabled:opacity-50"
+                  title="Accept and save modified changes to file"
+                >
+                  <HugeiconsIcon icon={CheckmarkCircle01Icon} size={13} />
+                  <span>Accept Changes</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Editor area */}
           <div className="relative flex-1 min-h-0">
             {loadingFile && (
