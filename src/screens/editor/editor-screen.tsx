@@ -151,8 +151,8 @@ export function EditorScreen() {
   const [diffMode, setDiffMode] = useState(false)
   const [diffActionLoading, setDiffActionLoading] = useState(false)
   const [chatOpen, setChatOpen] = useState(true)
-  const chatSessionId = useWorkspaceStore((s) => s.chatPanelSessionKey)
-  const setChatSessionId = useWorkspaceStore((s) => s.setChatPanelSessionKey)
+  const chatSessionId = useWorkspaceStore((s) => s.editorSessionKey)
+  const setChatSessionId = useWorkspaceStore((s) => s.setEditorSessionKey)
   const [terminalKey, setTerminalKey] = useState(0)
 
   const [isMobile, setIsMobile] = useState(false)
@@ -1651,48 +1651,51 @@ export function EditorScreen() {
             className="text-[11px] font-bold uppercase tracking-wider"
             style={{ color: 'var(--theme-muted)' }}
           >
-            Agent
+            Code Agent
           </span>
         </div>
-        <select
-          value={chatSessionId}
-          onChange={(e) => {
-            if (e.target.value === '_new') {
-              setChatSessionId('new')
-            } else {
-              setChatSessionId(e.target.value)
-            }
-          }}
-          className="max-w-[200px] truncate rounded border px-2 py-1 text-[11px] outline-none transition-colors"
-          style={{
-            borderColor: 'var(--theme-border)',
-            background: 'var(--theme-bg)',
-            color: 'var(--theme-text)',
-          }}
-        >
-          {chatSessionId !== 'new' && (
-            <option
-              value="_new"
-              style={{
-                color: 'var(--theme-accent, #60a5fa)',
-                fontWeight: 'bold',
-              }}
-            >
-              + New Session
-            </option>
-          )}
-          {chatSessionId === 'new' && <option value="new">New Session</option>}
-          <option disabled>──────────</option>
-          <option value="main">Main Session</option>
-          <option disabled>──────────</option>
-          {sessions
-            .filter((s) => s.key !== 'main')
-            .map((s) => (
-              <option key={s.key} value={s.key}>
-                {s.title || 'Untitled Session'}
-              </option>
-            ))}
-        </select>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setChatSessionId('new')}
+            className="flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-medium transition-colors hover:bg-[var(--theme-card2)]"
+            style={{
+              borderColor: 'var(--theme-border)',
+              background: chatSessionId === 'new' ? 'var(--theme-accent)/20' : 'var(--theme-bg)',
+              color: chatSessionId === 'new' ? 'var(--theme-accent, #60a5fa)' : 'var(--theme-text)',
+            }}
+            title="Start fresh isolated coding session"
+          >
+            <HugeiconsIcon icon={PlusSignIcon} size={12} />
+            <span>New Task</span>
+          </button>
+          <select
+            value={chatSessionId}
+            onChange={(e) => {
+              if (e.target.value === '_new') {
+                setChatSessionId('new')
+              } else {
+                setChatSessionId(e.target.value)
+              }
+            }}
+            className="max-w-[160px] truncate rounded border px-2 py-1 text-[11px] outline-none transition-colors"
+            style={{
+              borderColor: 'var(--theme-border)',
+              background: 'var(--theme-bg)',
+              color: 'var(--theme-text)',
+            }}
+          >
+            {chatSessionId === 'new' && <option value="new">New Task Session</option>}
+            <option value="main">Main Session</option>
+            {sessions
+              .filter((s) => s.key !== 'main')
+              .map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.title || 'Untitled Session'}
+                </option>
+              ))}
+          </select>
+        </div>
       </div>
 
       <Suspense

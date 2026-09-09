@@ -84,7 +84,18 @@ function getSessionDisplayTitle(
   if (derivedTitle) return derivedTitle
 
   const title = normalizeTitleValue(session.title)
-  if (title) return title
+  if (title) {
+    // If it has [Workspace: ...], clean it up or display cleanly
+    if (title.startsWith('[Workspace:')) {
+      const match = title.match(/\[Workspace:\s*([^\]]+)\]\s*(.*)/)
+      if (match) {
+        const folderName = match[1].split('/').filter(Boolean).pop() || match[1]
+        const rest = match[2]?.trim()
+        return rest ? `[${folderName}] ${rest}` : `Code: ${folderName}`
+      }
+    }
+    return title
+  }
 
   if (isGenerating) return 'Naming…'
   const shortId = getSessionShortId(session)

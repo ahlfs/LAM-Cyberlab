@@ -9,8 +9,10 @@ type WorkspaceState = {
   activeSubPage: string | null
   /** Chat panel visible alongside non-chat routes */
   chatPanelOpen: boolean
-  /** Session key for the chat panel (defaults to 'main') */
+  /** Session key for the general chat panel (defaults to 'main') */
   chatPanelSessionKey: string
+  /** Dedicated Session key specifically for Code Editor Agent (isolated from general chat) */
+  editorSessionKey: string
   /** The directory/workspace currently selected in the Code Editor */
   activeWorkspacePath: string | null
   /** File path currently open in the Code Editor — used for breadcrumb context injection */
@@ -29,6 +31,7 @@ type WorkspaceState = {
   toggleChatPanel: () => void
   setChatPanelOpen: (open: boolean) => void
   setChatPanelSessionKey: (key: string) => void
+  setEditorSessionKey: (key: string) => void
   setActiveWorkspacePath: (path: string | null) => void
   setActiveEditorFile: (path: string | null) => void
   setMobileKeyboardOpen: (open: boolean) => void
@@ -45,6 +48,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       activeSubPage: null,
       chatPanelOpen: false,
       chatPanelSessionKey: 'main',
+      editorSessionKey: 'new',
       activeWorkspacePath: null,
       activeEditorFile: null,
       mobileKeyboardOpen: false,
@@ -63,13 +67,14 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       setActiveSubPage: (page) => set({ activeSubPage: page }),
       toggleChatPanel: () => set((s) => ({ chatPanelOpen: !s.chatPanelOpen })),
       setChatPanelOpen: (open) => set({ chatPanelOpen: open }),
+      setChatPanelSessionKey: (key) => set({ chatPanelSessionKey: key }),
+      setEditorSessionKey: (key) => set({ editorSessionKey: key }),
       setActiveWorkspacePath: (path) => set({ activeWorkspacePath: path }),
       setActiveEditorFile: (path) => set({ activeEditorFile: path }),
       setMobileKeyboardOpen: (open) => set({ mobileKeyboardOpen: open }),
       setMobileKeyboardInset: (inset) => set({ mobileKeyboardInset: inset }),
       setMobileComposerFocused: (focused) =>
         set({ mobileComposerFocused: focused }),
-      setChatPanelSessionKey: (key) => set({ chatPanelSessionKey: key }),
     }),
     {
       name: 'hermes-workspace-v1',
@@ -78,6 +83,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
         fileExplorerCollapsed: state.fileExplorerCollapsed,
         chatPanelOpen: state.chatPanelOpen,
         chatPanelSessionKey: state.chatPanelSessionKey,
+        editorSessionKey: state.editorSessionKey,
         activeWorkspacePath: state.activeWorkspacePath,
       }),
     },
