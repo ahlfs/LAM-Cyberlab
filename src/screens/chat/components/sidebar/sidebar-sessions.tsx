@@ -51,6 +51,14 @@ export const SidebarSessions = memo(function SidebarSessions({
     const pinned: Array<SessionMeta> = []
     const unpinned: Array<SessionMeta> = []
     for (const session of sessions) {
+      // Filter out editor workspace sessions from general chat sidebar
+      const title = session.title || ''
+      const isWorkspaceSession =
+        title.startsWith('[Workspace:') ||
+        title.startsWith('Code:') ||
+        session.key.startsWith('editor-')
+      if (isWorkspaceSession) continue
+
       if (pinnedKeys.has(session.key)) {
         pinned.push(session)
       } else {

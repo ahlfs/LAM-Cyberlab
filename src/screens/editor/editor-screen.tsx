@@ -16,6 +16,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -165,15 +166,6 @@ export function EditorScreen() {
     return () => media.removeEventListener('change', update)
   }, [])
 
-  const { sessions } = useChatSessions({
-    activeFriendlyId: chatSessionId,
-    isNewChat: false,
-  })
-  const editorRef = useRef<any>(null)
-  const monacoRef = useRef<any>(null)
-  const decorationsRef = useRef<any[]>([])
-  const viewZonesRef = useRef<string[]>([])
-
   const [projects, setProjects] = useState<ProjectInfo[]>([])
   const activeWorkspacePath = useWorkspaceStore((s) => s.activeWorkspacePath)
   const setActiveWorkspacePath = useWorkspaceStore(
@@ -182,6 +174,35 @@ export function EditorScreen() {
   const selectedFolder = activeWorkspacePath || ''
   const setSelectedFolder = (path: string) =>
     setActiveWorkspacePath(path || null)
+
+  const { sessions } = useChatSessions({
+    activeFriendlyId: chatSessionId,
+    isNewChat: false,
+  })
+
+  // Filter sessions specifically relevant to Code Editor / active workspace
+  const editorSessions = useMemo(() => {
+    return sessions.filter((s) => {
+      if (s.key === 'main') return false
+      const title = s.title || ''
+      const isExplicitEditor =
+        title.startsWith('[Workspace:') ||
+        title.startsWith('Code:') ||
+        s.key.startsWith('editor-')
+      if (isExplicitEditor) {
+        if (!selectedFolder) return true
+        // If workspace is selected, match folder name in title
+        const folderName = selectedFolder.split('/').filter(Boolean).pop()
+        return folderName ? title.includes(folderName) : true
+      }
+      return false
+    })
+  }, [sessions, selectedFolder])
+
+  const editorRef = useRef<any>(null)
+  const monacoRef = useRef<any>(null)
+  const decorationsRef = useRef<any[]>([])
+  const viewZonesRef = useRef<string[]>([])
 
   const [folderModalOpen, setFolderModalOpen] = useState(false)
   const [fileTreeVersion, setFileTreeVersion] = useState(0)
@@ -1686,14 +1707,15 @@ export function EditorScreen() {
             }}
           >
             {chatSessionId === 'new' && <option value="new">New Task Session</option>}
-            <option value="main">Main Session</option>
-            {sessions
-              .filter((s) => s.key !== 'main')
-              .map((s) => (
+            {editorSessions.length > 0 ? (
+              editorSessions.map((s) => (
                 <option key={s.key} value={s.key}>
                   {s.title || 'Untitled Session'}
                 </option>
-              ))}
+              ))
+            ) : (
+              <option disabled>No workspace tasks yet</option>
+            )}
           </select>
         </div>
       </div>
