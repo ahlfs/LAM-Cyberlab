@@ -213,7 +213,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     (search as any)?.embed === 'true' ||
     (search as any)?.mode === 'embed'
   const isChromeFreeSurface = isEmbeddedSurface
-  const hideChatSidebar = isOnChatRoute && chatFocusMode
+  const hideChatSidebar = (isOnChatRoute && chatFocusMode) || isOnEditorRoute
   const showDesktopSidebarBackdrop =
     !isChromeFreeSurface && !isMobile && !isOnChatRoute && !sidebarCollapsed
 
