@@ -2835,6 +2835,55 @@ function MessageItemComponent({
     )
   }
 
+  // Auto-collapse Hermes runtime Context Compaction markers into clean collapsible pill
+  const isContextCompaction =
+    fullText.includes('[CONTEXT COMPACTION') ||
+    fullText.includes('--- END OF CONTEXT SUMMARY')
+
+  if (isContextCompaction) {
+    // Extract the actual user message that follows the compaction summary
+    const actualUserText = fullText.includes('--- END OF CONTEXT SUMMARY ---')
+      ? fullText.split('--- END OF CONTEXT SUMMARY ---').pop()?.trim() || ''
+      : ''
+
+    return (
+      <div
+        ref={wrapperRef}
+        data-chat-message-role={role}
+        data-chat-message-id={wrapperDataMessageId}
+        style={
+          typeof wrapperScrollMarginTop === 'number'
+            ? { scrollMarginTop: `${wrapperScrollMarginTop}px` }
+            : undefined
+        }
+        className={cn('w-full flex flex-col items-center my-3 gap-2', wrapperClassName)}
+      >
+        <details className="group max-w-xl w-full border border-dashed border-[var(--theme-border)] bg-[var(--theme-card)]/40 rounded-xl px-3 py-2 text-xs transition-all">
+          <summary className="cursor-pointer font-mono font-medium text-[var(--theme-muted)] hover:text-[var(--theme-text)] flex items-center justify-between select-none">
+            <span className="flex items-center gap-2">
+              <span className="inline-block size-2 rounded-full bg-amber-400/80" />
+              <span>⚡ Memory & Context Compaction Applied</span>
+            </span>
+            <span className="text-[10px] bg-[var(--theme-card2)] px-1.5 py-0.5 rounded text-[var(--theme-muted)] group-open:hidden">
+              Show Handoff Details
+            </span>
+          </summary>
+          <div className="mt-2.5 pt-2 border-t border-[var(--theme-border)] max-h-60 overflow-y-auto text-[11px] font-mono text-[var(--theme-muted)] whitespace-pre-wrap leading-relaxed">
+            {fullText}
+          </div>
+        </details>
+
+        {actualUserText.length > 0 && (
+          <div className="w-full flex justify-end">
+            <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-primary-600 text-white shadow-xs font-sans">
+              {actualUserText}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div
       ref={wrapperRef}

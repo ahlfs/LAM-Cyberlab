@@ -839,6 +839,19 @@ export const Route = createFileRoute('/api/files')({
               : ensureWorkspacePath(String(body.to || ''), workspaceRoot)
             await fs.mkdir(path.dirname(toPath), { recursive: true })
             await fs.rename(fromPath, toPath)
+
+            // Update Shadow Baseline Snapshots
+            for (const [snapKey, snapVal] of baselineSnapshots.entries()) {
+              if (snapKey === fromPath) {
+                baselineSnapshots.delete(fromPath)
+                baselineSnapshots.set(toPath, snapVal)
+              } else if (snapKey.startsWith(fromPath + '/')) {
+                const subPath = snapKey.slice(fromPath.length)
+                baselineSnapshots.delete(snapKey)
+                baselineSnapshots.set(toPath + subPath, snapVal)
+              }
+            }
+
             return json({
               ok: true,
               path: browseMode ? toPath : toRelative(toPath, workspaceRoot),
@@ -874,6 +887,14 @@ export const Route = createFileRoute('/api/files')({
               // Fallback to rm -rf if trash is not available
               await fs.rm(targetPath, { recursive: true, force: true })
             }
+
+            // Cleanup deleted paths from Shadow Baseline Snapshots
+            for (const snapKey of baselineSnapshots.keys()) {
+              if (snapKey === targetPath || snapKey.startsWith(targetPath + '/')) {
+                baselineSnapshots.delete(snapKey)
+              }
+            }
+
             return json({ ok: true })
           }
 
@@ -971,6 +992,15 @@ export const Route = createFileRoute('/api/files')({
 
           await fs.mkdir(path.dirname(filePath), { recursive: true })
           await fs.writeFile(filePath, content, 'utf8')
+
+          // If this is a manual user save from Editor, update baseline to current saved content
+          if (body.action === 'save') {
+            baselineSnapshots.set(filePath, {
+              content,
+              mtime: Date.now(),
+            })
+          }
+
           return json({
             ok: true,
             path: browseMode ? filePath : toRelative(filePath, workspaceRoot),

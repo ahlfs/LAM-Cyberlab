@@ -2,41 +2,41 @@
 @import 'devicon/devicon.min.css';
 @import 'tailwindcss';
 
-/* ── Monaco Single-Editor Diff Highlight (Stabilo Green & Red) ── */
+/* ── Monaco Single-Editor Diff Highlight (Subtle VS Code / Cursor Style) ── */
 .monaco-editor .diff-line-added,
 .diff-line-added,
 .monaco-editor .view-overlays .diff-line-added {
-  background-color: rgba(34, 197, 94, 0.28) !important;
+  background-color: rgba(34, 197, 94, 0.12) !important;
   border-left: 3px solid #22c55e !important;
   z-index: 10 !important;
 }
 .monaco-editor .diff-line-deleted,
 .diff-line-deleted,
 .monaco-editor .view-overlays .diff-line-deleted {
-  background-color: rgba(239, 68, 68, 0.28) !important;
+  background-color: rgba(239, 68, 68, 0.12) !important;
   border-left: 3px solid #ef4444 !important;
   z-index: 10 !important;
 }
 .monaco-editor .diff-gutter-added,
 .diff-gutter-added {
   background: #22c55e !important;
-  width: 5px !important;
+  width: 4px !important;
   margin-left: 2px !important;
   display: block !important;
 }
 .monaco-editor .diff-gutter-deleted,
 .diff-gutter-deleted {
   background: #ef4444 !important;
-  width: 5px !important;
+  width: 4px !important;
   margin-left: 2px !important;
   display: block !important;
 }
 .diff-inline-added {
-  background-color: rgba(34, 197, 94, 0.35) !important;
+  background-color: rgba(34, 197, 94, 0.22) !important;
   border-radius: 2px;
 }
 .diff-inline-deleted {
-  background-color: rgba(239, 68, 68, 0.35) !important;
+  background-color: rgba(239, 68, 68, 0.22) !important;
   border-radius: 2px;
 }
 .diff-overview-added {
@@ -46,11 +46,11 @@
   background: #ef4444 !important;
 }
 
-/* Inline Diff Deleted ViewZone Widget (Red phantom block for deleted code) */
+/* Inline Diff Deleted ViewZone Widget (Subtle red phantom block for deleted code) */
 .diff-deleted-viewzone {
-  background-color: rgba(239, 68, 68, 0.18) !important;
+  background-color: rgba(239, 68, 68, 0.10) !important;
   border-left: 3px solid #ef4444 !important;
-  color: #f87171 !important;
+  color: #fca5a5 !important;
   font-family: 'JetBrains Mono', 'Fira Code', Menlo, Monaco, monospace !important;
   font-size: 13px !important;
   line-height: 19px !important;
@@ -59,9 +59,9 @@
   box-sizing: border-box !important;
   padding: 0 0 0 4px !important;
   text-decoration: line-through !important;
-  text-decoration-color: rgba(239, 68, 68, 0.7) !important;
+  text-decoration-color: rgba(239, 68, 68, 0.5) !important;
   user-select: none !important;
-  opacity: 0.88 !important;
+  opacity: 0.9 !important;
 }
 .diff-deleted-viewzone-line {
   height: 19px !important;

@@ -179,21 +179,12 @@ export const Route = createFileRoute('/api/file-diff')({
             // 2. Get AI modified files from shadow baseline (for AI diff review & accept buttons)
             const aiFiles = await getAiModifiedFiles(targetDir)
 
-            // Merge for review panel
-            const mergedMap = new Map<string, { path: string; status: string; staged: boolean }>()
-            for (const f of gitStatus.files) {
-              mergedMap.set(f.path, f)
-            }
-            for (const f of aiFiles) {
-              mergedMap.set(f.path, f)
-            }
-
             return json({
               ok: true,
               isGit: gitStatus.isGit,
               gitFiles: gitStatus.files,
               aiFiles,
-              files: Array.from(mergedMap.values()),
+              files: aiFiles,
             })
           }
 

@@ -403,6 +403,14 @@ export function EditorScreen() {
     const original = activeFile.gitOriginalContent ?? activeFile.originalContent ?? ''
     const current = activeFile.content ?? ''
 
+    // Safety guard: skip heavy diff calculation if file is extremely large (> 500KB or > 10,000 lines)
+    if (original.length > 500_000 || current.length > 500_000) {
+      if (decorationsRef.current.length > 0) {
+        decorationsRef.current = editor.deltaDecorations(decorationsRef.current, [])
+      }
+      return
+    }
+
     // Compute line diff
     const diffs = Diff.diffLines(original, current)
     const newDecorations: any[] = []
@@ -713,6 +721,7 @@ export function EditorScreen() {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
+      // Update active tab state
       setTabs((prev) =>
         prev.map((t) =>
           t.path === activeFile.path
@@ -726,6 +735,9 @@ export function EditorScreen() {
             : t,
         ),
       )
+
+      // Remove from changedFiles state
+      setChangedFiles((prev) => prev.filter((f) => f.path !== activeFile.path))
       setDiffMode(false)
       setEditorVersion((v) => v + 1)
       toast(`Accepted changes for ${activeFile.name}`, { type: 'success' })
@@ -764,6 +776,7 @@ export function EditorScreen() {
         })),
       )
       setDiffMode(false)
+      setChangedFiles([])
       setEditorVersion((v) => v + 1)
       toast(`Accepted all ${changedFiles.length} changed files`, {
         type: 'success',
@@ -879,7 +892,7 @@ export function EditorScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'write',
+          action: 'save',
           path: activeFile.path,
           content: activeFile.content,
         }),
@@ -889,11 +902,15 @@ export function EditorScreen() {
       setTabs((prev) =>
         prev.map((t) =>
           t.path === activeFile.path
-            ? { ...t, dirty: false, originalContent: t.content }
+            ? { ...t, dirty: false, originalContent: t.content, gitOriginalContent: t.content }
             : t,
         ),
       )
+      setDiffMode(false)
+      setChangedFiles((prev) => prev.filter((f) => f.path !== activeFile.path))
+      setEditorVersion((v) => v + 1)
       toast(`Saved ${activeFile.name}`, { type: 'success' })
+      void fetchChangedFiles()
     } catch (err: any) {
       toast(`Save failed: ${err?.message ?? 'Unknown error'}`, {
         type: 'error',
@@ -901,7 +918,7 @@ export function EditorScreen() {
     } finally {
       setSaving(false)
     }
-  }, [activeFile])
+  }, [activeFile, fetchChangedFiles])
 
   /* ── Create File/Folder ───────────────────────────────────────────── */
 
@@ -1435,10 +1452,14 @@ export function EditorScreen() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             {changedFiles.map((file) => {
               const fileName = file.path.split('/').pop() || file.path
               const isActive = activeTab === file.path
+              const isModified = file.status.includes('M')
+              const isUntracked = file.status.includes('A') || file.status.includes('?') || file.status === 'U'
+              const isDeleted = file.status.includes('D')
+
               return (
                 <button
                   key={file.path}
@@ -1451,22 +1472,30 @@ export function EditorScreen() {
                     })
                   }
                   className={cn(
-                    'flex items-center justify-between rounded px-2 py-1 text-left text-xs font-mono transition-colors',
+                    'flex items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs font-mono transition-all border',
                     isActive
-                      ? 'bg-[var(--theme-accent)]/20 text-[var(--theme-accent)] font-semibold'
-                      : 'text-[var(--theme-text)] hover:bg-[var(--theme-card)]',
+                      ? 'bg-[var(--theme-accent)]/20 text-[var(--theme-accent)] border-[var(--theme-accent)]/40 font-semibold shadow-xs'
+                      : 'border-transparent text-[var(--theme-text)] hover:bg-[var(--theme-card2)] hover:border-[var(--theme-border)]',
                   )}
                   title={file.path}
                 >
-                  <span className="truncate max-w-[170px]">{fileName}</span>
                   <span
                     className={cn(
-                      'ml-1 shrink-0 rounded px-1 text-[10px] font-bold',
-                      file.status.includes('M')
-                        ? 'bg-amber-500/20 text-amber-400'
-                        : file.status.includes('A') || file.status.includes('?')
-                          ? 'bg-emerald-500/20 text-emerald-400'
-                          : 'bg-red-500/20 text-red-400',
+                      'truncate max-w-[160px] font-medium',
+                      isModified && 'text-[#fbbf24]',
+                      isUntracked && 'text-[#34d399]',
+                      isDeleted && 'text-[#f87171] line-through opacity-80',
+                    )}
+                  >
+                    {fileName}
+                  </span>
+                  <span
+                    className={cn(
+                      'ml-1 shrink-0 rounded px-1.5 py-0.2 text-[10px] font-bold font-mono border shadow-2xs',
+                      isModified && 'bg-[#fbbf24]/15 text-[#fbbf24] border-[#fbbf24]/30',
+                      isUntracked && 'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/30',
+                      isDeleted && 'bg-[#f87171]/15 text-[#f87171] border-[#f87171]/30',
+                      !isModified && !isUntracked && !isDeleted && 'bg-[var(--theme-card)] text-[var(--theme-muted)] border-[var(--theme-border)]',
                     )}
                   >
                     {file.status}
@@ -1578,6 +1607,38 @@ export function EditorScreen() {
               <span>{saving ? 'Saving…' : 'Save'}</span>
             </button>
           )}
+
+          {/* Terminal Toggle */}
+          <button
+            type="button"
+            onClick={toggleTerminal}
+            className={cn(
+              'mr-1 flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors',
+              terminalOpen
+                ? 'border-[var(--theme-accent)]/40 bg-[var(--theme-accent)]/15 text-[var(--theme-accent)]'
+                : 'border-[var(--theme-border)] text-[var(--theme-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-card2)]',
+            )}
+            title={terminalOpen ? 'Hide Terminal (` Ctrl+` )' : 'Open Terminal (` Ctrl+` )'}
+          >
+            <HugeiconsIcon icon={ComputerTerminal01Icon} size={14} />
+            <span className="hidden sm:inline">Terminal</span>
+          </button>
+
+          {/* Code Agent Chat Toggle */}
+          <button
+            type="button"
+            onClick={() => setChatOpen((prev) => !prev)}
+            className={cn(
+              'mr-2 flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors',
+              chatOpen
+                ? 'border-[var(--theme-accent)]/40 bg-[var(--theme-accent)]/15 text-[var(--theme-accent)]'
+                : 'border-[var(--theme-border)] text-[var(--theme-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-card2)]',
+            )}
+            title={chatOpen ? 'Hide Code Agent Panel' : 'Show Code Agent Panel'}
+          >
+            <HugeiconsIcon icon={Message02Icon} size={14} />
+            <span className="hidden sm:inline">Code Agent</span>
+          </button>
         </div>
 
         {/* ── Editor + Terminal split ─────────────────────────────── */}
@@ -1716,7 +1777,7 @@ export function EditorScreen() {
                   </div>
 
                   <div
-                    className="mt-2 w-full max-w-sm rounded-lg border p-2 text-left divide-y divide-[var(--theme-border)] max-h-48 overflow-y-auto"
+                    className="mt-2 w-full max-w-sm rounded-lg border p-2 text-left space-y-1 max-h-48 overflow-y-auto"
                     style={{
                       borderColor: 'var(--theme-border)',
                       background: 'var(--theme-card)',
@@ -1724,6 +1785,10 @@ export function EditorScreen() {
                   >
                     {changedFiles.map((f) => {
                       const fName = f.path.split('/').pop() || f.path
+                      const isModified = f.status.includes('M')
+                      const isUntracked = f.status.includes('A') || f.status.includes('?') || f.status === 'U'
+                      const isDeleted = f.status.includes('D')
+
                       return (
                         <button
                           key={f.path}
@@ -1735,15 +1800,26 @@ export function EditorScreen() {
                               type: 'file',
                             })
                           }
-                          className="flex w-full items-center justify-between py-1.5 px-2 text-xs font-mono hover:bg-[var(--theme-card2)] rounded transition-colors"
+                          className="flex w-full items-center justify-between py-1.5 px-2.5 text-xs font-mono hover:bg-[var(--theme-card2)] rounded-md transition-colors border border-transparent hover:border-[var(--theme-border)]"
                         >
-                          <span className="truncate text-[var(--theme-text)]">{fName}</span>
                           <span
                             className={cn(
-                              'ml-2 rounded px-1 text-[10px] font-bold shrink-0',
-                              f.status === 'M' && 'bg-amber-500/20 text-amber-400',
-                              f.status === 'U' && 'bg-emerald-500/20 text-emerald-400',
-                              f.status === 'D' && 'bg-red-500/20 text-red-400',
+                              'truncate font-medium',
+                              isModified && 'text-[#fbbf24]',
+                              isUntracked && 'text-[#34d399]',
+                              isDeleted && 'text-[#f87171] line-through opacity-80',
+                              !isModified && !isUntracked && !isDeleted && 'text-[var(--theme-text)]',
+                            )}
+                          >
+                            {fName}
+                          </span>
+                          <span
+                            className={cn(
+                              'ml-2 rounded px-1.5 py-0.2 text-[10px] font-bold font-mono shrink-0 border shadow-2xs',
+                              isModified && 'bg-[#fbbf24]/15 text-[#fbbf24] border-[#fbbf24]/30',
+                              isUntracked && 'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/30',
+                              isDeleted && 'bg-[#f87171]/15 text-[#f87171] border-[#f87171]/30',
+                              !isModified && !isUntracked && !isDeleted && 'bg-[var(--theme-card)] text-[var(--theme-muted)] border-[var(--theme-border)]',
                             )}
                           >
                             {f.status}
@@ -2099,13 +2175,12 @@ export function EditorScreen() {
         </>
       ) : (
         <PanelGroup
-          direction="horizontal"
-          autoSaveId="editor-panels-layout-v4"
+          orientation="horizontal"
           className="flex h-full w-full"
         >
           {sidebarOpen && (
             <>
-              <Panel id="sidebar" order={1} defaultSize={25} minSize={15}>
+              <Panel id="sidebar" defaultSize="20%" minSize="12%" maxSize="40%">
                 {sidebarElement}
               </Panel>
               <PanelResizeHandle className="w-2 relative bg-transparent hover:bg-primary-300 active:bg-primary-400 transition-colors cursor-col-resize z-50 group">
@@ -2116,8 +2191,7 @@ export function EditorScreen() {
 
           <Panel
             id="editor"
-            order={2}
-            defaultSize={sidebarOpen && chatOpen ? 40 : undefined}
+            minSize="25%"
           >
             {editorElement}
           </Panel>
@@ -2127,7 +2201,7 @@ export function EditorScreen() {
               <PanelResizeHandle className="w-2 relative bg-transparent hover:bg-primary-300 active:bg-primary-400 transition-colors cursor-col-resize z-50 group">
                 <div className="absolute inset-y-0 left-[3px] w-[1px] bg-border group-hover:bg-transparent" />
               </PanelResizeHandle>
-              <Panel id="chat" order={3} defaultSize={35} minSize={15}>
+              <Panel id="chat" defaultSize="35%" minSize="20%" maxSize="60%">
                 {chatElement}
               </Panel>
             </>

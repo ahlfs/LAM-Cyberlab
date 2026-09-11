@@ -592,19 +592,25 @@ function collectFilesFromDataTransfer(dt: DataTransfer | null): Array<File> {
 
   const pushFile = (file: File | null) => {
     if (!file) return
-    const key = `${file.name}:${file.size}:${file.lastModified}:${file.type}`
+    // In Chromium/Firefox, clipboard image blobs generated from item.getAsFile() might have name 'image.png'
+    // but identical size or content. We use size and type to deduplicate identical files in the same clipboard payload.
+    const key = `${file.name}:${file.size}:${file.type}`
     if (seen.has(key)) return
     seen.add(key)
     files.push(file)
   }
 
-  for (const item of Array.from(dt.items)) {
-    if (item.kind !== 'file') continue
-    pushFile(item.getAsFile())
-  }
-
-  for (const file of Array.from(dt.files)) {
-    pushFile(file)
+  // Priority 1: dt.files (Standard file payload)
+  if (dt.files && dt.files.length > 0) {
+    for (const file of Array.from(dt.files)) {
+      pushFile(file)
+    }
+  } else if (dt.items && dt.items.length > 0) {
+    // Priority 2: dt.items (Clipboard screenshot / items)
+    for (const item of Array.from(dt.items)) {
+      if (item.kind !== 'file') continue
+      pushFile(item.getAsFile())
+    }
   }
 
   return files

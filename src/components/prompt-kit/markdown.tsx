@@ -10,6 +10,72 @@ import type { Components } from 'react-markdown'
 import { cn } from '@/lib/utils'
 
 /**
+ * Common LaTeX math symbol map for lightweight, zero-dependency symbol resolution.
+ * Converts LaTeX math fragments like $\rightarrow$, $\alpha$, $\pm$, etc. into clean Unicode symbols.
+ */
+const LATEX_SYMBOL_MAP: Record<string, string> = {
+  rightarrow: '→',
+  leftarrow: '←',
+  Rightarrow: '⇒',
+  Leftarrow: '⇐',
+  leftrightarrow: '↔',
+  Leftrightarrow: '⇔',
+  to: '→',
+  mapsto: '↦',
+  uparrow: '↑',
+  downarrow: '↓',
+  pm: '±',
+  times: '×',
+  div: '÷',
+  cdot: '·',
+  approx: '≈',
+  neq: '≠',
+  ne: '≠',
+  leq: '≤',
+  le: '≤',
+  geq: '≥',
+  ge: '≥',
+  infty: '∞',
+  alpha: 'α',
+  beta: 'β',
+  gamma: 'γ',
+  delta: 'δ',
+  epsilon: 'ε',
+  theta: 'θ',
+  lambda: 'λ',
+  mu: 'μ',
+  pi: 'π',
+  sigma: 'σ',
+  tau: 'τ',
+  phi: 'φ',
+  omega: 'ω',
+  sum: '∑',
+  prod: '∏',
+  int: '∫',
+  sqrt: '√',
+}
+
+/**
+ * Clean & replace inline LaTeX math syntax (e.g. $\rightarrow$, $\alpha$) into clean unicode/readable text
+ */
+export function normalizeLatexMathSymbols(content: string): string {
+  if (!content || !content.includes('$')) return content
+
+  // Replace inline LaTeX like $\command$ or $ \command $
+  return content.replace(/\$(?:\\([a-zA-Z]+)|\s*([^\$]+?)\s*)\$/g, (match, cmd, expr) => {
+    const symbolKey = (cmd || expr || '').trim().replace(/^\\/, '')
+    if (LATEX_SYMBOL_MAP[symbolKey]) {
+      return LATEX_SYMBOL_MAP[symbolKey]
+    }
+    // Handle arrow representations inside math blocks
+    if (match.includes('\\rightarrow') || match.includes('\\to')) {
+      return match.replace(/\$(.*?)\$/g, '$1').replace(/\\(?:rightarrow|to)/g, '→').replace(/\\/g, '')
+    }
+    return match
+  })
+}
+
+/**
  * Rewrite Workspace-local `MEDIA:<path>` tokens emitted by Hermes Agent to the
  * authenticated media endpoint. Messaging bridges intercept MEDIA tags before
  * rendering; the web chat sees raw markdown/HTML and needs this client-side
@@ -476,7 +542,7 @@ function MarkdownComponent({
   const generatedId = useId()
   const blockId = id ?? generatedId
   const blocks = useMemo(
-    () => parseMarkdownIntoBlocks(rewriteLocalMediaSources(children)),
+    () => parseMarkdownIntoBlocks(rewriteLocalMediaSources(normalizeLatexMathSymbols(children))),
     [children],
   )
 

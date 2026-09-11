@@ -201,10 +201,11 @@ function TreeNode({
         {/* Name */}
         <span
           className={cn(
-            'min-w-0 truncate font-mono',
-            entry.gitStatus === 'M' && 'text-amber-400',
-            entry.gitStatus === 'U' && 'text-emerald-400',
-            entry.gitStatus === 'D' && 'text-red-400 line-through opacity-70',
+            'min-w-0 truncate font-mono transition-colors',
+            entry.gitStatus === 'M' && 'text-[#fbbf24] font-medium',
+            entry.gitStatus === 'U' && 'text-[#34d399] font-medium',
+            entry.gitStatus === 'D' && 'text-[#f87171] line-through opacity-80',
+            entry.gitStatus === 'R' && 'text-[#60a5fa] font-medium',
           )}
         >
           {entry.name}
@@ -214,11 +215,11 @@ function TreeNode({
         {entry.gitStatus && (
           <span
             className={cn(
-              'ml-1 text-[10px] font-bold font-mono px-1 rounded shrink-0',
-              entry.gitStatus === 'M' && 'text-amber-400 bg-amber-400/15',
-              entry.gitStatus === 'U' && 'text-emerald-400 bg-emerald-400/15',
-              entry.gitStatus === 'D' && 'text-red-400 bg-red-400/15',
-              entry.gitStatus === 'R' && 'text-blue-400 bg-blue-400/15',
+              'ml-auto text-[10px] font-bold font-mono px-1.5 py-0.2 rounded shrink-0 shadow-xs border',
+              entry.gitStatus === 'M' && 'text-[#fbbf24] bg-[#fbbf24]/15 border-[#fbbf24]/30',
+              entry.gitStatus === 'U' && 'text-[#34d399] bg-[#34d399]/15 border-[#34d399]/30',
+              entry.gitStatus === 'D' && 'text-[#f87171] bg-[#f87171]/15 border-[#f87171]/30',
+              entry.gitStatus === 'R' && 'text-[#60a5fa] bg-[#60a5fa]/15 border-[#60a5fa]/30',
             )}
             title={`Git Status: ${entry.gitStatus}`}
           >
