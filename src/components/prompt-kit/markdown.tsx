@@ -540,7 +540,7 @@ function MarkdownComponent({
   components = INITIAL_COMPONENTS,
 }: MarkdownProps) {
   const generatedId = useId()
-  const blockId = id ?? generatedId
+  const blockId = id ?? 'md-static'
   const blocks = useMemo(
     () => parseMarkdownIntoBlocks(rewriteLocalMediaSources(normalizeLatexMathSymbols(children))),
     [children],

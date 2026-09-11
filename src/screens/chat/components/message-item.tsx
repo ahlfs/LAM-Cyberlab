@@ -3258,6 +3258,9 @@ function areMessagesEqual(
   prevProps: MessageItemProps,
   nextProps: MessageItemProps,
 ): boolean {
+  if (prevProps.isLastAssistant !== nextProps.isLastAssistant) {
+    return false
+  }
   if (prevProps.forceActionsVisible !== nextProps.forceActionsVisible) {
     return false
   }
