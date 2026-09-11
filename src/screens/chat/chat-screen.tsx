@@ -427,7 +427,13 @@ function shouldCollapseTextDuplicate(
   if (existing.role !== candidate.role) return false
 
   if (candidate.role === 'assistant') {
-    return true
+    // Collapse duplicate assistant responses if their content/tools match
+    const existingText = stripQueuedWrapper(textFromMessage(existing)).trim()
+    const candidateText = stripQueuedWrapper(textFromMessage(candidate)).trim()
+    if (existingText.length > 0 && candidateText.length > 0 && existingText === candidateText) {
+      return true
+    }
+    return false
   }
 
   if (candidate.role !== 'user') return false
@@ -435,7 +441,7 @@ function shouldCollapseTextDuplicate(
   const existingTs = getMessageTimestampValue(existing)
   const candidateTs = getMessageTimestampValue(candidate)
   if (existingTs !== null && candidateTs !== null) {
-    if (Math.abs(existingTs - candidateTs) > 15_000) return false
+    if (Math.abs(existingTs - candidateTs) > 60_000) return false
   }
 
   // Collapse same-turn user duplicates even after the optimistic marker has been
@@ -614,6 +620,12 @@ export function ChatScreen({
     })
   }, [sessions, embedded])
   const effectiveActiveSessionKey = activeSessionKeyProp || activeSessionKey
+  const storeWaiting = useChatStore((s) => s.waitingSessionKeys)
+  const isCurrentlyWaitingOrActive = Boolean(
+    sending ||
+    (effectiveActiveSessionKey && storeWaiting.has(effectiveActiveSessionKey))
+  )
+
   const {
     historyQuery,
     historyMessages,
@@ -632,7 +644,7 @@ export function ChatScreen({
     sessionsReady: sessionsQuery.isSuccess,
     queryClient,
     historyRefetchInterval:
-      sending
+      isCurrentlyWaitingOrActive
         ? false
         : sseConnectionState === 'connected'
           ? 30_000
@@ -644,7 +656,6 @@ export function ChatScreen({
   // resolvedSessionKey is now available (defined above from useChatHistory).
   const isNewChat = routeIsNewChat || resolvedSessionKey === 'new'
 
-  const storeWaiting = useChatStore((s) => s.waitingSessionKeys)
   const sessionKeyForWaiting = useRef<string | undefined>(undefined)
   const pendingVerifySessionKeyRef = useRef<string | undefined>(undefined)
 
