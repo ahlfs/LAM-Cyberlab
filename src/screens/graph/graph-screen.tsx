@@ -70,9 +70,25 @@ type SimLink = {
 
 // ── Color Schemes & Physics Helpers ─────────────────────────────────
 
-export function getNodeColor(type?: string): string {
+export function getNodeColor(type?: string, isDark: boolean = true): string {
   const normalized = (type?.toLowerCase() || 'concept') as GraphCategory
-  return CATEGORY_CONFIG[normalized]?.color || CATEGORY_CONFIG.concept.color
+  if (normalized === 'concept') {
+    return isDark ? '#f8fafc' : '#0f172a'
+  }
+  if (normalized === 'entity') {
+    return isDark ? '#2dd4bf' : '#0d9488'
+  }
+  if (normalized === 'project') {
+    return isDark ? '#10b981' : '#059669'
+  }
+  if (normalized === 'skill') {
+    return isDark ? '#f43f5e' : '#e11d48'
+  }
+  if (normalized === 'daily') {
+    return isDark ? '#38bdf8' : '#0284c7'
+  }
+  const fallback = CATEGORY_CONFIG[normalized] as { color: string } | undefined
+  return fallback?.color || (isDark ? '#f8fafc' : '#0f172a')
 }
 
 export function getNodeRadius(connections: number): number {
@@ -269,7 +285,7 @@ function CanvasRenderer({
       }
 
       const isCenter = hasFocus && node.id === activeFocus.centerId
-      const nodeColor = getNodeColor(node.type)
+      const nodeColor = getNodeColor(node.type, isDark)
 
       // Node Radius & Scale
       let radius = baseRadius
@@ -280,7 +296,7 @@ function CanvasRenderer({
       ctx.arc(node.x, node.y, radius, 0, Math.PI * 2)
 
       if (isCenter) {
-        ctx.fillStyle = '#ffffff'
+        ctx.fillStyle = isDark ? '#ffffff' : '#000000'
         ctx.shadowColor = nodeColor
         ctx.shadowBlur = 18
         ctx.globalAlpha = 1.0
@@ -290,14 +306,14 @@ function CanvasRenderer({
         ctx.shadowBlur = 10
         ctx.globalAlpha = 0.95
       } else if (isFaded) {
-        ctx.fillStyle = isDark ? '#475569' : '#94a3b8'
+        ctx.fillStyle = isDark ? '#475569' : '#cbd5e1'
         ctx.shadowBlur = 0
-        ctx.globalAlpha = 0.12
+        ctx.globalAlpha = isDark ? 0.12 : 0.18
       } else {
         ctx.fillStyle = nodeColor
         ctx.shadowColor = nodeColor
-        ctx.shadowBlur = 4
-        ctx.globalAlpha = 0.85
+        ctx.shadowBlur = isDark ? 4 : 2
+        ctx.globalAlpha = isDark ? 0.9 : 0.95
       }
 
       ctx.fill()
@@ -352,7 +368,7 @@ function CanvasRenderer({
         )
 
         ctx.strokeStyle = isCenter
-          ? (CATEGORY_CONFIG[(node.type?.toLowerCase() || 'concept') as GraphCategory]?.color || '#f8fafc')
+          ? nodeColor
           : (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)')
         ctx.lineWidth = isCenter ? 1.5 : 1
         ctx.strokeRect(
