@@ -665,7 +665,18 @@ function CanvasRenderer({
     let clickStartY = 0
     let clickedNodeCandidate: SimNode | null = null
 
+    const isEventOverModalOrOverlay = (e: MouseEvent): boolean => {
+      const target = e.target as HTMLElement | null
+      if (!target) return false
+      // If event happened on something outside this canvas (e.g. settings modal dialog, drawer, overlay)
+      if (target !== canvas && !canvas.contains(target)) {
+        return true
+      }
+      return false
+    }
+
     const handleMouseDown = (e: MouseEvent) => {
+      if (isEventOverModalOrOverlay(e)) return
       const rect = canvas.getBoundingClientRect()
       const screenX = e.clientX - rect.left
       const screenY = e.clientY - rect.top
@@ -698,6 +709,15 @@ function CanvasRenderer({
     }
 
     const handleMouseMove = (e: MouseEvent) => {
+      if (isEventOverModalOrOverlay(e)) {
+        if (hoveredNodeIdRef.current !== null) {
+          hoveredNodeIdRef.current = null
+          onHover(null)
+          renderFrame()
+        }
+        return
+      }
+
       const rect = canvas.getBoundingClientRect()
       const screenX = e.clientX - rect.left
       const screenY = e.clientY - rect.top
@@ -726,6 +746,7 @@ function CanvasRenderer({
     }
 
     const handleMouseUp = (e: MouseEvent) => {
+      if (isEventOverModalOrOverlay(e)) return
       const rect = canvas.getBoundingClientRect()
       const screenX = e.clientX - rect.left
       const screenY = e.clientY - rect.top
