@@ -611,6 +611,7 @@ function CanvasRenderer({
         const hitNode = getNodeAtScreenPos(screenX, screenY)
         canvas.style.cursor = hitNode ? 'pointer' : 'grab'
         onHover(hitNode ? hitNode.id : null)
+        renderFrame()
       }
     }
 
