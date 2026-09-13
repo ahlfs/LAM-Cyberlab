@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { cn } from '@/lib/utils'
+import { useCurrentTheme } from '@/lib/theme'
 
 export type GraphCategory = 'concept' | 'entity' | 'project' | 'skill' | 'daily'
 
@@ -38,13 +39,17 @@ type GraphFilterBarProps = {
   activeCategories: Set<string>
   counts: Record<string, number>
   onToggleCategory: (category: GraphCategory) => void
+  getNodeColorDynamic?: (cat: string) => string
 }
 
 export const GraphFilterBar = memo(function GraphFilterBar({
   activeCategories,
   counts,
   onToggleCategory,
+  getNodeColorDynamic,
 }: GraphFilterBarProps) {
+  const { isDark } = useCurrentTheme()
+
   const categories: GraphCategory[] = [
     'concept',
     'entity',
@@ -59,6 +64,7 @@ export const GraphFilterBar = memo(function GraphFilterBar({
         const config = CATEGORY_CONFIG[cat]
         const isActive = activeCategories.has(cat)
         const count = counts[cat] || 0
+        const activeColor = getNodeColorDynamic ? getNodeColorDynamic(cat) : config.color
 
         return (
           <button
@@ -80,8 +86,8 @@ export const GraphFilterBar = memo(function GraphFilterBar({
             <span
               className="size-2 rounded-full shrink-0"
               style={{
-                backgroundColor: config.color,
-                boxShadow: isActive ? `0 0 6px ${config.color}80` : 'none',
+                backgroundColor: activeColor,
+                boxShadow: isActive ? `0 0 6px ${activeColor}` : 'none',
               }}
             />
             <span>{config.label}</span>

@@ -73,6 +73,33 @@ type SimLink = {
 
 export function getNodeColor(type?: string, isDark: boolean = true): string {
   const normalized = (type?.toLowerCase() || 'concept') as GraphCategory
+  // Read dynamic theme tokens computed from the current document root
+  if (typeof window !== 'undefined') {
+    const computed = getComputedStyle(document.documentElement)
+    const themeAccent = computed.getPropertyValue('--theme-accent').trim()
+    const themeText = computed.getPropertyValue('--theme-text').trim()
+    const themeBorder = computed.getPropertyValue('--theme-border').trim()
+    const themeSuccess = computed.getPropertyValue('--theme-success').trim()
+    const themeWarning = computed.getPropertyValue('--theme-warning').trim()
+    const themeDanger = computed.getPropertyValue('--theme-danger').trim()
+
+    if (normalized === 'concept') {
+      return themeText || (isDark ? '#f8fafc' : '#0f172a')
+    }
+    if (normalized === 'entity') {
+      return themeAccent || (isDark ? '#2dd4bf' : '#0d9488')
+    }
+    if (normalized === 'project') {
+      return themeSuccess || (isDark ? '#10b981' : '#059669')
+    }
+    if (normalized === 'skill') {
+      return themeDanger || (isDark ? '#f43f5e' : '#e11d48')
+    }
+    if (normalized === 'daily') {
+      return themeWarning || (isDark ? '#38bdf8' : '#0284c7')
+    }
+  }
+
   if (normalized === 'concept') {
     return isDark ? '#f8fafc' : '#0f172a'
   }
@@ -872,8 +899,7 @@ function CanvasRenderer({
 
 export function GraphScreen() {
   const navigate = useNavigate()
-  const toggleSidebar = useWorkspaceStore((s) => s.toggleSidebar)
-  const sidebarCollapsed = useWorkspaceStore((s) => s.sidebarCollapsed)
+  const { isDark } = useCurrentTheme()
   const [searchQuery, setSearchQuery] = useState('')
   const [showAlwaysLabels, setShowAlwaysLabels] = useState(false)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
@@ -1068,6 +1094,7 @@ export function GraphScreen() {
             activeCategories={activeCategories}
             counts={categoryCounts}
             onToggleCategory={handleToggleCategory}
+            getNodeColorDynamic={(cat) => getNodeColor(cat, isDark)}
           />
         </div>
 
