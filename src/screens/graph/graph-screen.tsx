@@ -1031,21 +1031,8 @@ export function GraphScreen() {
           backdropFilter: 'blur(12px)',
         }}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <button
-            type="button"
-            onClick={() => toggleSidebar()}
-            className="flex items-center justify-center p-2 rounded-xl border transition-colors hover:bg-[var(--theme-card2)]"
-            style={{
-              borderColor: 'var(--theme-border)',
-              backgroundColor: sidebarCollapsed ? 'transparent' : 'var(--theme-card2)',
-              color: 'var(--theme-text)',
-            }}
-            title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-          >
-            <HugeiconsIcon icon={SidebarLeftIcon} size={16} />
-          </button>
-          <div className="relative w-48 sm:w-64">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="relative w-56 sm:w-72">
             <HugeiconsIcon
               icon={Search01Icon}
               size={14}
