@@ -379,7 +379,10 @@ function buildPageMeta(
       path: relativePath,
       name,
       title,
-      type: normalizeFrontmatterValue(data.type),
+      type: inferWikiTypeFromPath(
+        relativePath,
+        normalizeFrontmatterValue(data.type),
+      ),
       domain: normalizeFrontmatterValue(data.domain),
       status: normalizeFrontmatterValue(data.status),
       tags: normalizeTagList(data.tags),
@@ -393,6 +396,29 @@ function buildPageMeta(
     content,
     raw,
   }
+}
+
+function inferWikiTypeFromPath(
+  relativePath: string,
+  rawType?: string,
+): string {
+  if (rawType && rawType.trim().length > 0) return rawType.toLowerCase()
+  const lower = relativePath.toLowerCase()
+  if (lower.includes('04-wiki/concepts') || lower.startsWith('concepts/'))
+    return 'concept'
+  if (lower.includes('04-wiki/entities') || lower.startsWith('entities/'))
+    return 'entity'
+  if (lower.includes('05-projects') || lower.startsWith('projects/'))
+    return 'project'
+  if (
+    lower.includes('07-daily') ||
+    lower.startsWith('daily/') ||
+    /^\d{4}-\d{2}-\d{2}/.test(path.basename(relativePath))
+  )
+    return 'daily'
+  if (lower.includes('skills/') || lower.startsWith('skills/')) return 'skill'
+  if (lower.includes('03-notes/extracted-docs')) return 'extracted-doc'
+  return 'concept'
 }
 
 function readParsedKnowledgeFile(
@@ -432,6 +458,8 @@ function walkKnowledgeDir(
 
     if (stats.isDirectory()) {
       if (shouldSkipDirectory(name)) continue
+      // Exclude Extracted-Docs from the graph and knowledge tree
+      if (name === 'Extracted-Docs') continue
       walkKnowledgeDir(results, knowledgeRoot, fullPath)
       continue
     }
@@ -576,12 +604,47 @@ export function searchKnowledgePages(
   return matches
 }
 
+function getHermesSkillsPages(): Array<ParsedKnowledgePage> {
+  const skillsDir = path.resolve(os.homedir(), '.hermes/skills')
+  if (!fs.existsSync(skillsDir)) return []
+
+  const results: Array<ParsedKnowledgePage> = []
+  
+  function scanSkills(dir: string) {
+    try {
+      const entries = fs.readdirSync(dir)
+      for (const entry of entries) {
+        const full = path.join(dir, entry)
+        const stat = fs.statSync(full)
+        if (stat.isDirectory()) {
+          scanSkills(full)
+        } else if (entry.toLowerCase() === 'skill.md') {
+          const relative = path.relative(skillsDir, full).replace(/\\\\/g, '/')
+          const skillName = path.dirname(relative).replace(/\\\\/g, '/')
+          const raw = fs.readFileSync(full, 'utf-8')
+          const parsed = buildPageMeta(`skills/${relative}`, stat, raw)
+          if (parsed) {
+            parsed.meta.type = 'skill'
+            parsed.meta.title = skillName
+            results.push(parsed)
+          }
+        }
+      }
+    } catch {}
+  }
+
+  scanSkills(skillsDir)
+  return results
+}
+
 export function buildKnowledgeGraph(): KnowledgeGraph {
-  const pages = getParsedKnowledgePages()
-  const resolveLink = createWikilinkResolver(pages)
+  const wikiPages = getParsedKnowledgePages()
+  const skillPages = getHermesSkillsPages()
+  const allPages = [...wikiPages, ...skillPages]
+  const resolveLink = createWikilinkResolver(allPages)
   const edges = new Map<string, WikiLink>()
 
-  for (const page of pages) {
+  for (const page of allPages) {
     for (const wikilink of page.meta.wikilinks) {
       const target = resolveLink(wikilink)
       if (!target) continue
@@ -593,7 +656,7 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
   }
 
   return {
-    nodes: pages.map((page) => ({
+    nodes: allPages.map((page) => ({
       id: page.meta.path,
       title: page.meta.title,
       type: page.meta.type,

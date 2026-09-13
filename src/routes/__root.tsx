@@ -449,7 +449,10 @@ function RootLayout() {
           {rootSurfaceState.showPostOnboardingOverlays &&
           !isGameSurfaceRoute ? (
             <>
-              {!isFileManagerRoute && <MobilePromptTrigger />}
+              {!isFileManagerRoute &&
+                !location.pathname.startsWith('/study') && (
+                  <MobilePromptTrigger />
+                )}
               <OnboardingTour />
             </>
           ) : null}

@@ -1,1318 +1,1003 @@
 /**
- * Lightweight 2D Knowledge Graph (Fake 3D Projection)
+ * Obsidian-Style Live 2D Interactive Concept Graph
  *
- * Uses d3-force-3d for physical layout, but renders completely
- * on a standard HTML5 <canvas> to save GPU/CPU resources.
- * No WebGL or Three.js required.
+ * Impeccable Architecture:
+ * 1. Live organic spring physics with decay-to-sleep (0% CPU at equilibrium).
+ * 2. Interactive node dragging with spring tension and elastic ripple effect.
+ * 3. Smart Level-of-Detail (LOD) typography with dark contrast halos.
+ * 4. Side-over Inspector Drawer for instant Markdown reading & relation traversal.
+ * 5. Category filter pills (Concepts, Entities, Projects, Skills, Daily notes).
  */
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+// @ts-ignore
+import * as d3 from 'd3-force-3d'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Search01Icon,
   Cancel01Icon,
-  ArrowRight01Icon,
+  Add01Icon,
+  MinusSignIcon,
+  ViewIcon,
+  ViewOffIcon,
 } from '@hugeicons/core-free-icons'
+import { HamburgerTrigger } from '@/components/mobile-hamburger-menu'
+import { useCurrentTheme } from '@/lib/theme'
+import { useNavigate } from '@tanstack/react-router'
+import {
+  GraphFilterBar,
+  CATEGORY_CONFIG,
+  type GraphCategory,
+} from './components/graph-filter-bar'
+import {
+  GraphSideInspector,
+  type InspectorNode,
+} from './components/graph-side-inspector'
 
 // ── Types ───────────────────────────────────────────────────────────
 
-import { HamburgerTrigger } from '@/components/mobile-hamburger-menu'
-
-type GraphNode = {
+export type GraphNode = {
   id: string
   title: string
   type?: string
   tags?: string[]
 }
 
-type GraphEdge = {
+export type GraphEdge = {
   source: string
   target: string
 }
 
-type GraphResponse = {
+export type GraphResponse = {
   nodes?: GraphNode[]
   edges?: GraphEdge[]
 }
 
-type LayoutNode = GraphNode & {
+type SimNode = GraphNode & {
   x: number
   y: number
-  z: number
+  vx?: number
+  vy?: number
+  fx?: number | null
+  fy?: number | null
   connections: number
-  isBlackHole?: boolean
 }
 
-// ── Colors & Sizes ──────────────────────────────────────────────────
-
-const NODE_COLORS: Record<string, string> = {
-  entity: '#00FFFF', // Pure Cyan
-  concept: '#FFFFFF', // White
-  action: '#FFCC00', // Bright Yellow
-  file: '#3B82F6', // Neon Blue
-  folder: '#FF0055', // Laser Red
-  default: '#00F0FF',
+type SimLink = {
+  source: SimNode
+  target: SimNode
 }
 
-const BG_COLOR = '#02040A' // Deep space black
-const EDGE_COLOR = 'rgba(255, 255, 255, 0.15)'
-const EDGE_FADED_COLOR = 'rgba(255, 255, 255, 0.03)'
-const EDGE_HIGHLIGHT_COLOR = 'rgba(0, 240, 255, 0.7)' // Cyan highlight
+// ── Color Schemes & Physics Helpers ─────────────────────────────────
 
-function getNodeColor(type?: string): string {
-  if (!type) return NODE_COLORS.default
-  return NODE_COLORS[type.toLowerCase()] ?? NODE_COLORS.default
+export function getNodeColor(type?: string): string {
+  const normalized = (type?.toLowerCase() || 'concept') as GraphCategory
+  return CATEGORY_CONFIG[normalized]?.color || CATEGORY_CONFIG.concept.color
 }
 
-function getNodeRadius(connections: number): number {
-  return Math.max(5, Math.min(18, 5 + connections * 2.5))
+export function getNodeRadius(connections: number): number {
+  return Math.max(4, Math.min(16, 4 + Math.sqrt(connections) * 2.5))
 }
 
-// ── Force Layout Hook ───────────────────────────────────────────────
-
-function useForceLayout(
-  nodes: GraphNode[],
-  edges: GraphEdge[],
-): LayoutNode[] | null {
-  const [layout, setLayout] = useState<LayoutNode[] | null>(null)
-
-  useEffect(() => {
-    if (nodes.length === 0) {
-      setLayout([])
-      return
-    }
-
-    // Spawn Web Worker for heavy d3-force-3d layout calculation
-    const worker = new Worker(
-      new URL('./workers/force-layout.worker.ts', import.meta.url),
-      { type: 'module' },
-    )
-
-    worker.onmessage = (event) => {
-      setLayout(event.data.layout)
-    }
-
-    worker.postMessage({ nodes, edges })
-
-    // Cleanup worker if component unmounts or data changes
-    return () => worker.terminate()
-  }, [nodes, edges])
-
-  return layout
-}
-
-// ── Fake 3D Canvas Renderer ─────────────────────────────────────────
+// ── Obsidian 2D Canvas Renderer ─────────────────────────────────────
 
 function CanvasRenderer({
-  nodes,
-  edges,
+  nodesData,
+  edgesData,
   hoveredNodeId,
   selectedNodeId,
   searchHighlightIds,
+  showLabels,
   onHover,
   onClick,
+  onResetRef,
+  onZoomInRef,
+  onZoomOutRef,
 }: {
-  nodes: LayoutNode[]
-  edges: GraphEdge[]
+  nodesData: GraphNode[]
+  edgesData: GraphEdge[]
   hoveredNodeId: string | null
   selectedNodeId: string | null
   searchHighlightIds: Set<string>
+  showLabels: boolean
   onHover: (id: string | null) => void
   onClick: (id: string | null) => void
+  onResetRef: React.MutableRefObject<(() => void) | null>
+  onZoomInRef: React.MutableRefObject<(() => void) | null>
+  onZoomOutRef: React.MutableRefObject<(() => void) | null>
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const projDataRef = useRef<Float32Array | null>(null)
-  const drawOrderRef = useRef<Uint16Array | null>(null)
-  const nodeIndexMapRef = useRef<Map<string, number>>(new Map())
+  const { isDark } = useCurrentTheme()
 
-  // Transform state
-  const state = useRef({
-    rotX: -0.3,
-    rotY: 0.4,
-    zoom: 1.2,
+  const simNodesRef = useRef<SimNode[]>([])
+  const simLinksRef = useRef<SimLink[]>([])
+  const simulationRef = useRef<any>(null)
+  const isInitializedRef = useRef(false)
+
+  // 2D Viewport Transform
+  const transformRef = useRef({
+    panX: 0,
+    panY: 0,
+    zoom: 1,
     isDragging: false,
-    lastMouseX: 0,
-    lastMouseY: 0,
-    width: 0,
-    height: 0,
-    hoveredId: hoveredNodeId,
-    selectedId: selectedNodeId,
-    pointers: new Map<number, { x: number; y: number }>(),
-    lastPinchDist: 0,
+    dragStartX: 0,
+    dragStartY: 0,
+    lastPanX: 0,
+    lastPanY: 0,
+    isDraggingNode: false,
+    draggedNode: null as SimNode | null,
   })
 
-  const activeIdsRef = useRef<Set<string>>(new Set())
-  const activeEdgesRef = useRef<Set<string>>(new Set())
+  // Fast lookups & adjacency map
+  const { neighborMap } = useMemo(() => {
+    const adjMap = new Map<string, Set<string>>()
+    for (const node of nodesData) {
+      adjMap.set(node.id, new Set())
+    }
+    for (const edge of edgesData) {
+      adjMap.get(edge.source)?.add(edge.target)
+      adjMap.get(edge.target)?.add(edge.source)
+    }
+    return { neighborMap: adjMap }
+  }, [nodesData, edgesData])
 
-  // Sync props to mutable ref so animation loop can read them without recreating closures
-  useEffect(() => {
-    state.current.hoveredId = hoveredNodeId
-    state.current.selectedId = selectedNodeId
+  // Active focus IDs (selected or hovered node + its immediate neighbors)
+  const activeFocus = useMemo(() => {
+    const focusNodeId = hoveredNodeId || selectedNodeId
+    if (!focusNodeId) return null
 
-    // Precompute active sets to eliminate GC pressure inside render loop
-    const activeIds = new Set<string>()
-    for (const id of searchHighlightIds) activeIds.add(id)
-
-    let activeEdges = new Set<string>()
-    const addActive = (centerId: string) => {
-      activeIds.add(centerId)
-      for (const edge of edges) {
-        if (edge.source === centerId) {
-          activeIds.add(edge.target)
-          activeEdges.add(`${edge.source}->${edge.target}`)
-        }
-        if (edge.target === centerId) {
-          activeIds.add(edge.source)
-          activeEdges.add(`${edge.target}->${edge.source}`)
-        }
+    const set = new Set<string>()
+    set.add(focusNodeId)
+    const neighbors = neighborMap.get(focusNodeId)
+    if (neighbors) {
+      for (const neighborId of neighbors) {
+        set.add(neighborId)
       }
     }
-
-    if (selectedNodeId) addActive(selectedNodeId)
-    if (hoveredNodeId) addActive(hoveredNodeId)
-
-    activeIdsRef.current = activeIds
-    activeEdgesRef.current = activeEdges
-  }, [hoveredNodeId, selectedNodeId, searchHighlightIds, edges])
-
-  // Resize observer
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const parent = canvas.parentElement
-    if (!parent) return
-
-    const resize = () => {
-      const w = parent.clientWidth
-      const h = parent.clientHeight
-      const dpr = window.devicePixelRatio || 1
-      canvas.width = w * dpr
-      canvas.height = h * dpr
-      canvas.style.width = `${w}px`
-      canvas.style.height = `${h}px`
-      state.current.width = w
-      state.current.height = h
+    return {
+      centerId: focusNodeId,
+      connectedIds: set,
     }
+  }, [hoveredNodeId, selectedNodeId, neighborMap])
 
-    const observer = new ResizeObserver(resize)
-    observer.observe(parent)
-    resize()
-    return () => observer.disconnect()
-  }, [])
-
-  // Allocate typed arrays once when nodes change
-  useEffect(() => {
-    if (nodes && nodes.length > 0) {
-      if (
-        !projDataRef.current ||
-        projDataRef.current.length < nodes.length * 5
-      ) {
-        projDataRef.current = new Float32Array(nodes.length * 5)
-        drawOrderRef.current = new Uint16Array(nodes.length)
-      }
-      const drawOrder = drawOrderRef.current!
-      for (let i = 0; i < nodes.length; i++) drawOrder[i] = i
-
-      const map = new Map<string, number>()
-      nodes.forEach((n, i) => map.set(n.id, i))
-      nodeIndexMapRef.current = map
-    }
-  }, [nodes])
-
-  // Animation Loop
-  useEffect(() => {
+  // Single Frame Draw Function
+  const renderFrame = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    let animationId: number
+    const dpr = window.devicePixelRatio || 1
+    const width = canvas.clientWidth
+    const height = canvas.clientHeight
 
-    // Optimize Black Hole Accretion Disk by caching its particle as a Sprite
-    const glowSprite = document.createElement('canvas')
-    glowSprite.width = 64
-    glowSprite.height = 64
-    const spriteCtx = glowSprite.getContext('2d')
-    if (spriteCtx) {
-      spriteCtx.beginPath()
-      spriteCtx.arc(32, 32, 4, 0, 2 * Math.PI)
-      spriteCtx.fillStyle = '#FFFFFF'
-      spriteCtx.shadowColor = '#FFaa00'
-      spriteCtx.shadowBlur = 18
-      spriteCtx.fill()
+    ctx.save()
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.scale(dpr, dpr)
+
+    const { panX, panY, zoom } = transformRef.current
+    const cx = width / 2 + panX
+    const cy = height / 2 + panY
+
+    // Apply 2D World Transform
+    ctx.translate(cx, cy)
+    ctx.scale(zoom, zoom)
+
+    const hasSearch = searchHighlightIds.size > 0
+    const hasFocus = activeFocus !== null
+    const nodes = simNodesRef.current
+    const links = simLinksRef.current
+
+    // 1. Draw Links / Edges
+    for (let i = 0; i < links.length; i++) {
+      const link = links[i]
+      const s = link.source
+      const t = link.target
+      if (!s || !t) continue
+
+      let isEdgeHighlighted = false
+      let isEdgeFaded = false
+
+      if (hasFocus) {
+        const isConnectedToCenter =
+          (s.id === activeFocus.centerId && activeFocus.connectedIds.has(t.id)) ||
+          (t.id === activeFocus.centerId && activeFocus.connectedIds.has(s.id))
+
+        if (isConnectedToCenter) {
+          isEdgeHighlighted = true
+        } else {
+          isEdgeFaded = true
+        }
+      } else if (hasSearch) {
+        const isSearchLinked =
+          searchHighlightIds.has(s.id) && searchHighlightIds.has(t.id)
+        if (isSearchLinked) {
+          isEdgeHighlighted = true
+        } else {
+          isEdgeFaded = true
+        }
+      }
+
+      ctx.beginPath()
+      ctx.moveTo(s.x, s.y)
+      ctx.lineTo(t.x, t.y)
+
+      if (isEdgeHighlighted) {
+        ctx.strokeStyle = '#818cf8'
+        ctx.lineWidth = Math.max(1.8 / zoom, 1.2)
+        ctx.globalAlpha = 0.9
+      } else if (isEdgeFaded) {
+        ctx.strokeStyle = isDark ? '#334155' : '#cbd5e1'
+        ctx.lineWidth = Math.max(0.6 / zoom, 0.4)
+        ctx.globalAlpha = 0.08
+      } else {
+        ctx.strokeStyle = isDark ? '#475569' : '#94a3b8'
+        ctx.lineWidth = Math.max(0.9 / zoom, 0.6)
+        ctx.globalAlpha = 0.25
+      }
+
+      ctx.stroke()
     }
 
-    // Optimize Comets by caching them as well
-    const cometSprite = document.createElement('canvas')
-    cometSprite.width = 64
-    cometSprite.height = 64
-    const cometCtx = cometSprite.getContext('2d')
-    if (cometCtx) {
-      cometCtx.beginPath()
-      cometCtx.arc(32, 32, 4, 0, 2 * Math.PI)
-      cometCtx.fillStyle = '#FFFFFF'
-      cometCtx.shadowColor = '#00FFFF'
-      cometCtx.shadowBlur = 18
-      cometCtx.fill()
-    }
+    // 2. Draw Nodes
+    const drawnLabelBoxes: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
 
-    // Pre-allocate TypedArray for Accretion Disk particles (350 points * 4 values: px, py, scale, z)
-    const diskCount = 150 + 100 + 100
-    const diskProj = new Float32Array(diskCount * 4)
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i]
+      const baseRadius = getNodeRadius(node.connections)
 
-    const render = () => {
-      // Auto-rotation when idle (no drag, no hover, no selection)
-      if (
-        !state.current.isDragging &&
-        !state.current.hoveredId &&
-        !state.current.selectedId
-      ) {
-        state.current.rotY += 0.002 // Slow horizontal spin
+      let isHighlighted = false
+      let isFaded = false
+
+      if (hasFocus) {
+        if (node.id === activeFocus.centerId) {
+          isHighlighted = true
+        } else if (activeFocus.connectedIds.has(node.id)) {
+          isHighlighted = true
+        } else {
+          isFaded = true
+        }
+      } else if (hasSearch) {
+        if (searchHighlightIds.has(node.id)) {
+          isHighlighted = true
+        } else {
+          isFaded = true
+        }
       }
 
-      const { width, height, rotX, rotY, zoom, hoveredId, selectedId } =
-        state.current
-      const dpr = window.devicePixelRatio || 1
+      const isCenter = hasFocus && node.id === activeFocus.centerId
+      const nodeColor = getNodeColor(node.type)
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.save()
-      ctx.scale(dpr, dpr)
+      // Node Radius & Scale
+      let radius = baseRadius
+      if (isCenter) radius = baseRadius * 1.35
+      else if (isHighlighted) radius = baseRadius * 1.15
 
-      // Math precomputes
-      const cx = width / 2
-      const cy = height / 2
-      const cosX = Math.cos(rotX)
-      const sinX = Math.sin(rotX)
-      const cosY = Math.cos(rotY)
-      const sinY = Math.sin(rotY)
-      const focalLength = 600
-      const cameraDistance = 350
+      ctx.beginPath()
+      ctx.arc(node.x, node.y, radius, 0, Math.PI * 2)
 
-      const activeIds = activeIdsRef.current
-      const activeEdges = activeEdgesRef.current
-      const hasFocus = activeIds.size > 0
-
-      // TypedArrays for Zero GC
-      const projData = projDataRef.current
-      const drawOrder = drawOrderRef.current
-      const nodeIndexMap = nodeIndexMapRef.current
-
-      if (!projData || !drawOrder) {
-        animationId = requestAnimationFrame(render)
-        return
+      if (isCenter) {
+        ctx.fillStyle = '#ffffff'
+        ctx.shadowColor = nodeColor
+        ctx.shadowBlur = 18
+        ctx.globalAlpha = 1.0
+      } else if (isHighlighted) {
+        ctx.fillStyle = nodeColor
+        ctx.shadowColor = nodeColor
+        ctx.shadowBlur = 10
+        ctx.globalAlpha = 0.95
+      } else if (isFaded) {
+        ctx.fillStyle = isDark ? '#475569' : '#94a3b8'
+        ctx.shadowBlur = 0
+        ctx.globalAlpha = 0.12
+      } else {
+        ctx.fillStyle = nodeColor
+        ctx.shadowColor = nodeColor
+        ctx.shadowBlur = 4
+        ctx.globalAlpha = 0.85
       }
 
-      // Project nodes 3D -> 2D
-      for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i]
-        // Rotate around Y
-        const r1x = node.x * cosY - node.z * sinY
-        const r1z = node.x * sinY + node.z * cosY
-        // Rotate around X
-        const r2y = node.y * cosX - r1z * sinX
-        const finalZ = node.y * sinX + r1z * cosX
+      ctx.fill()
+      ctx.shadowBlur = 0 // reset shadow blur
 
-        // Perspective
-        const baseScale = focalLength / (focalLength + finalZ + cameraDistance)
-        const scale = baseScale * zoom
-        const px = r1x * scale + cx
-        const py = r2y * scale + cy
-        const pr = getNodeRadius(node.connections) * scale
-
-        const idx = i * 5
-        projData[idx + 0] = px
-        projData[idx + 1] = py
-        projData[idx + 2] = pr
-        projData[idx + 3] = finalZ
-        projData[idx + 4] = scale
-      }
-
-      // Sort indices by Z for proper draw order (back to front)
-      drawOrder.sort((a, b) => projData[b * 5 + 3] - projData[a * 5 + 3])
-
-      // Helper for projecting a 3D point
-      const projectPoint = (x: number, y: number, z: number) => {
-        const r1x = x * cosY - z * sinY
-        const r1z = x * sinY + z * cosY
-        const r2y = y * cosX - r1z * sinX
-        const finalZ = y * sinX + r1z * cosX
-        if (finalZ < -focalLength) return null
-        const scale =
-          (focalLength / (focalLength + finalZ + cameraDistance)) * zoom
-        return { px: r1x * scale + cx, py: r2y * scale + cy, scale }
-      }
-
-      // Helper for 3D rotation independent of camera
-      const rotate3D = (
-        x: number,
-        y: number,
-        z: number,
-        rx: number,
-        ry: number,
-        rz: number,
-      ) => {
-        let x1 = x * Math.cos(rz) - y * Math.sin(rz),
-          y1 = x * Math.sin(rz) + y * Math.cos(rz),
-          z1 = z
-        let y2 = y1 * Math.cos(rx) - z1 * Math.sin(rx),
-          z2 = y1 * Math.sin(rx) + z1 * Math.cos(rx),
-          x2 = x1
-        let x3 = x2 * Math.cos(ry) + z2 * Math.sin(ry),
-          z3 = -x2 * Math.sin(ry) + z2 * Math.cos(ry),
-          y3 = y2
-        return [x3, y3, z3]
-      }
-
-      // Draw Glowing Core (Black Hole)
-      const coreProj = projectPoint(0, 0, 0)
-      if (coreProj) {
-        const time = performance.now() * 0.001
-
-        // 1. Far outer glow (Event Horizon Aura)
-        const gradient = ctx.createRadialGradient(
-          coreProj.px,
-          coreProj.py,
-          15 * coreProj.scale,
-          coreProj.px,
-          coreProj.py,
-          70 * coreProj.scale,
-        )
-        gradient.addColorStop(0, 'rgba(255, 100, 0, 0.8)')
-        gradient.addColorStop(0.3, 'rgba(255, 50, 0, 0.3)')
-        gradient.addColorStop(1, 'transparent')
+      // Center Node Accent Ring
+      if (isCenter) {
         ctx.beginPath()
-        ctx.arc(coreProj.px, coreProj.py, 70 * coreProj.scale, 0, 2 * Math.PI)
-        ctx.fillStyle = gradient
-        ctx.fill()
+        ctx.arc(node.x, node.y, radius + 3.5, 0, Math.PI * 2)
+        ctx.strokeStyle = nodeColor
+        ctx.lineWidth = 1.5 / zoom
+        ctx.globalAlpha = 0.9
+        ctx.stroke()
+      }
 
-        // 2. Accretion Disks (3D Rings intersecting like an atom)
-        let diskIdx = 0
-        const createRing = (
-          rx: number,
-          ry: number,
-          rz: number,
-          count: number,
-          baseRadius: number,
-        ) => {
-          for (let i = 0; i < count; i++) {
-            const angle = (i / count) * Math.PI * 2
-            const rDisk = baseRadius + Math.sin(angle * 6 + time * 3) * 3
-            const px = Math.cos(angle) * rDisk
-            const pz = Math.sin(angle) * rDisk
-            const py = Math.cos(angle * 3 + time * 2) * 2 // slight vertical wobble
+      // 3. Smart Obsidian LOD (Level-of-Detail) with Spatial Collision Culling & Clean Truncation
+      // At default zoom (< 1.2): ONLY hovered/active nodes, search matches, projects, and major hubs (connections >= 10)
+      // At 1.2 <= zoom < 2.0: Highlighted + hubs with connections >= 4 + projects/skills
+      // At zoom >= 2.0: All visible nodes (with strict collision culling)
+      const isEligibleByZoom =
+        isHighlighted ||
+        zoom >= 2.5 ||
+        (zoom >= 1.8 && node.connections >= 3) ||
+        (zoom >= 1.2 && (node.connections >= 5 || node.type === 'project')) ||
+        (zoom < 1.2 && (node.connections >= 10 || (node.type === 'project' && node.connections >= 2)))
 
-            const [x3, y3, z3] = rotate3D(px, py, pz, rx, ry, rz)
+      const shouldRenderLabel = showLabels && !isFaded && isEligibleByZoom
 
-            // Inline projectPoint to grab the finalZ for depth sorting
-            const r1x = x3 * cosY - z3 * sinY
-            const r1z = x3 * sinY + z3 * cosY
-            const r2y = y3 * cosX - r1z * sinX
-            const finalZ = y3 * sinX + r1z * cosX
-            if (finalZ >= -focalLength) {
-              const scale =
-                (focalLength / (focalLength + finalZ + cameraDistance)) * zoom
-              diskProj[diskIdx++] = r1x * scale + cx
-              diskProj[diskIdx++] = r2y * scale + cy
-              diskProj[diskIdx++] = scale
-              diskProj[diskIdx++] = finalZ
+      if (shouldRenderLabel) {
+        const fontSize = Math.max(9, Math.min(11, 10 / Math.sqrt(zoom)))
+        ctx.font = `${isCenter ? '600' : '500'} ${fontSize}px Inter, -apple-system, sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'top'
+
+        const rawTitle = node.title || node.id
+        const labelText =
+          !isCenter && rawTitle.length > 24
+            ? `${rawTitle.slice(0, 22)}…`
+            : rawTitle
+        const textY = node.y + radius + 4
+
+        const textMetrics = ctx.measureText(labelText)
+        const textWidth = textMetrics.width
+        const textHeight = fontSize * 1.25
+
+        const box = {
+          x1: node.x - textWidth / 2 - 6,
+          y1: textY - 1,
+          x2: node.x + textWidth / 2 + 6,
+          y2: textY + textHeight + 2,
+        }
+
+        // Spatial collision check — prevent overlapping labels unless highlighted
+        if (!isHighlighted) {
+          let hasCollision = false
+          for (let b = 0; b < drawnLabelBoxes.length; b++) {
+            const drawn = drawnLabelBoxes[b]
+            if (
+              !(
+                box.x2 < drawn.x1 ||
+                box.x1 > drawn.x2 ||
+                box.y2 < drawn.y1 ||
+                box.y1 > drawn.y2
+              )
+            ) {
+              hasCollision = true
+              break
             }
           }
+          if (hasCollision) continue
         }
 
-        createRing(0, 0, 0, 150, 32) // Horizontal
-        createRing(Math.PI / 2, 0, 0, 100, 38) // Vertical 1
-        createRing(0, Math.PI / 2, 0, 100, 38) // Vertical 2
+        drawnLabelBoxes.push(box)
 
-        // Draw Back Disk (Z < 0)
-        for (let i = 0; i < diskIdx; i += 4) {
-          if (diskProj[i + 3] < 0) {
-            const size = 32 * diskProj[i + 2]
-            ctx.drawImage(
-              glowSprite,
-              diskProj[i] - size / 2,
-              diskProj[i + 1] - size / 2,
-              size,
-              size,
-            )
-          }
-        }
+        // Pill contrast background
+        ctx.fillStyle = isDark
+          ? 'rgba(11, 13, 19, 0.94)'
+          : 'rgba(255, 255, 255, 0.94)'
+        ctx.globalAlpha = 0.95
+        ctx.fillRect(
+          box.x1,
+          box.y1,
+          box.x2 - box.x1,
+          box.y2 - box.y1,
+        )
 
-        // 3. The Black Hole (Event Horizon - Turbulent Anomaly)
-        ctx.beginPath()
-        const baseBHRadius = 22 * coreProj.scale
-        for (let i = 0; i <= 60; i++) {
-          const a = (i / 60) * Math.PI * 2
-          // Chaotic ripples to the radius based on angle and time
-          const ripple =
-            Math.sin(a * 5 + time * 8) * 1.5 + Math.cos(a * 3 - time * 6) * 1.5
-          const rBH = baseBHRadius + ripple * coreProj.scale
-
-          const px = coreProj.px + Math.cos(a) * rBH
-          const py = coreProj.py + Math.sin(a) * rBH
-
-          if (i === 0) ctx.moveTo(px, py)
-          else ctx.lineTo(px, py)
-        }
-        ctx.closePath()
-
-        ctx.fillStyle = '#000000' // Pure void
-        ctx.shadowBlur = 0
-        ctx.fill()
-        // Bright rippling rim light for the black hole
-        ctx.lineWidth = 1.5 * coreProj.scale
-        ctx.strokeStyle = 'rgba(255, 180, 50, 0.9)'
-        ctx.stroke()
-
-        // Draw front half of the disks (overlapping the black hole)
-        // Draw Front Disk (Z >= 0)
-        for (let i = 0; i < diskIdx; i += 4) {
-          if (diskProj[i + 3] >= 0) {
-            const size = 32 * diskProj[i + 2]
-            ctx.drawImage(
-              glowSprite,
-              diskProj[i] - size / 2,
-              diskProj[i + 1] - size / 2,
-              size,
-              size,
-            )
-          }
-        }
-
-        // 4. Sucked-in particles (Comets falling in)
-        for (let i = 0; i < 6; i++) {
-          const t = (time * 1.2 + i * 0.33) % 1 // loops from 0 to 1
-          const angle = i * ((Math.PI * 2) / 6) + time * 2
-          const r = 70 - t * 48 // spirals inwards from 70 to 22
-          const p = projectPoint(
-            Math.cos(angle) * r,
-            (Math.sin(time + i) - 0.5) * 15,
-            Math.sin(angle) * r,
-          )
-          if (p) {
-            const size = 32 * p.scale
-            ctx.drawImage(
-              cometSprite,
-              p.px - size / 2,
-              p.py - size / 2,
-              size,
-              size,
-            )
-          }
-        }
-
-        ctx.shadowBlur = 0 // reset
+        ctx.fillStyle = isCenter
+          ? '#ffffff'
+          : isHighlighted
+            ? nodeColor
+            : isDark
+              ? '#f1f5f9'
+              : '#0f172a'
+        ctx.globalAlpha = isHighlighted ? 1.0 : 0.9
+        ctx.fillText(labelText, node.x, textY)
       }
-
-      // Draw Spherical Wireframe (Equator & Meridians)
-      const r = 400
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)'
-      ctx.lineWidth = 1
-
-      // Equator and Latitudes
-      for (let lat = -2; lat <= 2; lat++) {
-        const latAngle = (lat / 5) * (Math.PI / 2)
-        const latR = Math.cos(latAngle) * r
-        const latY = Math.sin(latAngle) * r
-
-        ctx.beginPath()
-        for (let i = 0; i <= 60; i++) {
-          const lonAngle = (i / 60) * Math.PI * 2
-          const x = latR * Math.cos(lonAngle)
-          const z = latR * Math.sin(lonAngle)
-          const proj = projectPoint(x, latY, z)
-          if (proj) {
-            if (i === 0) ctx.moveTo(proj.px, proj.py)
-            else ctx.lineTo(proj.px, proj.py)
-          }
-        }
-        ctx.stroke()
-      }
-
-      // Longitudes
-      for (let j = 0; j < 12; j++) {
-        const lonAngle = (j / 12) * Math.PI * 2
-        ctx.beginPath()
-        for (let i = 0; i <= 60; i++) {
-          const latAngle = (i / 60) * Math.PI * 2
-          const x = r * Math.cos(latAngle) * Math.cos(lonAngle)
-          const y = r * Math.sin(latAngle)
-          const z = r * Math.cos(latAngle) * Math.sin(lonAngle)
-
-          const proj = projectPoint(x, y, z)
-          if (proj) {
-            if (i === 0) ctx.moveTo(proj.px, proj.py)
-            else ctx.lineTo(proj.px, proj.py)
-          }
-        }
-        ctx.stroke()
-      }
-
-      // Draw Edges
-      ctx.lineWidth = 1
-      for (const edge of edges) {
-        const fromIdx = nodeIndexMap.get(edge.source)
-        const toIdx = nodeIndexMap.get(edge.target)
-        if (fromIdx === undefined || toIdx === undefined) continue
-
-        const fScale = projData[fromIdx * 5 + 4]
-        const tScale = projData[toIdx * 5 + 4]
-
-        // Don't draw edges behind camera
-        if (fScale < 0 && tScale < 0) continue
-
-        const fx = projData[fromIdx * 5 + 0]
-        const fy = projData[fromIdx * 5 + 1]
-        const tx = projData[toIdx * 5 + 0]
-        const ty = projData[toIdx * 5 + 1]
-
-        // Edge Frustum Culling
-        if (
-          (fx < 0 && tx < 0) ||
-          (fx > width && tx > width) ||
-          (fy < 0 && ty < 0) ||
-          (fy > height && ty > height)
-        ) {
-          continue
-        }
-
-        let isFaded = hasFocus
-        let isHighlighted = false
-
-        if (
-          activeEdges.has(`${edge.source}->${edge.target}`) ||
-          activeEdges.has(`${edge.target}->${edge.source}`)
-        ) {
-          isFaded = false
-          isHighlighted = true
-        } else if (activeIds.has(edge.source) && activeIds.has(edge.target)) {
-          isFaded = false
-        }
-
-        ctx.beginPath()
-        ctx.moveTo(fx, fy)
-        ctx.lineTo(tx, ty)
-        ctx.strokeStyle = isHighlighted
-          ? EDGE_HIGHLIGHT_COLOR
-          : isFaded
-            ? EDGE_FADED_COLOR
-            : EDGE_COLOR
-        ctx.stroke()
-      }
-
-      // Draw Nodes
-      for (let i = 0; i < drawOrder.length; i++) {
-        const nodeIdx = drawOrder[i]
-        const idx = nodeIdx * 5
-        const scale = projData[idx + 4]
-
-        if (scale < 0) continue // behind camera
-
-        const px = projData[idx + 0]
-        const py = projData[idx + 1]
-        const pr = projData[idx + 2]
-        const node = nodes[nodeIdx]
-
-        const isHighlighted =
-          activeIds.has(node.id) ||
-          hoveredId === node.id ||
-          searchHighlightIds.has(node.id)
-        const isSelected = selectedId === node.id
-        const isFaded = hasFocus && !isHighlighted
-        const isSearchHit = searchHighlightIds.has(node.id)
-
-        const baseColor = getNodeColor(node.type)
-        const radius = isHighlighted || isSelected ? pr * 1.5 : pr
-
-        const actualRadius = Math.max(0.5, radius)
-
-        // Helper to draw circle
-        const drawCircle = (x: number, y: number, r: number) => {
-          ctx.beginPath()
-          ctx.arc(x, y, r, 0, 2 * Math.PI)
-          ctx.closePath()
-        }
-
-        if (!node.isBlackHole) {
-          if (isFaded) {
-            drawCircle(px, py, actualRadius)
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)'
-            ctx.fill()
-          } else {
-            // Stardust / Data Bits design (clean, tiny squares)
-            ctx.fillStyle = baseColor
-            // Faint opacity for background stars, bright for highlighted
-            ctx.globalAlpha = isHighlighted || isSelected ? 1.0 : 0.6
-
-            // Draw as a tiny square (data bit)
-            const size = Math.max(1.5, actualRadius * 0.8)
-            ctx.fillRect(px - size / 2, py - size / 2, size, size)
-
-            ctx.globalAlpha = 1.0 // reset alpha
-          }
-
-          if (isSelected || isSearchHit) {
-            ctx.shadowBlur = 0 // turn off shadow for ring
-            drawCircle(px, py, actualRadius + 4 * scale)
-            ctx.strokeStyle = '#FFFFFF'
-            ctx.lineWidth = 1.5 * scale
-            ctx.stroke()
-          }
-        }
-
-        ctx.shadowBlur = 0 // reset shadow for next draw
-
-        // Draw Label if highlighted
-        if (isHighlighted || isSelected) {
-          ctx.font = `bold ${Math.max(10, 12 * Math.min(1.5, scale))}px 'JetBrains Mono', 'Courier New', monospace`
-          ctx.fillStyle = '#FFFFFF'
-          ctx.textAlign = 'center'
-          ctx.fillText(node.title.toUpperCase(), px, py - radius - 8 * scale)
-        }
-      }
-
-      ctx.restore()
-      animationId = requestAnimationFrame(render)
     }
 
-    render()
-    return () => cancelAnimationFrame(animationId)
-  }, [nodes, edges, searchHighlightIds])
+    ctx.restore()
+  }, [activeFocus, searchHighlightIds, showLabels, isDark])
 
-  // Mouse / Touch Handlers
-  const handlePointerDown = (e: React.PointerEvent) => {
-    state.current.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
-    if (state.current.pointers.size === 1) {
-      state.current.isDragging = true
-      state.current.lastMouseX = e.clientX
-      state.current.lastMouseY = e.clientY
-    } else if (state.current.pointers.size === 2) {
-      state.current.isDragging = false // disable rotation when pinching
-      const pts = Array.from(state.current.pointers.values())
-      state.current.lastPinchDist = Math.hypot(
-        pts[0].x - pts[1].x,
-        pts[0].y - pts[1].y,
+  // Coordinate Conversion (Screen to Simulation Space)
+  const screenToWorld = useCallback((screenX: number, screenY: number) => {
+    const canvas = canvasRef.current
+    if (!canvas) return { x: 0, y: 0 }
+    const width = canvas.clientWidth
+    const height = canvas.clientHeight
+    const { panX, panY, zoom } = transformRef.current
+    const cx = width / 2 + panX
+    const cy = height / 2 + panY
+    return {
+      x: (screenX - cx) / zoom,
+      y: (screenY - cy) / zoom,
+    }
+  }, [])
+
+  // Find Nearest Node Under Cursor
+  const getNodeAtScreenPos = useCallback(
+    (screenX: number, screenY: number): SimNode | null => {
+      const { x, y } = screenToWorld(screenX, screenY)
+      const zoom = transformRef.current.zoom
+      const nodes = simNodesRef.current
+
+      for (let i = nodes.length - 1; i >= 0; i--) {
+        const node = nodes[i]
+        const radius = getNodeRadius(node.connections)
+        const hitRadius = Math.max(radius + 4, 12 / zoom)
+        const dx = node.x - x
+        const dy = node.y - y
+        if (dx * dx + dy * dy <= hitRadius * hitRadius) {
+          return node
+        }
+      }
+      return null
+    },
+    [screenToWorld],
+  )
+
+  // Redraw when visual state changes (without restarting simulation)
+  useEffect(() => {
+    renderFrame()
+  }, [renderFrame])
+
+  // Initialize and Update Force Simulation (ONLY on dataset identity change)
+  useEffect(() => {
+    if (!nodesData || nodesData.length === 0) return
+
+    // If simulation is already initialized and running/sleeping on the same nodes length, do not re-run
+    if (simulationRef.current && simNodesRef.current.length === nodesData.length) {
+      return
+    }
+
+    const connectionCountMap = new Map<string, number>()
+    for (const edge of edgesData) {
+      connectionCountMap.set(
+        edge.source,
+        (connectionCountMap.get(edge.source) || 0) + 1,
+      )
+      connectionCountMap.set(
+        edge.target,
+        (connectionCountMap.get(edge.target) || 0) + 1,
       )
     }
-    try {
-      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-    } catch {}
-  }
 
-  const handlePointerMove = (e: React.PointerEvent) => {
-    const s = state.current
-    if (s.pointers.has(e.pointerId)) {
-      s.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const existingMap = new Map<string, SimNode>()
+    for (const sn of simNodesRef.current) {
+      existingMap.set(sn.id, sn)
     }
 
-    if (s.pointers.size === 2) {
-      // Pinch to zoom
-      const pts = Array.from(s.pointers.values())
-      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y)
-      if (s.lastPinchDist > 0) {
-        const delta = dist - s.lastPinchDist
-        const zoomDelta = delta * 0.01 // Sensitivity
-        let newZoom = s.zoom * (1 + zoomDelta)
-        newZoom = Math.max(0.2, Math.min(newZoom, 5))
-        s.zoom = newZoom
-      }
-      s.lastPinchDist = dist
-      return // skip drag rotation
-    }
-
-    if (s.isDragging && s.pointers.size === 1) {
-      const dx = e.clientX - s.lastMouseX
-      const dy = e.clientY - s.lastMouseY
-      // Y rotation is controlled by horizontal mouse movement
-      s.rotY += dx * 0.005
-      // X rotation is controlled by vertical mouse movement
-      s.rotX += dy * 0.005
-      s.lastMouseX = e.clientX
-      s.lastMouseY = e.clientY
-    } else if (s.pointers.size === 0) {
-      // Hit detection (hover) only when not interacting
-      const rect = canvasRef.current!.getBoundingClientRect()
-      const mx = e.clientX - rect.left
-      const my = e.clientY - rect.top
-
-      let hitId: string | null = null
-      // Check from front to back (drawOrder is sorted back-to-front, so we iterate backwards)
-      if (projDataRef.current && drawOrderRef.current) {
-        const projData = projDataRef.current
-        const drawOrder = drawOrderRef.current
-        for (let i = drawOrder.length - 1; i >= 0; i--) {
-          const nodeIdx = drawOrder[i]
-          const idx = nodeIdx * 5
-          const scale = projData[idx + 4]
-          if (scale < 0) continue
-
-          const px = projData[idx + 0]
-          const py = projData[idx + 1]
-          const pr = projData[idx + 2]
-
-          const r = Math.max(pr * 1.5, 5) // at least 5px hit radius
-          const distSq = (px - mx) ** 2 + (py - my) ** 2
-          if (distSq < r ** 2) {
-            hitId = nodes[nodeIdx].id
-            break
-          }
+    const simNodes: SimNode[] = nodesData.map((n, i) => {
+      const existing = existingMap.get(n.id)
+      const connections = connectionCountMap.get(n.id) || 0
+      if (existing) {
+        return {
+          ...n,
+          x: existing.x,
+          y: existing.y,
+          vx: 0,
+          vy: 0,
+          connections,
         }
       }
 
-      if (hitId !== s.hoveredId) {
-        onHover(hitId)
+      // Initial organic balanced distribution centered on viewport origin
+      const angle = i * 0.38
+      const radius = 35 + Math.sqrt(i) * 36
+      return {
+        ...n,
+        x: Math.cos(angle) * radius + (Math.random() - 0.5) * 15,
+        y: Math.sin(angle) * radius + (Math.random() - 0.5) * 15,
+        connections,
       }
+    })
 
-      if (canvasRef.current) {
-        canvasRef.current.style.cursor = hitId
-          ? 'pointer'
-          : s.isDragging
-            ? 'grabbing'
-            : 'grab'
-      }
-    }
-  }
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    state.current.pointers.delete(e.pointerId)
-
-    if (state.current.pointers.size === 0) {
-      state.current.isDragging = false
-      state.current.lastPinchDist = 0
-    } else if (state.current.pointers.size === 1) {
-      const remaining = Array.from(state.current.pointers.values())[0]
-      state.current.isDragging = true
-      state.current.lastMouseX = remaining.x
-      state.current.lastMouseY = remaining.y
-      state.current.lastPinchDist = 0
+    const nodeById = new Map<string, SimNode>()
+    for (const sn of simNodes) {
+      nodeById.set(sn.id, sn)
     }
 
-    try {
-      ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
-    } catch {}
-
-    if (canvasRef.current) {
-      canvasRef.current.style.cursor = state.current.hoveredId
-        ? 'pointer'
-        : 'grab'
-    }
-  }
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault()
-    const zoomDelta = e.deltaY * -0.001
-    let newZoom = state.current.zoom * (1 + zoomDelta)
-    newZoom = Math.max(0.2, Math.min(newZoom, 5))
-    state.current.zoom = newZoom
-  }
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (!canvasRef.current || !projDataRef.current || !drawOrderRef.current)
-      return
-
-    // Perform hit detection directly on click for mobile tap support
-    const rect = canvasRef.current.getBoundingClientRect()
-    const mx = e.clientX - rect.left
-    const my = e.clientY - rect.top
-
-    let hitId: string | null = null
-    const projData = projDataRef.current
-    const drawOrder = drawOrderRef.current
-
-    // Check from front to back
-    for (let i = drawOrder.length - 1; i >= 0; i--) {
-      const nodeIdx = drawOrder[i]
-      const idx = nodeIdx * 5
-      const scale = projData[idx + 4]
-      if (scale < 0) continue
-
-      const px = projData[idx + 0]
-      const py = projData[idx + 1]
-      const pr = projData[idx + 2]
-
-      const r = Math.max(pr * 1.5, 5) // at least 5px hit radius
-      const distSq = (px - mx) ** 2 + (py - my) ** 2
-      if (distSq < r ** 2) {
-        hitId = nodes[nodeIdx].id
-        break
+    const simLinks: SimLink[] = []
+    for (const edge of edgesData) {
+      const source = nodeById.get(edge.source)
+      const target = nodeById.get(edge.target)
+      if (source && target) {
+        simLinks.push({ source, target })
       }
     }
 
-    if (hitId) {
-      onClick(hitId)
-    } else {
-      onClick(null)
+    simNodesRef.current = simNodes
+    simLinksRef.current = simLinks
+
+    if (simulationRef.current) {
+      simulationRef.current.stop()
     }
-  }
+
+    // 2D Force Simulation (Sleeps when alpha reaches equilibrium)
+    const sim = d3
+      .forceSimulation(simNodes, 2)
+      .force(
+        'link',
+        d3
+          .forceLink(simLinks)
+          .id((d: any) => d.id)
+          .distance((d: any) => 80 + Math.sqrt((d.source.connections || 0) + (d.target.connections || 0)) * 10)
+          .strength(0.35),
+      )
+      .force(
+        'charge',
+        d3
+          .forceManyBody()
+          .strength((d: any) => -350 - Math.sqrt(d.connections || 1) * 50)
+          .distanceMax(1000),
+      )
+      .force('center', d3.forceCenter(0, 0).strength(0.01))
+      .force(
+        'collision',
+        d3
+          .forceCollide()
+          .radius((d: any) => getNodeRadius(d.connections) + 16)
+          .iterations(3),
+      )
+      .alphaDecay(0.02)
+      .alphaMin(0.005)
+
+    sim.on('tick', () => {
+      renderFrame()
+    })
+
+    simulationRef.current = sim
+
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true
+      sim.alpha(0.8).restart()
+    }
+
+    return () => {
+      sim.stop()
+    }
+  }, [nodesData, edgesData])
+
+  // Mouse / Drag Handlers (Live Spring Tension with Local Reheat)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const screenX = e.clientX - rect.left
+      const screenY = e.clientY - rect.top
+
+      const hitNode = getNodeAtScreenPos(screenX, screenY)
+      if (hitNode) {
+        // Dragging a node (Reheats physics organically)
+        transformRef.current.isDraggingNode = true
+        transformRef.current.draggedNode = hitNode
+        hitNode.fx = hitNode.x
+        hitNode.fy = hitNode.y
+
+        if (simulationRef.current) {
+          simulationRef.current.alphaTarget(0.3).restart()
+        }
+      } else {
+        // Panning the canvas
+        transformRef.current.isDragging = true
+        transformRef.current.dragStartX = e.clientX
+        transformRef.current.dragStartY = e.clientY
+        transformRef.current.lastPanX = transformRef.current.panX
+        transformRef.current.lastPanY = transformRef.current.panY
+      }
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const screenX = e.clientX - rect.left
+      const screenY = e.clientY - rect.top
+
+      if (transformRef.current.isDraggingNode && transformRef.current.draggedNode) {
+        const { x, y } = screenToWorld(screenX, screenY)
+        transformRef.current.draggedNode.fx = x
+        transformRef.current.draggedNode.fy = y
+        renderFrame()
+      } else if (transformRef.current.isDragging) {
+        const dx = e.clientX - transformRef.current.dragStartX
+        const dy = e.clientY - transformRef.current.dragStartY
+        transformRef.current.panX = transformRef.current.lastPanX + dx
+        transformRef.current.panY = transformRef.current.lastPanY + dy
+        renderFrame()
+      } else {
+        const hitNode = getNodeAtScreenPos(screenX, screenY)
+        canvas.style.cursor = hitNode ? 'pointer' : 'grab'
+        onHover(hitNode ? hitNode.id : null)
+      }
+    }
+
+    const handleMouseUp = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const screenX = e.clientX - rect.left
+      const screenY = e.clientY - rect.top
+
+      if (transformRef.current.isDraggingNode) {
+        if (transformRef.current.draggedNode) {
+          transformRef.current.draggedNode.fx = null
+          transformRef.current.draggedNode.fy = null
+          transformRef.current.draggedNode = null
+        }
+        transformRef.current.isDraggingNode = false
+        if (simulationRef.current) {
+          simulationRef.current.alphaTarget(0)
+        }
+      } else if (transformRef.current.isDragging) {
+        transformRef.current.isDragging = false
+        // Detect pure click
+        const dx = Math.abs(e.clientX - transformRef.current.dragStartX)
+        const dy = Math.abs(e.clientY - transformRef.current.dragStartY)
+        if (dx < 4 && dy < 4) {
+          const hitNode = getNodeAtScreenPos(screenX, screenY)
+          onClick(hitNode ? hitNode.id : null)
+        }
+      }
+    }
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const rect = canvas.getBoundingClientRect()
+      const mouseX = e.clientX - rect.left
+      const mouseY = e.clientY - rect.top
+
+      const { panX, panY, zoom } = transformRef.current
+      const width = canvas.clientWidth
+      const height = canvas.clientHeight
+
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87
+      const newZoom = Math.max(0.15, Math.min(5.0, zoom * zoomFactor))
+
+      const cx = width / 2 + panX
+      const cy = height / 2 + panY
+
+      const newPanX = mouseX - (mouseX - cx) * (newZoom / zoom) - width / 2
+      const newPanY = mouseY - (mouseY - cy) * (newZoom / zoom) - height / 2
+
+      transformRef.current.zoom = newZoom
+      transformRef.current.panX = newPanX
+      transformRef.current.panY = newPanY
+
+      renderFrame()
+    }
+
+    canvas.addEventListener('mousedown', handleMouseDown)
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    canvas.addEventListener('wheel', handleWheel, { passive: false })
+
+    return () => {
+      canvas.removeEventListener('mousedown', handleMouseDown)
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+      canvas.removeEventListener('wheel', handleWheel)
+    }
+  }, [getNodeAtScreenPos, screenToWorld, onHover, onClick, renderFrame])
+
+  // Resize Observer to match DPR
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ro = new ResizeObserver(() => {
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = canvas.clientWidth * dpr
+      canvas.height = canvas.clientHeight * dpr
+      renderFrame()
+    })
+
+    ro.observe(canvas)
+    return () => ro.disconnect()
+  }, [renderFrame])
+
+  // External Ref Controls
+  useEffect(() => {
+    onResetRef.current = () => {
+      transformRef.current.panX = 0
+      transformRef.current.panY = 0
+      transformRef.current.zoom = 1
+      renderFrame()
+    }
+    onZoomInRef.current = () => {
+      transformRef.current.zoom = Math.min(5.0, transformRef.current.zoom * 1.3)
+      renderFrame()
+    }
+    onZoomOutRef.current = () => {
+      transformRef.current.zoom = Math.max(0.15, transformRef.current.zoom * 0.77)
+      renderFrame()
+    }
+  }, [onResetRef, onZoomInRef, onZoomOutRef, renderFrame])
 
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 h-full w-full outline-none touch-none"
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      onPointerLeave={handlePointerUp}
-      onWheel={handleWheel}
-      onClick={handleClick}
-      style={{ cursor: 'grab', background: BG_COLOR }}
+      className="w-full h-full block touch-none"
+      style={{
+        backgroundColor: 'var(--theme-bg, #08090a)',
+      }}
     />
   )
 }
 
-// ── Node Detail Panel ───────────────────────────────────────────────
-
-function NodeDetailPanel({
-  node,
-  edges,
-  allNodes,
-  onClose,
-}: {
-  node: LayoutNode
-  edges: GraphEdge[]
-  allNodes: LayoutNode[]
-  onClose: () => void
-}) {
-  const nodeMap = useMemo(() => {
-    const map = new Map<string, LayoutNode>()
-    for (const n of allNodes) map.set(n.id, n)
-    return map
-  }, [allNodes])
-
-  const connections = useMemo(() => {
-    const connected: LayoutNode[] = []
-    for (const edge of edges) {
-      if (edge.source === node.id) {
-        const n = nodeMap.get(edge.target)
-        if (n) connected.push(n)
-      }
-      if (edge.target === node.id) {
-        const n = nodeMap.get(edge.source)
-        if (n) connected.push(n)
-      }
-    }
-    return connected
-  }, [node, edges, nodeMap])
-
-  const typeColor = getNodeColor(node.type)
-
-  return (
-    <div
-      className="absolute right-4 top-16 z-10 w-60 sm:w-80 overflow-hidden rounded-2xl border"
-      style={{
-        background:
-          'linear-gradient(135deg, rgba(15, 20, 35, 0.8), rgba(5, 10, 20, 0.95))',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(24px)',
-        boxShadow:
-          '0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-      }}
-    >
-      <div className="flex items-start justify-between gap-2 border-b border-white/5 p-3 sm:p-5">
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm sm:text-base font-semibold tracking-wide text-white">
-            {node.title}
-          </h3>
-          <div className="mt-2 flex items-center gap-2">
-            <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{
-                backgroundColor: typeColor,
-                boxShadow: `0 0 8px ${typeColor}`,
-              }}
-            />
-            <span className="text-xs font-medium uppercase tracking-wider text-slate-300">
-              {node.type ?? 'unknown'}
-            </span>
-            <span className="text-xs text-slate-500">
-              • {node.connections} links
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="shrink-0 rounded-full bg-white/5 p-1.5 text-slate-400 transition-all hover:bg-white/10 hover:text-white"
-          aria-label="Close detail panel"
-        >
-          <HugeiconsIcon icon={Cancel01Icon} size={16} />
-        </button>
-      </div>
-
-      <div className="max-h-40 sm:max-h-64 overflow-y-auto p-2 sm:p-3">
-        <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-          Connected Nodes
-        </p>
-        {connections.length === 0 ? (
-          <p className="px-2 py-4 text-center text-xs italic text-slate-500">
-            No connections found.
-          </p>
-        ) : (
-          <ul className="space-y-1">
-            {connections.map((c) => (
-              <li
-                key={c.id}
-                className="group flex cursor-default items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-white/5"
-              >
-                <span
-                  className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{
-                    backgroundColor: getNodeColor(c.type),
-                    boxShadow: `0 0 6px ${getNodeColor(c.type)}`,
-                  }}
-                />
-                <span className="truncate text-xs font-medium text-slate-300 transition-colors group-hover:text-white">
-                  {c.title}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="border-t border-white/5 p-4">
-        <a
-          href={`/memory?tab=knowledge&page=${encodeURIComponent(node.id)}`}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600/20 px-4 py-2.5 text-xs font-semibold text-indigo-300 transition-all hover:bg-indigo-600/30 hover:text-indigo-200"
-        >
-          View in Databank
-          <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
-        </a>
-      </div>
-    </div>
-  )
-}
-
-// ── Stats Bar ───────────────────────────────────────────────────────
-
-function StatsBar({
-  nodeCount,
-  edgeCount,
-  entityCount,
-  conceptCount,
-}: {
-  nodeCount: number
-  edgeCount: number
-  entityCount: number
-  conceptCount: number
-}) {
-  return (
-    <div
-      className="absolute bottom-4 left-4 z-10 flex items-center gap-4 rounded-lg border px-3 py-2"
-      style={{
-        background: 'color-mix(in srgb, #02040A 85%, transparent)',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(12px)',
-      }}
-    >
-      <StatItem label="Nodes" value={nodeCount} />
-      <StatItem label="Edges" value={edgeCount} />
-      <StatItem label="Entities" value={entityCount} color="#00FFFF" />
-      <StatItem label="Concepts" value={conceptCount} color="#FFFFFF" />
-    </div>
-  )
-}
-
-function StatItem({
-  label,
-  value,
-  color,
-}: {
-  label: string
-  value: number
-  color?: string
-}) {
-  return (
-    <div className="flex items-center gap-1.5 text-xs">
-      {color && (
-        <span
-          className="inline-block h-2 w-2 rounded-full"
-          style={{ backgroundColor: color, boxShadow: `0 0 5px ${color}` }}
-        />
-      )}
-      <span style={{ color: 'rgba(255, 255, 255, 0.5)' }}>{label}</span>
-      <span className="font-mono font-semibold" style={{ color: '#FFFFFF' }}>
-        {value}
-      </span>
-    </div>
-  )
-}
-
-// ── Dummy Data Generator ──────────────────────────────────────────────
-function getDummyGraphData(): GraphResponse {
-  const nodes: GraphNode[] = []
-  const edges: GraphEdge[] = []
-
-  const types = ['entity', 'concept', 'action', 'file', 'folder']
-
-  // Create 1000 nodes
-  for (let i = 0; i < 1000; i++) {
-    nodes.push({
-      id: `node_${i}`,
-      title: `Node ${Math.random().toString(36).substring(7)}`.toUpperCase(),
-      type: types[Math.floor(Math.random() * types.length)],
-      tags: ['dummy'],
-    })
-  }
-
-  // Create clusters (hubs)
-  const hubs = [0, 20, 40, 60, 80]
-
-  for (let i = 0; i < 1000; i++) {
-    if (hubs.includes(i)) continue // Skip hubs themselves
-
-    // Connect most nodes to a random hub (clustering effect)
-    if (Math.random() > 0.3) {
-      const randomHub = hubs[Math.floor(Math.random() * hubs.length)]
-      edges.push({ source: `node_${i}`, target: `node_${randomHub}` })
-    }
-
-    // Add some random cross-connections
-    if (Math.random() > 0.95) {
-      // Reduce cross-connection probability to prevent excessive edges
-      const randomTarget = Math.floor(Math.random() * 1000)
-      if (i !== randomTarget) {
-        edges.push({ source: `node_${i}`, target: `node_${randomTarget}` })
-      }
-    }
-  }
-
-  return { nodes, edges }
-}
-
-// ── Main Export ──────────────────────────────────────────────────────
+// ── Root Screen Component ───────────────────────────────────────────
 
 export function GraphScreen() {
+  const navigate = useNavigate()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showLabels, setShowLabels] = useState(true)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
 
-  const { data, isLoading, error } = useQuery({
+  // Top Category Filter State
+  const [activeCategories, setActiveCategories] = useState<Set<string>>(
+    () => new Set(['concept', 'entity', 'project', 'skill', 'daily']),
+  )
+
+  const onResetRef = useRef<(() => void) | null>(null)
+  const onZoomInRef = useRef<(() => void) | null>(null)
+  const onZoomOutRef = useRef<(() => void) | null>(null)
+
+  const { data: rawGraph, isLoading } = useQuery<GraphResponse>({
     queryKey: ['knowledge-graph'],
     queryFn: async () => {
       const res = await fetch('/api/knowledge/graph')
-      if (!res.ok) throw new Error('Failed to fetch graph')
-      return (await res.json()) as GraphResponse
+      if (!res.ok) throw new Error('Failed to fetch knowledge graph')
+      return res.json()
     },
     staleTime: 60_000,
   })
 
-  const nodes = data?.nodes ?? []
-  const edges = data?.edges ?? []
-
-  const layoutNodes = useForceLayout(nodes, edges)
-
-  const searchHighlightIds = useMemo(() => {
-    if (!searchQuery.trim() || !layoutNodes) return new Set<string>()
-    const q = searchQuery.toLowerCase()
-    const ids = new Set<string>()
-    for (const node of layoutNodes) {
-      if (node.title.toLowerCase().includes(q)) ids.add(node.id)
+  // Category counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      concept: 0,
+      entity: 0,
+      project: 0,
+      skill: 0,
+      daily: 0,
     }
-    return ids
-  }, [searchQuery, layoutNodes])
+    for (const node of rawGraph?.nodes || []) {
+      const cat = (node.type?.toLowerCase() || 'concept') as GraphCategory
+      if (counts[cat] !== undefined) {
+        counts[cat]++
+      } else {
+        counts.concept++
+      }
+    }
+    return counts
+  }, [rawGraph?.nodes])
 
-  const selectedNode = useMemo(
-    () => layoutNodes?.find((n) => n.id === selectedNodeId) ?? null,
-    [layoutNodes, selectedNodeId],
-  )
+  // Filtered nodes & edges based on active categories
+  const { filteredNodes, filteredEdges, nodeLookup } = useMemo(() => {
+    const nodes = rawGraph?.nodes || []
+    const edges = rawGraph?.edges || []
 
-  const entityCount = nodes.filter(
-    (n) => n.type?.toLowerCase() === 'entity',
-  ).length
-  const conceptCount = nodes.filter(
-    (n) => n.type?.toLowerCase() === 'concept',
-  ).length
+    const validNodes = nodes.filter((n) => {
+      const cat = (n.type?.toLowerCase() || 'concept')
+      return activeCategories.has(cat)
+    })
 
-  if (error) {
-    return (
-      <div
-        className="flex h-full items-center justify-center"
-        style={{ color: 'var(--theme-danger)' }}
-      >
-        <p className="text-sm">
-          Failed to load knowledge graph: {error.message}
-        </p>
-      </div>
+    const validNodeIdSet = new Set(validNodes.map((n) => n.id))
+    const validEdges = edges.filter(
+      (e) => validNodeIdSet.has(e.source) && validNodeIdSet.has(e.target),
     )
-  }
+
+    const map = new Map<string, GraphNode>()
+    for (const n of validNodes) {
+      map.set(n.id, n)
+    }
+
+    return {
+      filteredNodes: validNodes,
+      filteredEdges: validEdges,
+      nodeLookup: map,
+    }
+  }, [rawGraph, activeCategories])
+
+  // Search Highlights
+  const searchHighlightIds = useMemo(() => {
+    if (!searchQuery.trim()) return new Set<string>()
+    const q = searchQuery.toLowerCase()
+    const matches = new Set<string>()
+    for (const n of filteredNodes) {
+      if (
+        n.title.toLowerCase().includes(q) ||
+        n.id.toLowerCase().includes(q) ||
+        (n.tags && n.tags.some((t) => t.toLowerCase().includes(q)))
+      ) {
+        matches.add(n.id)
+      }
+    }
+    return matches
+  }, [searchQuery, filteredNodes])
+
+  // Selected Node Details for Side Inspector
+  const selectedNode = useMemo(() => {
+    if (!selectedNodeId) return null
+    return nodeLookup.get(selectedNodeId) || null
+  }, [selectedNodeId, nodeLookup])
+
+  const { inboundLinks, outboundLinks } = useMemo(() => {
+    if (!selectedNodeId) return { inboundLinks: [], outboundLinks: [] }
+
+    const inList: InspectorNode[] = []
+    const outList: InspectorNode[] = []
+
+    for (const edge of filteredEdges) {
+      if (edge.source === selectedNodeId) {
+        const target = nodeLookup.get(edge.target)
+        if (target) outList.push(target)
+      }
+      if (edge.target === selectedNodeId) {
+        const source = nodeLookup.get(edge.source)
+        if (source) inList.push(source)
+      }
+    }
+
+    return { inboundLinks: inList, outboundLinks: outList }
+  }, [selectedNodeId, filteredEdges, nodeLookup])
+
+  const handleToggleCategory = useCallback((category: GraphCategory) => {
+    setActiveCategories((prev) => {
+      const next = new Set(prev)
+      if (next.has(category)) {
+        if (next.size > 1) next.delete(category) // Keep at least 1 category
+      } else {
+        next.add(category)
+      }
+      return next
+    })
+  }, [])
+
+  const handleOpenFull = useCallback(
+    (id: string) => {
+      if (id.startsWith('skills/')) {
+        navigate({ to: '/skills' })
+      } else {
+        navigate({
+          to: '/memory',
+          search: { tab: 'knowledge', path: id },
+        })
+      }
+    },
+    [navigate],
+  )
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden"
-      style={{ background: BG_COLOR }}
+      className="flex h-full w-full min-h-0 flex-1 flex-col overflow-hidden relative select-none"
+      style={{
+        backgroundColor: 'var(--theme-bg, #08090a)',
+        color: 'var(--theme-text)',
+      }}
     >
-      {/* Header / Search Bar */}
+      {/* ── Top Bar with Filter Pills & Search ── */}
       <div
-        className="absolute left-2 right-2 top-2 md:left-4 md:right-auto md:top-4 z-50 flex gap-2"
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        className="h-14 shrink-0 border-b px-4 flex items-center justify-between gap-3 z-30"
+        style={{
+          borderColor: 'var(--theme-border)',
+          backgroundColor: 'var(--theme-card, rgba(15, 17, 23, 0.8))',
+          backdropFilter: 'blur(12px)',
+        }}
       >
-        {/* Mobile Hamburger Trigger */}
-        <HamburgerTrigger className="md:hidden shrink-0 bg-white/10 backdrop-blur-sm border border-white/10 shadow-lg" />
+        <div className="flex items-center gap-3 min-w-0">
+          <HamburgerTrigger />
+          <div className="relative w-48 sm:w-64">
+            <HugeiconsIcon
+              icon={Search01Icon}
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50"
+            />
+            <input
+              type="text"
+              placeholder="Search nodes or topics..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full text-xs rounded-xl pl-8 pr-7 py-1.5 outline-none border transition-colors"
+              style={{
+                backgroundColor: 'var(--theme-bg)',
+                borderColor: 'var(--theme-border)',
+                color: 'var(--theme-text)',
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} size={12} />
+              </button>
+            )}
+          </div>
+        </div>
 
-        {/* Search Input */}
-        <div
-          className="flex-1 md:w-[280px] flex items-center gap-2 rounded-lg border px-3 py-2"
-          style={{
-            background: 'color-mix(in srgb, #02040A 85%, transparent)',
-            borderColor: 'rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(12px)',
-          }}
-        >
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={14}
-            style={{ color: 'rgba(255, 255, 255, 0.5)' }}
+        {/* Category Pills Filter */}
+        <div className="hidden sm:flex items-center gap-2">
+          <GraphFilterBar
+            activeCategories={activeCategories}
+            counts={categoryCounts}
+            onToggleCategory={handleToggleCategory}
           />
-          <input
-            type="text"
-            placeholder="Search nodes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 bg-transparent text-xs outline-none min-w-0"
-            style={{ color: '#FFFFFF' }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="rounded p-0.5 hover:bg-white/10 shrink-0"
-            >
-              <HugeiconsIcon
-                icon={Cancel01Icon}
-                size={12}
-                style={{ color: 'rgba(255, 255, 255, 0.5)' }}
-              />
-            </button>
-          )}
-          {searchHighlightIds.size > 0 && (
-            <span
-              className="text-[10px] tabular-nums shrink-0"
-              style={{ color: 'rgba(255, 255, 255, 0.5)' }}
-            >
-              {searchHighlightIds.size} found
-            </span>
-          )}
+        </div>
+
+        {/* Canvas Quick Controls */}
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowLabels((prev) => !prev)}
+            className="p-2 rounded-xl border transition-colors"
+            style={{
+              borderColor: 'var(--theme-border)',
+              backgroundColor: showLabels ? 'var(--theme-card2)' : 'transparent',
+              color: showLabels ? 'var(--theme-accent)' : 'var(--theme-muted)',
+            }}
+            title={showLabels ? 'Hide Labels' : 'Show Labels'}
+          >
+            <HugeiconsIcon icon={showLabels ? ViewIcon : ViewOffIcon} size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onZoomInRef.current?.()}
+            className="p-2 rounded-xl border transition-colors hover:bg-[var(--theme-card2)]"
+            style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+            title="Zoom In"
+          >
+            <HugeiconsIcon icon={Add01Icon} size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onZoomOutRef.current?.()}
+            className="p-2 rounded-xl border transition-colors hover:bg-[var(--theme-card2)]"
+            style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+            title="Zoom Out"
+          >
+            <HugeiconsIcon icon={MinusSignIcon} size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onResetRef.current?.()}
+            className="text-xs px-2.5 py-1.5 rounded-xl border font-medium transition-colors hover:bg-[var(--theme-card2)]"
+            style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-text)' }}
+          >
+            Reset
+          </button>
         </div>
       </div>
 
-      {/* Loading state */}
-      {(isLoading || !layoutNodes) && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div
-              className="h-8 w-8 animate-spin rounded-full border-2 border-t-transparent"
-              style={{
-                borderColor: 'var(--theme-border)',
-                borderTopColor: 'transparent',
-              }}
-            />
-            <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-              {isLoading ? 'Loading knowledge graph...' : 'Computing layout...'}
-            </p>
+      {/* ── Main Canvas Viewport ── */}
+      <div className="flex-1 min-h-0 w-full relative overflow-hidden">
+        {isLoading ? (
+          <div className="flex h-full w-full items-center justify-center gap-2 text-xs opacity-60">
+            <span>Loading Living Brain Graph...</span>
           </div>
-        </div>
-      )}
+        ) : (
+          <CanvasRenderer
+            nodesData={filteredNodes}
+            edgesData={filteredEdges}
+            hoveredNodeId={hoveredNodeId}
+            selectedNodeId={selectedNodeId}
+            searchHighlightIds={searchHighlightIds}
+            showLabels={showLabels}
+            onHover={setHoveredNodeId}
+            onClick={setSelectedNodeId}
+            onResetRef={onResetRef}
+            onZoomInRef={onZoomInRef}
+            onZoomOutRef={onZoomOutRef}
+          />
+        )}
 
-      {/* Empty state */}
-      {layoutNodes && layoutNodes.length === 0 && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
-          <div className="flex flex-col items-center gap-4 text-center max-w-sm">
-            <div className="flex flex-col gap-1">
-              <p
-                className="text-sm font-medium"
-                style={{ color: 'var(--theme-text)' }}
-              >
-                No knowledge pages found
-              </p>
-              <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-                Your Knowledge Graph is currently empty.
-              </p>
-            </div>
-
-            <div
-              className="rounded-md border p-3 text-left w-full shadow-sm"
-              style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                borderColor: 'rgba(255, 255, 255, 0.1)',
-              }}
-            >
-              <p
-                className="text-xs font-medium mb-2"
-                style={{ color: 'var(--theme-text)' }}
-              >
-                How to connect your Second Brain:
-              </p>
-              <ol
-                className="text-xs space-y-2 list-decimal pl-4"
-                style={{ color: 'var(--theme-muted)' }}
-              >
-                <li>
-                  Go to the{' '}
-                  <strong style={{ color: 'var(--theme-text)' }}>Memory</strong>{' '}
-                  page from the sidebar.
-                </li>
-                <li>
-                  Click the{' '}
-                  <strong style={{ color: 'var(--theme-text)' }}>
-                    Knowledge Base
-                  </strong>{' '}
-                  tab.
-                </li>
-                <li>
-                  Click the{' '}
-                  <strong style={{ color: 'var(--theme-text)' }}>
-                    Settings
-                  </strong>{' '}
-                  (gear) icon.
-                </li>
-                <li>
-                  Set the source to{' '}
-                  <strong style={{ color: 'var(--theme-text)' }}>
-                    Local Path
-                  </strong>{' '}
-                  (e.g. <code>~/obsidian/memo</code>) or{' '}
-                  <strong style={{ color: 'var(--theme-text)' }}>
-                    GitHub Repo
-                  </strong>
-                  .
-                </li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 2D Canvas */}
-      {layoutNodes && layoutNodes.length > 0 && (
-        <CanvasRenderer
-          nodes={layoutNodes}
-          edges={edges}
-          hoveredNodeId={hoveredNodeId}
-          selectedNodeId={selectedNodeId}
-          searchHighlightIds={searchHighlightIds}
-          onHover={setHoveredNodeId}
-          onClick={setSelectedNodeId}
-        />
-      )}
-
-      {/* Node Detail Panel */}
-      {selectedNode && layoutNodes && (
-        <NodeDetailPanel
-          node={selectedNode}
-          edges={edges}
-          allNodes={layoutNodes}
+        {/* ── Side Inspector Drawer ── */}
+        <GraphSideInspector
+          selectedNode={selectedNode}
+          inboundLinks={inboundLinks}
+          outboundLinks={outboundLinks}
           onClose={() => setSelectedNodeId(null)}
+          onSelectNode={setSelectedNodeId}
+          onOpenFull={handleOpenFull}
         />
-      )}
-
-      {/* Stats Bar */}
-      {layoutNodes && layoutNodes.length > 0 && (
-        <StatsBar
-          nodeCount={layoutNodes.length}
-          edgeCount={edges.length}
-          entityCount={entityCount}
-          conceptCount={conceptCount}
-        />
-      )}
+      </div>
     </div>
   )
 }

@@ -203,6 +203,8 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
   const chatMatch = pathname.match(/^\/chat\/(.+)$/)
   const activeFriendlyId = chatMatch ? chatMatch[1] : 'main'
   const isOnChatRoute = Boolean(chatMatch) || pathname === '/new'
+  const isOnStudyRoute = pathname.startsWith('/study')
+  const isOnGraphRoute = pathname.startsWith('/graph')
   const isOnTerminalRoute = pathname.startsWith('/terminal')
   const isOnEditorRoute = pathname.startsWith('/editor')
   const isOnFileManagerRoute = pathname.startsWith('/file-manager')
@@ -401,12 +403,16 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
               onTouchEnd={isMobile ? onTouchEnd : undefined}
               className={[
                 'h-full min-h-0 min-w-0 overflow-x-hidden bg-[var(--theme-bg)] relative flex-1',
-                isOnChatRoute ? 'overflow-hidden' : 'overflow-y-auto',
-                isMobile && !isOnChatRoute
+                isOnChatRoute || isOnStudyRoute || isOnGraphRoute
+                  ? 'overflow-hidden'
+                  : 'overflow-y-auto',
+                isMobile && !isOnChatRoute && !isOnStudyRoute && !isOnGraphRoute
                   ? 'pb-2'
                   : !isMobile &&
                       !isChromeFreeSurface &&
                       !isOnChatRoute &&
+                      !isOnStudyRoute &&
+                      !isOnGraphRoute &&
                       settings.showSystemMetricsFooter
                     ? 'pb-7'
                     : '',
@@ -447,7 +453,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
 
             <div
               className={[
-                'page-transition flex flex-col',
+                'page-transition flex flex-col flex-1 min-h-0',
                 isChromeFreeSurface ? 'min-h-full' : 'h-full',
                 slideClass,
                 isOnTerminalRoute ? 'hidden' : '',
@@ -465,9 +471,11 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           </main>
         </div>
 
-          {/* Chat panel — visible on non-chat, non-editor, and non-file-manager routes */}
+          {/* Chat panel — visible on non-chat, non-editor, non-study, non-graph, and non-file-manager routes */}
           {!isOnChatRoute &&
             !isOnEditorRoute &&
+            !isOnStudyRoute &&
+            !isOnGraphRoute &&
             !isOnFileManagerRoute &&
             !isChromeFreeSurface &&
             !isMobile && (
@@ -477,10 +485,12 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
             )}
         </div>
 
-        {/* Floating chat toggle — visible on non-chat, non-editor, and non-file-manager routes */}
+        {/* Floating chat toggle — visible on non-chat, non-editor, non-study, non-graph, and non-file-manager routes */}
         {!isChromeFreeSurface &&
           !isOnChatRoute &&
           !isOnEditorRoute &&
+          !isOnStudyRoute &&
+          !isOnGraphRoute &&
           !isOnFileManagerRoute &&
           !isMobile && <ChatPanelToggle />}
 

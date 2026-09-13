@@ -15,6 +15,7 @@ import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SystemRouteImport } from './routes/system'
 import { Route as Swarm2RouteImport } from './routes/swarm2'
 import { Route as SwarmRouteImport } from './routes/swarm'
+import { Route as StudyRouteImport } from './routes/study'
 import { Route as SkillsRouteImport } from './routes/skills'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ReserveRouteImport } from './routes/reserve'
@@ -133,6 +134,9 @@ import { Route as ApiUpdateStatusRouteImport } from './routes/api/update/status'
 import { Route as ApiUpdateAgentRouteImport } from './routes/api/update/agent'
 import { Route as ApiSwarmRuntimeResetRouteImport } from './routes/api/swarm-runtime.reset'
 import { Route as ApiSwarmMemorySearchRouteImport } from './routes/api/swarm-memory/search'
+import { Route as ApiStudyExtractRouteImport } from './routes/api/study/extract'
+import { Route as ApiStudyCommitRouteImport } from './routes/api/study/commit'
+import { Route as ApiStudyAnalyzeRouteImport } from './routes/api/study/analyze'
 import { Route as ApiSkillsUninstallRouteImport } from './routes/api/skills/uninstall'
 import { Route as ApiSkillsToggleRouteImport } from './routes/api/skills/toggle'
 import { Route as ApiSkillsInstallRouteImport } from './routes/api/skills/install'
@@ -233,6 +237,11 @@ const Swarm2Route = Swarm2RouteImport.update({
 const SwarmRoute = SwarmRouteImport.update({
   id: '/swarm',
   path: '/swarm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudyRoute = StudyRouteImport.update({
+  id: '/study',
+  path: '/study',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SkillsRoute = SkillsRouteImport.update({
@@ -826,6 +835,21 @@ const ApiSwarmMemorySearchRoute = ApiSwarmMemorySearchRouteImport.update({
   path: '/search',
   getParentRoute: () => ApiSwarmMemoryRoute,
 } as any)
+const ApiStudyExtractRoute = ApiStudyExtractRouteImport.update({
+  id: '/api/study/extract',
+  path: '/api/study/extract',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStudyCommitRoute = ApiStudyCommitRouteImport.update({
+  id: '/api/study/commit',
+  path: '/api/study/commit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStudyAnalyzeRoute = ApiStudyAnalyzeRouteImport.update({
+  id: '/api/study/analyze',
+  path: '/api/study/analyze',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSkillsUninstallRoute = ApiSkillsUninstallRouteImport.update({
   id: '/uninstall',
   path: '/uninstall',
@@ -1214,6 +1238,7 @@ export interface FileRoutesByFullPath {
   '/reserve': typeof ReserveRouteWithChildren
   '/settings': typeof SettingsRouteWithChildren
   '/skills': typeof SkillsRoute
+  '/study': typeof StudyRoute
   '/swarm': typeof SwarmRoute
   '/swarm2': typeof Swarm2Route
   '/system': typeof SystemRoute
@@ -1370,6 +1395,9 @@ export interface FileRoutesByFullPath {
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/toggle': typeof ApiSkillsToggleRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/study/analyze': typeof ApiStudyAnalyzeRoute
+  '/api/study/commit': typeof ApiStudyCommitRoute
+  '/api/study/extract': typeof ApiStudyExtractRoute
   '/api/swarm-memory/search': typeof ApiSwarmMemorySearchRoute
   '/api/swarm-runtime/reset': typeof ApiSwarmRuntimeResetRoute
   '/api/update/agent': typeof ApiUpdateAgentRoute
@@ -1410,6 +1438,7 @@ export interface FileRoutesByTo {
   '/remote-access': typeof RemoteAccessRoute
   '/reserve': typeof ReserveRouteWithChildren
   '/skills': typeof SkillsRoute
+  '/study': typeof StudyRoute
   '/swarm': typeof SwarmRoute
   '/swarm2': typeof Swarm2Route
   '/system': typeof SystemRoute
@@ -1566,6 +1595,9 @@ export interface FileRoutesByTo {
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/toggle': typeof ApiSkillsToggleRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/study/analyze': typeof ApiStudyAnalyzeRoute
+  '/api/study/commit': typeof ApiStudyCommitRoute
+  '/api/study/extract': typeof ApiStudyExtractRoute
   '/api/swarm-memory/search': typeof ApiSwarmMemorySearchRoute
   '/api/swarm-runtime/reset': typeof ApiSwarmRuntimeResetRoute
   '/api/update/agent': typeof ApiUpdateAgentRoute
@@ -1608,6 +1640,7 @@ export interface FileRoutesById {
   '/reserve': typeof ReserveRouteWithChildren
   '/settings': typeof SettingsRouteWithChildren
   '/skills': typeof SkillsRoute
+  '/study': typeof StudyRoute
   '/swarm': typeof SwarmRoute
   '/swarm2': typeof Swarm2Route
   '/system': typeof SystemRoute
@@ -1764,6 +1797,9 @@ export interface FileRoutesById {
   '/api/skills/install': typeof ApiSkillsInstallRoute
   '/api/skills/toggle': typeof ApiSkillsToggleRoute
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
+  '/api/study/analyze': typeof ApiStudyAnalyzeRoute
+  '/api/study/commit': typeof ApiStudyCommitRoute
+  '/api/study/extract': typeof ApiStudyExtractRoute
   '/api/swarm-memory/search': typeof ApiSwarmMemorySearchRoute
   '/api/swarm-runtime/reset': typeof ApiSwarmRuntimeResetRoute
   '/api/update/agent': typeof ApiUpdateAgentRoute
@@ -1807,6 +1843,7 @@ export interface FileRouteTypes {
     | '/reserve'
     | '/settings'
     | '/skills'
+    | '/study'
     | '/swarm'
     | '/swarm2'
     | '/system'
@@ -1963,6 +2000,9 @@ export interface FileRouteTypes {
     | '/api/skills/install'
     | '/api/skills/toggle'
     | '/api/skills/uninstall'
+    | '/api/study/analyze'
+    | '/api/study/commit'
+    | '/api/study/extract'
     | '/api/swarm-memory/search'
     | '/api/swarm-runtime/reset'
     | '/api/update/agent'
@@ -2003,6 +2043,7 @@ export interface FileRouteTypes {
     | '/remote-access'
     | '/reserve'
     | '/skills'
+    | '/study'
     | '/swarm'
     | '/swarm2'
     | '/system'
@@ -2159,6 +2200,9 @@ export interface FileRouteTypes {
     | '/api/skills/install'
     | '/api/skills/toggle'
     | '/api/skills/uninstall'
+    | '/api/study/analyze'
+    | '/api/study/commit'
+    | '/api/study/extract'
     | '/api/swarm-memory/search'
     | '/api/swarm-runtime/reset'
     | '/api/update/agent'
@@ -2200,6 +2244,7 @@ export interface FileRouteTypes {
     | '/reserve'
     | '/settings'
     | '/skills'
+    | '/study'
     | '/swarm'
     | '/swarm2'
     | '/system'
@@ -2356,6 +2401,9 @@ export interface FileRouteTypes {
     | '/api/skills/install'
     | '/api/skills/toggle'
     | '/api/skills/uninstall'
+    | '/api/study/analyze'
+    | '/api/study/commit'
+    | '/api/study/extract'
     | '/api/swarm-memory/search'
     | '/api/swarm-runtime/reset'
     | '/api/update/agent'
@@ -2398,6 +2446,7 @@ export interface RootRouteChildren {
   ReserveRoute: typeof ReserveRouteWithChildren
   SettingsRoute: typeof SettingsRouteWithChildren
   SkillsRoute: typeof SkillsRoute
+  StudyRoute: typeof StudyRoute
   SwarmRoute: typeof SwarmRoute
   Swarm2Route: typeof Swarm2Route
   SystemRoute: typeof SystemRoute
@@ -2525,6 +2574,9 @@ export interface RootRouteChildren {
   ApiRemoteAccessPublicIpRoute: typeof ApiRemoteAccessPublicIpRoute
   ApiRemoteAccessStatusRoute: typeof ApiRemoteAccessStatusRoute
   ApiRunsActiveRoute: typeof ApiRunsActiveRoute
+  ApiStudyAnalyzeRoute: typeof ApiStudyAnalyzeRoute
+  ApiStudyCommitRoute: typeof ApiStudyCommitRoute
+  ApiStudyExtractRoute: typeof ApiStudyExtractRoute
   ApiUpdateAgentRoute: typeof ApiUpdateAgentRoute
   ApiUpdateStatusRoute: typeof ApiUpdateStatusRoute
   ApiUpdateWorkspaceRoute: typeof ApiUpdateWorkspaceRoute
@@ -2573,6 +2625,13 @@ declare module '@tanstack/react-router' {
       path: '/swarm'
       fullPath: '/swarm'
       preLoaderRoute: typeof SwarmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/study': {
+      id: '/study'
+      path: '/study'
+      fullPath: '/study'
+      preLoaderRoute: typeof StudyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/skills': {
@@ -3401,6 +3460,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSwarmMemorySearchRouteImport
       parentRoute: typeof ApiSwarmMemoryRoute
     }
+    '/api/study/extract': {
+      id: '/api/study/extract'
+      path: '/api/study/extract'
+      fullPath: '/api/study/extract'
+      preLoaderRoute: typeof ApiStudyExtractRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/study/commit': {
+      id: '/api/study/commit'
+      path: '/api/study/commit'
+      fullPath: '/api/study/commit'
+      preLoaderRoute: typeof ApiStudyCommitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/study/analyze': {
+      id: '/api/study/analyze'
+      path: '/api/study/analyze'
+      fullPath: '/api/study/analyze'
+      preLoaderRoute: typeof ApiStudyAnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/skills/uninstall': {
       id: '/api/skills/uninstall'
       path: '/uninstall'
@@ -4188,6 +4268,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReserveRoute: ReserveRouteWithChildren,
   SettingsRoute: SettingsRouteWithChildren,
   SkillsRoute: SkillsRoute,
+  StudyRoute: StudyRoute,
   SwarmRoute: SwarmRoute,
   Swarm2Route: Swarm2Route,
   SystemRoute: SystemRoute,
@@ -4315,6 +4396,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiRemoteAccessPublicIpRoute: ApiRemoteAccessPublicIpRoute,
   ApiRemoteAccessStatusRoute: ApiRemoteAccessStatusRoute,
   ApiRunsActiveRoute: ApiRunsActiveRoute,
+  ApiStudyAnalyzeRoute: ApiStudyAnalyzeRoute,
+  ApiStudyCommitRoute: ApiStudyCommitRoute,
+  ApiStudyExtractRoute: ApiStudyExtractRoute,
   ApiUpdateAgentRoute: ApiUpdateAgentRoute,
   ApiUpdateStatusRoute: ApiUpdateStatusRoute,
   ApiUpdateWorkspaceRoute: ApiUpdateWorkspaceRoute,

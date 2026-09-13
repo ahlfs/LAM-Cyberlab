@@ -31,6 +31,7 @@ const ROUTE_NAME_MAP: Record<string, string> = {
   '/jobs': 'Cron Jobs',
   '/profiles': 'Profiles',
   '/memory': 'Memory Vault',
+  '/study': 'Study Studio',
   '/knowledge': 'Knowledge Base',
   '/graph': 'Concept Graph',
   '/links': 'Graph Links',
@@ -74,6 +75,7 @@ export function WorkspaceTopbar({
     if (pathname.startsWith('/jobs')) return 'Cron Jobs'
     if (pathname.startsWith('/profiles')) return 'Profiles'
     if (pathname.startsWith('/memory')) return 'Memory Vault'
+    if (pathname.startsWith('/study')) return 'Study Studio'
     if (pathname.startsWith('/knowledge')) return 'Knowledge Base'
     if (pathname.startsWith('/graph')) return 'Concept Graph'
     if (pathname.startsWith('/links')) return 'Graph Links'

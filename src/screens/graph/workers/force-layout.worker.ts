@@ -17,7 +17,6 @@ self.onmessage = (event) => {
   }
 
   const simNodes = nodes.map((n: any) => {
-    // Detect index node (the "black hole" center)
     const isIndex =
       n.id === 'index.md' ||
       n.id === 'wiki/index.md' ||
@@ -26,8 +25,7 @@ self.onmessage = (event) => {
     return {
       ...n,
       connections: connectionCount.get(n.id) ?? 0,
-      // Pin index node exactly at the center (0,0,0)
-      ...(isIndex ? { fx: 0, fy: 0, fz: 0, isBlackHole: true } : {}),
+      ...(isIndex ? { fx: 0, fy: 0, isBlackHole: true } : {}),
     }
   })
 
@@ -38,22 +36,25 @@ self.onmessage = (event) => {
     )
     .map((e: any) => ({ source: e.source, target: e.target }))
 
+  // 2D Force simulation (Obsidian style)
   const simulation = d3
-    .forceSimulation(simNodes, 3)
+    .forceSimulation(simNodes, 2)
     .force(
       'link',
       d3
         .forceLink(simLinks)
         .id((d: any) => d.id)
-        .distance(150)
-        .strength(0.5),
+        .distance(70)
+        .strength(0.6),
     )
-    .force('charge', d3.forceManyBody().strength(-400))
-    .force('center', d3.forceCenter(0, 0, 0))
-    .force('collide', d3.forceCollide().radius(30))
+    .force('charge', d3.forceManyBody().strength(-220))
+    .force('center', d3.forceCenter(0, 0))
+    .force(
+      'collide',
+      d3.forceCollide().radius((d: any) => Math.max(8, 6 + (d.connections ?? 0) * 2) + 8),
+    )
     .stop()
 
-  // Run simulation synchronously inside the worker
   const iterations = 300
   for (let i = 0; i < iterations; i++) simulation.tick()
 
@@ -64,7 +65,6 @@ self.onmessage = (event) => {
     tags: n.tags,
     x: n.x ?? 0,
     y: n.y ?? 0,
-    z: n.z ?? 0,
     connections: n.connections,
     isBlackHole: n.isBlackHole,
   }))

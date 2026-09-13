@@ -4,6 +4,7 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Atom02Icon,
+  BookOpen01Icon,
   CheckmarkCircle01Icon,
   CodeIcon,
   BrainIcon,
@@ -570,6 +571,7 @@ export function ChatSidebarComponent(
   const isTerminalActive = pathname === '/terminal'
   const isJobsActive = pathname === '/jobs'
   const isMemoryActive = pathname === '/memory'
+  const isStudyActive = pathname === '/study'
   const isGraphActive = pathname === '/graph'
   const isLinksActive = pathname === '/links'
   const isTasksActive = pathname === '/tasks'
@@ -880,6 +882,13 @@ export function ChatSidebarComponent(
       icon: BrainIcon,
       label: t('nav.memory'),
       active: isMemoryActive,
+    },
+    {
+      kind: 'link',
+      to: '/study',
+      icon: BookOpen01Icon,
+      label: 'Study Studio',
+      active: isStudyActive,
     },
     {
       kind: 'link',
