@@ -113,6 +113,9 @@ function CanvasRenderer({
   const simLinksRef = useRef<SimLink[]>([])
   const simulationRef = useRef<any>(null)
   const isInitializedRef = useRef(false)
+  const hoveredNodeIdRef = useRef<string | null>(null)
+  hoveredNodeIdRef.current = hoveredNodeId
+  const lastPointerPosRef = useRef<{ screenX: number; screenY: number } | null>(null)
 
   // 2D Viewport Transform
   const transformRef = useRef({
@@ -406,6 +409,84 @@ function CanvasRenderer({
     [screenToWorld],
   )
 
+  // React to selectedNodeId: smooth animated zoom to fit node + all its connected neighbors
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !selectedNodeId) return
+
+    const nodes = simNodesRef.current
+    const targetNode = nodes.find((n) => n.id === selectedNodeId)
+    if (!targetNode || targetNode.x === undefined || targetNode.y === undefined) return
+
+    const neighbors = neighborMap.get(selectedNodeId) || new Set<string>()
+    const clusterNodes: SimNode[] = [targetNode]
+
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i]
+      if (neighbors.has(n.id) && n.x !== undefined && n.y !== undefined) {
+        clusterNodes.push(n)
+      }
+    }
+
+    // Compute bounding box around cluster
+    let minX = Infinity
+    let maxX = -Infinity
+    let minY = Infinity
+    let maxY = -Infinity
+
+    for (let i = 0; i < clusterNodes.length; i++) {
+      const cn = clusterNodes[i]
+      const r = getNodeRadius(cn.connections) + 36
+      if (cn.x - r < minX) minX = cn.x - r
+      if (cn.x + r > maxX) maxX = cn.x + r
+      if (cn.y - r < minY) minY = cn.y - r
+      if (cn.y + r > maxY) maxY = cn.y + r
+    }
+
+    const bboxWidth = Math.max(100, maxX - minX)
+    const bboxHeight = Math.max(100, maxY - minY)
+    const clusterCenterX = (minX + maxX) / 2
+    const clusterCenterY = (minY + maxY) / 2
+
+    const width = canvas.clientWidth
+    const height = canvas.clientHeight
+
+    // Account for right-side inspector drawer (~380px)
+    const availableWidth = width > 800 ? width - 380 : width
+    const padding = 70
+    const zoomX = (availableWidth - padding) / bboxWidth
+    const zoomY = (height - padding) / bboxHeight
+    const desiredZoom = Math.max(0.65, Math.min(2.5, Math.min(zoomX, zoomY)))
+
+    const desiredPanX = -clusterCenterX * desiredZoom - (width > 800 ? 120 : 0)
+    const desiredPanY = -clusterCenterY * desiredZoom
+
+    const startPanX = transformRef.current.panX
+    const startPanY = transformRef.current.panY
+    const startZoom = transformRef.current.zoom
+    const startTime = performance.now()
+    const duration = 380
+
+    const animateZoom = (now: number) => {
+      const elapsed = now - startTime
+      const progress = Math.min(1, elapsed / duration)
+      // Ease out cubic curve
+      const ease = 1 - Math.pow(1 - progress, 3)
+
+      transformRef.current.panX = startPanX + (desiredPanX - startPanX) * ease
+      transformRef.current.panY = startPanY + (desiredPanY - startPanY) * ease
+      transformRef.current.zoom = startZoom + (desiredZoom - startZoom) * ease
+
+      renderFrame()
+
+      if (progress < 1) {
+        requestAnimationFrame(animateZoom)
+      }
+    }
+
+    requestAnimationFrame(animateZoom)
+  }, [selectedNodeId, neighborMap, renderFrame])
+
   // Redraw when visual state changes (without restarting simulation)
   useEffect(() => {
     renderFrame()
@@ -532,10 +613,19 @@ function CanvasRenderer({
           .radius((d: any) => getNodeRadius(d.connections) + 18)
           .iterations(3),
       )
-      .alphaDecay(0.02)
+      .alphaDecay(0.025)
       .alphaMin(0.005)
 
     sim.on('tick', () => {
+      // If user is actively hovering during simulation movement, sync cursor and hover state
+      if (lastPointerPosRef.current) {
+        const { screenX, screenY } = lastPointerPosRef.current
+        const hit = getNodeAtScreenPos(screenX, screenY)
+        if (hoveredNodeIdRef.current !== (hit ? hit.id : null)) {
+          hoveredNodeIdRef.current = hit ? hit.id : null
+          onHover(hit ? hit.id : null)
+        }
+      }
       renderFrame()
     })
 
@@ -595,6 +685,7 @@ function CanvasRenderer({
       const rect = canvas.getBoundingClientRect()
       const screenX = e.clientX - rect.left
       const screenY = e.clientY - rect.top
+      lastPointerPosRef.current = { screenX, screenY }
 
       if (transformRef.current.isDraggingNode && transformRef.current.draggedNode) {
         const { x, y } = screenToWorld(screenX, screenY)
