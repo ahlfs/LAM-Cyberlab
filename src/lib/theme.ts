@@ -374,6 +374,9 @@ export function useCurrentTheme(): { theme: ThemeId; isDark: boolean } {
   return { theme, isDark: isDarkTheme(theme) }
 }
 
+let lastThemeSwitchTime = 0
+let isThemeTransitioning = false
+
 /**
  * Apply theme with optional View Transition circular ripple animation (Zero-Flicker).
  *
@@ -391,6 +394,13 @@ export function setTheme(
   event?: React.MouseEvent | MouseEvent | null,
   onAfterApply?: () => void,
 ): void {
+  // If the same theme is selected, do not trigger a new transition
+  if (getTheme() === theme) {
+    onAfterApply?.()
+    return
+  }
+
+  const now = Date.now()
   const root = document.documentElement
   const nextMode = isDarkTheme(theme) ? 'dark' : 'light'
 
@@ -408,6 +418,14 @@ export function setTheme(
     onAfterApply?.()
   }
 
+  // Prevent double-tap transition collision (debounce rapid clicks within 350ms)
+  if (isThemeTransitioning || now - lastThemeSwitchTime < 350) {
+    applyChanges()
+    return
+  }
+
+  lastThemeSwitchTime = now
+
   // Fallback for browsers without View Transitions API
   if (typeof document === 'undefined' || !(document as any).startViewTransition) {
     applyChanges()
@@ -421,27 +439,47 @@ export function setTheme(
     Math.max(y, window.innerHeight - y),
   )
 
+  isThemeTransitioning = true
+
   // Capture "before" snapshot, apply DOM changes, capture "after" snapshot
   // Must call on document directly — detaching loses `this` binding ("Illegal invocation")
-  const transition = (document as any).startViewTransition(() => {
-    applyChanges()
-  }) as { ready: Promise<void> }
+  try {
+    const transition = (document as any).startViewTransition(() => {
+      applyChanges()
+    }) as { ready: Promise<void>; finished?: Promise<void> }
 
-  transition.ready.then(() => {
-    const clipPath = [
-      `circle(0px at ${x}px ${y}px)`,
-      `circle(${endRadius}px at ${x}px ${y}px)`,
-    ]
-    document.documentElement.animate(
-      {
-        clipPath,
-      },
-      {
-        duration: 1150,
-        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-        fill: 'forwards',
-        pseudoElement: '::view-transition-new(root)',
-      },
-    )
-  })
+    transition.ready
+      .then(() => {
+        const clipPath = [
+          `circle(0px at ${x}px ${y}px)`,
+          `circle(${endRadius}px at ${x}px ${y}px)`,
+        ]
+        const animation = document.documentElement.animate(
+          {
+            clipPath,
+          },
+          {
+            duration: 1150,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            fill: 'forwards',
+            pseudoElement: '::view-transition-new(root)',
+          },
+        )
+        animation.onfinish = () => {
+          isThemeTransitioning = false
+        }
+      })
+      .catch(() => {
+        isThemeTransitioning = false
+      })
+
+    if (transition.finished) {
+      transition.finished.finally(() => {
+        isThemeTransitioning = false
+      })
+    }
+  } catch {
+    isThemeTransitioning = false
+    applyChanges()
+  }
 }

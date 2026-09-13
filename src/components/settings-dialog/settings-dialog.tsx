@@ -121,13 +121,13 @@ function SectionHeader({
 }) {
   return (
     <div className="mb-2">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-500">
+      <p className="mb-1 text-[10.5px] font-mono font-bold uppercase tracking-wider text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))]">
         Settings
       </p>
-      <h3 className="text-base font-semibold text-primary-900 dark:text-neutral-100">
+      <h3 className="text-base font-semibold text-[var(--theme-text,#f7f8f8)]">
         {title}
       </h3>
-      <p className="text-xs text-primary-500 dark:text-neutral-400">
+      <p className="text-xs text-[var(--theme-muted,#8a8f98)]">
         {description}
       </p>
     </div>
@@ -146,11 +146,11 @@ function Row({
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 py-1.5">
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-primary-900 dark:text-neutral-100">
+        <p className="text-xs sm:text-sm font-medium text-[var(--theme-text,#f7f8f8)]">
           {label}
         </p>
         {description && (
-          <p className="text-xs text-primary-500 dark:text-neutral-400">
+          <p className="text-[11px] text-[var(--theme-muted,#8a8f98)]">
             {description}
           </p>
         )}
@@ -161,7 +161,10 @@ function Row({
 }
 
 const SETTINGS_CARD_CLASS =
-  'rounded-xl border border-primary-200 bg-primary-50/80 px-4 py-3 shadow-sm'
+  'rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.025))] px-4 py-3 shadow-2xs'
+
+const SETTINGS_INPUT_CLASS =
+  'h-8 rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.1))] bg-[var(--theme-card2,rgba(255,255,255,0.04))] px-2.5 text-xs text-[var(--theme-text,#f7f8f8)] outline-none transition-colors focus:border-[var(--theme-accent,#5e6ad2)]'
 
 // ── Section components ──────────────────────────────────────────────────
 
@@ -1453,11 +1456,11 @@ function _ProfileContent() {
         <div className="flex items-center gap-3">
           <UserAvatar size={44} src={cs.avatarDataUrl} alt={displayName} />
           <div>
-            <p className="text-sm font-medium text-primary-900 dark:text-neutral-100">
+            <p className="text-sm font-semibold text-[var(--theme-text,#f7f8f8)]">
               {displayName}
             </p>
-            <p className="text-xs text-primary-500 dark:text-neutral-400">
-              No email connected
+            <p className="text-xs text-[var(--theme-muted,#8a8f98)]">
+              Workspace User
             </p>
           </div>
         </div>
@@ -1469,7 +1472,7 @@ function _ProfileContent() {
               value={cs.displayName}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="User"
-              className="h-8 w-full rounded-lg border-primary-200 text-sm"
+              className={SETTINGS_INPUT_CLASS}
               maxLength={50}
               aria-label="Display name"
               aria-invalid={!!nameError}
@@ -1478,7 +1481,7 @@ function _ProfileContent() {
             {nameError && (
               <p
                 id={errorId}
-                className="mt-1 text-xs text-red-600"
+                className="mt-1 text-xs text-red-500"
                 role="alert"
               >
                 {nameError}
@@ -1495,7 +1498,7 @@ function _ProfileContent() {
                 onChange={handleAvatarUpload}
                 disabled={processing}
                 aria-label="Upload profile picture"
-                className="block max-w-[13rem] cursor-pointer text-xs text-primary-700 dark:text-neutral-300 file:mr-2 file:cursor-pointer file:rounded-lg file:border file:border-primary-200 file:bg-primary-100 file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-primary-900 file:transition-colors hover:file:bg-primary-200 disabled:cursor-not-allowed disabled:opacity-50"
+                className="block max-w-[13rem] cursor-pointer text-xs text-[var(--theme-muted,#8a8f98)] file:mr-2 file:cursor-pointer file:rounded-lg file:border file:border-[var(--theme-border,rgba(255,255,255,0.1))] file:bg-[var(--theme-card2,rgba(255,255,255,0.06))] file:px-2.5 file:py-1.5 file:text-xs file:font-medium file:text-[var(--theme-text,#f7f8f8)] file:transition-colors hover:file:bg-[var(--theme-card)] disabled:cursor-not-allowed disabled:opacity-50"
               />
             </label>
             <Button
@@ -1503,7 +1506,7 @@ function _ProfileContent() {
               size="sm"
               onClick={() => updateCS({ avatarDataUrl: null })}
               disabled={!cs.avatarDataUrl || processing}
-              className="h-8 rounded-lg border-primary-200 px-3"
+              className="h-8 rounded-lg border-[var(--theme-border,rgba(255,255,255,0.1))] px-3 text-xs"
             >
               Remove
             </Button>
@@ -1960,6 +1963,8 @@ function EnterpriseThemePicker() {
   }, [])
 
   function applyEnterpriseTheme(id: ThemeId, event?: React.MouseEvent) {
+    event?.preventDefault()
+    event?.stopPropagation()
     setTheme(id, event, () => {
       updateSettings({ theme: isDarkTheme(id) ? 'dark' : 'light' })
       setCurrent(id)
@@ -1967,6 +1972,8 @@ function EnterpriseThemePicker() {
   }
 
   function toggleEnterpriseThemeMode(event?: React.MouseEvent) {
+    event?.preventDefault()
+    event?.stopPropagation()
     const nextMode = currentMode === 'dark' ? 'light' : 'dark'
     applyEnterpriseTheme(getThemeVariant(current, nextMode), event)
   }
@@ -2180,7 +2187,7 @@ function ChatContent() {
                 chatWidth: e.target.value as 'comfortable' | 'wide' | 'full',
               })
             }
-            className="h-8 rounded-md border border-primary-200 bg-primary-50 px-2 text-sm text-primary-900 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary-400"
+            className={SETTINGS_INPUT_CLASS}
             aria-label="Chat content width"
           >
             <option value="comfortable">Comfortable (900px)</option>
@@ -2454,7 +2461,7 @@ function AgentBehaviorContent() {
             max={100}
             value={Number(config.max_turns) || 50}
             onChange={(e) => save('max_turns', Number(e.target.value))}
-            className="h-8 w-20 rounded-lg border border-primary-200 bg-primary-50 px-2 text-sm text-center text-primary-900 outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className={cn(SETTINGS_INPUT_CLASS, 'w-20 text-center')}
           />
         </Row>
         <Row label="Gateway timeout" description="Seconds before timeout">
@@ -2464,14 +2471,14 @@ function AgentBehaviorContent() {
             max={600}
             value={Number(config.gateway_timeout) || 120}
             onChange={(e) => save('gateway_timeout', Number(e.target.value))}
-            className="h-8 w-20 rounded-lg border border-primary-200 bg-primary-50 px-2 text-sm text-center text-primary-900 outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className={cn(SETTINGS_INPUT_CLASS, 'w-20 text-center')}
           />
         </Row>
         <Row label="Tool enforcement" description="When agent must use tools">
           <select
             value={String(config.tool_use_enforcement || 'auto')}
             onChange={(e) => save('tool_use_enforcement', e.target.value)}
-            className="h-8 rounded-lg border border-primary-200 bg-primary-50 px-2 text-sm text-primary-900 outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className={SETTINGS_INPUT_CLASS}
           >
             <option value="auto">Auto</option>
             <option value="required">Required</option>
@@ -2684,14 +2691,14 @@ function VoiceContent() {
         </div>
       )}
       <div className={SETTINGS_CARD_CLASS}>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-500">
+        <p className="mb-2 text-[10.5px] font-mono font-bold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)]">
           Text-to-Speech
         </p>
         <Row label="TTS Provider">
           <select
             value={ttsProvider}
             onChange={(e) => saveTts('provider', e.target.value)}
-            className="h-8 rounded-lg border border-primary-200 bg-primary-50 px-2 text-sm text-primary-900 outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className={SETTINGS_INPUT_CLASS}
           >
             <option value="edge">Edge TTS</option>
             <option value="elevenlabs">ElevenLabs</option>
@@ -2711,7 +2718,7 @@ function VoiceContent() {
                   voice: e.target.value,
                 })
               }
-              className="h-8 rounded-lg border border-primary-200 bg-primary-50 px-2 text-sm text-primary-900 outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+              className={SETTINGS_INPUT_CLASS}
             >
               {['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'].map(
                 (v) => (
@@ -2725,7 +2732,7 @@ function VoiceContent() {
         )}
       </div>
       <div className={SETTINGS_CARD_CLASS}>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-500">
+        <p className="mb-2 text-[10.5px] font-mono font-bold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)]">
           Speech-to-Text
         </p>
         <Row label="Enable STT">
@@ -2738,7 +2745,7 @@ function VoiceContent() {
           <select
             value={sttProvider}
             onChange={(e) => saveStt('provider', e.target.value)}
-            className="h-8 rounded-lg border border-primary-200 bg-primary-50 px-2 text-sm text-primary-900 outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className={SETTINGS_INPUT_CLASS}
           >
             {STT_PROVIDER_OPTIONS.map((provider) => (
               <option key={provider.value} value={provider.value}>
@@ -2758,7 +2765,7 @@ function VoiceContent() {
                     model: e.target.value,
                   })
                 }
-                className="h-8 rounded-lg border border-primary-200 bg-primary-50 px-2 text-sm text-primary-900 outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+                className={SETTINGS_INPUT_CLASS}
               >
                 {GROQ_STT_MODELS.map((model) => (
                   <option key={model} value={model}>
@@ -2839,7 +2846,7 @@ function DisplayContent() {
           <select
             value={String(config.personality || 'default')}
             onChange={(e) => save('personality', e.target.value)}
-            className="h-8 rounded-lg border border-primary-200 bg-primary-50 px-2 text-sm text-primary-900 outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className={SETTINGS_INPUT_CLASS}
           >
             <option value="default">Default</option>
             <option value="concise">Concise</option>
@@ -2954,11 +2961,11 @@ export function SettingsDialog({
 
   return (
     <DialogRoot open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="inset-0 h-full w-full max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-0 p-0 shadow-xl md:inset-auto md:left-1/2 md:top-1/2 md:h-[min(88dvh,740px)] md:min-h-[520px] md:w-full md:max-w-3xl md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:border md:border-primary-200 bg-[var(--theme-bg)]">
+      <DialogContent className="inset-0 h-full w-full max-w-none translate-x-0 translate-y-0 overflow-hidden rounded-none border-0 p-0 shadow-2xl md:inset-auto md:left-1/2 md:top-1/2 md:h-[min(88dvh,740px)] md:min-h-[520px] md:w-full md:max-w-3xl md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:border md:border-[var(--theme-border,rgba(255,255,255,0.1))] bg-[var(--theme-bg,#08090a)] text-[var(--theme-text,#f7f8f8)]">
         <div className="flex h-full min-h-0 flex-col">
-          <div className="flex items-center justify-between border-b border-primary-200 bg-primary-50/80 px-4 py-4 md:rounded-t-2xl md:px-5">
+          <div className="flex items-center justify-between border-b border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.02))] px-4 py-3.5 md:rounded-t-2xl md:px-5">
             <div>
-              <DialogTitle className="text-base font-semibold text-primary-900 dark:text-neutral-100">
+              <DialogTitle className="text-base font-semibold text-[var(--theme-text,#f7f8f8)]">
                 Settings
               </DialogTitle>
               <DialogDescription className="sr-only">
@@ -2970,7 +2977,7 @@ export function SettingsDialog({
                 <Button
                   size="icon-sm"
                   variant="ghost"
-                  className="rounded-full text-primary-500 hover:bg-primary-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                  className="rounded-full text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] cursor-pointer"
                   aria-label="Close"
                 >
                   <HugeiconsIcon
@@ -2987,7 +2994,7 @@ export function SettingsDialog({
             <div className="flex min-h-0 flex-1 flex-col md:flex-row">
               <aside
                 className={cn(
-                  'w-full bg-primary-50/60 p-2 md:w-44 md:shrink-0 md:border-r md:border-primary-200',
+                  'w-full bg-[var(--theme-card,rgba(255,255,255,0.02))] p-2 md:w-44 md:shrink-0 md:border-r md:border-[var(--theme-border,rgba(255,255,255,0.08))]',
                   mobileView === 'content' && 'hidden md:block',
                 )}
               >
@@ -2998,9 +3005,10 @@ export function SettingsDialog({
                       type="button"
                       onClick={() => handleSectionSelect(s.id)}
                       className={cn(
-                        'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-primary-600 dark:text-neutral-400 transition-colors hover:bg-primary-100 dark:hover:bg-neutral-800',
-                        active === s.id &&
-                          'bg-primary-100 dark:bg-neutral-800 font-medium text-primary-900 dark:text-neutral-100',
+                        'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs sm:text-sm transition-colors cursor-pointer',
+                        active === s.id
+                          ? 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold border-l-2 border-[var(--theme-accent,#5e6ad2)]'
+                          : 'text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.05))] hover:text-[var(--theme-text,#f7f8f8)]',
                       )}
                     >
                       <HugeiconsIcon
@@ -3025,7 +3033,7 @@ export function SettingsDialog({
                     variant="ghost"
                     size="sm"
                     onClick={() => setMobileView('nav')}
-                    className="h-8 gap-1.5 rounded-lg px-2 text-primary-600 hover:bg-primary-100"
+                    className="h-8 gap-1.5 rounded-lg px-2 text-[var(--theme-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-card2)] cursor-pointer"
                   >
                     <HugeiconsIcon
                       icon={ArrowLeft01Icon}
@@ -3040,12 +3048,12 @@ export function SettingsDialog({
             </div>
           </SettingsErrorBoundary>
 
-          <div className="sticky bottom-0 z-10 border-t border-primary-200 bg-primary-50/60 px-4 py-3 text-xs text-primary-500 dark:text-neutral-400 md:rounded-b-2xl md:px-5">
+          <div className="sticky bottom-0 z-10 border-t border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.02))] px-4 py-2.5 text-[11px] text-[var(--theme-muted,#8a8f98)] md:rounded-b-2xl md:px-5">
             Most changes save automatically; the default model commits only when
             you click Set as default.{' '}
             <a
               href="/settings"
-              className="ml-2 font-medium underline underline-offset-2 hover:text-primary-700 dark:hover:text-neutral-200"
+              className="ml-2 font-medium underline underline-offset-2 text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] hover:opacity-80"
             >
               All settings →
             </a>
