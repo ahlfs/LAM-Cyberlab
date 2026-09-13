@@ -311,15 +311,15 @@ function CanvasRenderer({
       }
 
       // 3. Smart Obsidian LOD (Level-of-Detail) with Spatial Collision Culling & Clean Truncation
-      // At default zoom (< 1.2): ONLY hovered/active nodes, search matches, projects, and major hubs (connections >= 10)
-      // At 1.2 <= zoom < 2.0: Highlighted + hubs with connections >= 4 + projects/skills
+      // At default zoom (< 1.2): ONLY hovered/active nodes, search matches, and major hubs (connections >= 14)
+      // At 1.2 <= zoom < 2.0: Highlighted + hubs with connections >= 8 + projects
       // At zoom >= 2.0: All visible nodes (with strict collision culling)
       const isEligibleByZoom =
         isHighlighted ||
-        zoom >= 2.5 ||
-        (zoom >= 1.8 && node.connections >= 3) ||
-        (zoom >= 1.2 && (node.connections >= 5 || node.type === 'project')) ||
-        (zoom < 1.2 && (node.connections >= 10 || (node.type === 'project' && node.connections >= 2)))
+        zoom >= 2.8 ||
+        (zoom >= 2.0 && node.connections >= 4) ||
+        (zoom >= 1.3 && (node.connections >= 8 || node.type === 'project')) ||
+        (zoom < 1.3 && (node.connections >= 14 || (node.type === 'project' && node.connections >= 3)))
 
       const shouldRenderLabel = showLabels && !isFaded && isEligibleByZoom
 
@@ -510,6 +510,15 @@ function CanvasRenderer({
       simulationRef.current.stop()
     }
 
+    // Cluster focal centers by category for structured visual grouping
+    const CLUSTER_CENTERS: Record<string, { x: number; y: number }> = {
+      concept: { x: -80, y: -20 },
+      entity: { x: -140, y: 160 },
+      project: { x: 0, y: 180 },
+      skill: { x: 260, y: -40 },
+      daily: { x: 220, y: 180 },
+    }
+
     // 2D Force Simulation (Sleeps when alpha reaches equilibrium)
     const sim = d3
       .forceSimulation(simNodes, 2)
@@ -518,22 +527,36 @@ function CanvasRenderer({
         d3
           .forceLink(simLinks)
           .id((d: any) => d.id)
-          .distance((d: any) => 80 + Math.sqrt((d.source.connections || 0) + (d.target.connections || 0)) * 10)
-          .strength(0.35),
+          .distance((d: any) => 70 + Math.sqrt((d.source.connections || 0) + (d.target.connections || 0)) * 10)
+          .strength(0.45),
       )
       .force(
         'charge',
         d3
           .forceManyBody()
-          .strength((d: any) => -350 - Math.sqrt(d.connections || 1) * 50)
-          .distanceMax(1000),
+          .strength((d: any) => (d.connections > 0 ? -260 - (d.connections || 0) * 15 : -80))
+          .distanceMax(700),
       )
-      .force('center', d3.forceCenter(0, 0).strength(0.01))
+      .force(
+        'clusterX',
+        d3.forceX((d: any) => {
+          const cat = (d.type?.toLowerCase() || 'concept') as string
+          return CLUSTER_CENTERS[cat]?.x || 0
+        }).strength((d: any) => (d.connections > 0 ? 0.06 : 0.22))
+      )
+      .force(
+        'clusterY',
+        d3.forceY((d: any) => {
+          const cat = (d.type?.toLowerCase() || 'concept') as string
+          return CLUSTER_CENTERS[cat]?.y || 0
+        }).strength((d: any) => (d.connections > 0 ? 0.06 : 0.22))
+      )
+      .force('center', d3.forceCenter(0, 0).strength(0.02))
       .force(
         'collision',
         d3
           .forceCollide()
-          .radius((d: any) => getNodeRadius(d.connections) + 16)
+          .radius((d: any) => getNodeRadius(d.connections) + 18)
           .iterations(3),
       )
       .alphaDecay(0.02)
