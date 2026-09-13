@@ -1561,15 +1561,18 @@ export function EditorScreen() {
               className={cn(
                 'group flex h-full items-center gap-2 border-r px-3 text-[12px] font-medium transition-colors',
                 tab.path === activeTab
-                  ? 'bg-[var(--theme-bg)] text-[var(--theme-text)]'
-                  : 'text-[var(--theme-muted)] hover:bg-[var(--theme-card2)]',
+                  ? 'bg-[var(--theme-bg,#08090a)] text-[var(--theme-text,#f7f8f8)] font-medium shadow-2xs'
+                  : 'text-[var(--theme-muted,#8a8f98)] opacity-70 hover:opacity-100 hover:bg-[var(--theme-card2,rgba(255,255,255,0.04))] hover:text-[var(--theme-text,#f7f8f8)]',
               )}
               style={{ borderColor: 'var(--theme-border)' }}
             >
               <HugeiconsIcon
                 icon={File01Icon}
                 size={13}
-                className="shrink-0 opacity-60"
+                className={cn(
+                  'shrink-0 transition-opacity',
+                  tab.path === activeTab ? 'opacity-100 text-[var(--theme-accent-secondary,#7170ff)]' : 'opacity-60'
+                )}
               />
               <span className="max-w-[120px] truncate">{tab.name}</span>
               {tab.dirty && (

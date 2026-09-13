@@ -96,6 +96,7 @@ const SECTIONS: Array<{ id: SectionId; label: string; icon: any }> = [
 ]
 
 const DARK_ENTERPRISE_THEMES = new Set<ThemeId>([
+  'dark-minimalist',
   'claude-nous',
   'claude-official',
   'claude-classic',
@@ -1521,14 +1522,23 @@ function _ProfileContent() {
 function AppearanceContent() {
   const { settings, updateSettings } = useSettings()
 
-  function handleThemeChange(value: string) {
-    const theme = value as SettingsThemeMode
-    applyTheme(theme)
-    if (theme === 'light' || theme === 'dark') {
-      setTheme(getThemeVariant(getTheme(), theme))
+  function handleThemeModeChange(mode: 'custom' | 'system') {
+    if (mode === 'system') {
+      updateSettings({ theme: 'system' })
+      const prefersDark =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+      const sysMode = prefersDark ? 'dark' : 'light'
+      setTheme(getThemeVariant(getTheme(), sysMode))
+    } else {
+      const activeTheme = getTheme()
+      const currentMode = isDarkTheme(activeTheme) ? 'dark' : 'light'
+      updateSettings({ theme: currentMode })
     }
-    updateSettings({ theme })
   }
+
+  const isSystem = settings.theme === 'system'
+  const activeMode = isSystem ? 'system' : 'custom'
 
   function _badgeClass(color: AccentColor): string {
     if (color === 'orange') return 'bg-orange-500'
@@ -1551,27 +1561,26 @@ function AppearanceContent() {
         description="Theme and color accents."
       />
       <div className={SETTINGS_CARD_CLASS}>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-500">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)]">
           Theme Mode
         </p>
-        <div className="inline-flex rounded-lg border border-primary-200 p-1">
+        <div className="inline-flex rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.08))] p-1 bg-[var(--theme-card,rgba(255,255,255,0.02))]">
           {[
-            { value: 'light', label: 'Light', icon: Sun01Icon },
-            { value: 'dark', label: 'Dark', icon: Moon01Icon },
+            { value: 'custom', label: 'Custom', icon: PaintBoardIcon },
             { value: 'system', label: 'System', icon: ComputerIcon },
           ].map((option) => (
             <button
               key={option.value}
               type="button"
-              onClick={() => handleThemeChange(option.value)}
+              onClick={() => handleThemeModeChange(option.value as 'custom' | 'system')}
               className={cn(
-                'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
-                settings.theme === option.value
-                  ? 'bg-accent-500 text-white'
-                  : 'text-primary-600 hover:bg-primary-100',
+                'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
+                activeMode === option.value
+                  ? 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] border border-[var(--theme-accent,#5e6ad2)] shadow-2xs font-semibold'
+                  : 'border border-transparent text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.05))]',
               )}
             >
-              <HugeiconsIcon icon={option.icon} size={16} strokeWidth={1.5} />
+              <HugeiconsIcon icon={option.icon} size={15} strokeWidth={1.5} />
               {option.label}
             </button>
           ))}
@@ -1579,7 +1588,7 @@ function AppearanceContent() {
       </div>
       {/* Accent color removed — themes control accent */}
       <div className={SETTINGS_CARD_CLASS}>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-500">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)]">
           Enterprise Theme
         </p>
         <EnterpriseThemePicker />
@@ -1605,6 +1614,7 @@ function AppearanceContent() {
 }
 
 const ENTERPRISE_THEME_FAMILIES: Array<ThemeId> = [
+  'dark-minimalist',
   'dracula',
   'claude-nous',
   'matrix',
@@ -1626,8 +1636,24 @@ const ENTERPRISE_THEMES = THEMES.map((theme) => ({
   ...theme,
   desc: theme.description,
   preview:
-    theme.id === 'claude-nous'
+    theme.id === 'dark-minimalist'
       ? {
+          bg: '#08090a',
+          panel: '#0d0e11',
+          border: 'rgba(255,255,255,0.08)',
+          accent: '#5e6ad2',
+          text: '#f7f8f8',
+        }
+      : theme.id === 'dark-minimalist-light'
+        ? {
+            bg: '#f7f8f8',
+            panel: '#ffffff',
+            border: '#e2e4e8',
+            accent: '#5e6ad2',
+            text: '#08090a',
+          }
+        : theme.id === 'claude-nous'
+          ? {
           bg: '#041C1C',
           panel: '#06282A',
           border: 'rgba(255,230,203,0.2)',
@@ -1924,7 +1950,7 @@ function ThemeSwatch({
 function EnterpriseThemePicker() {
   const { updateSettings } = useSettings()
   const [current, setCurrent] = useState(() => {
-    if (typeof window === 'undefined') return 'dracula'
+    if (typeof window === 'undefined') return 'dark-minimalist'
     return getTheme()
   })
   const currentMode = isDarkTheme(current) ? 'dark' : 'light'
@@ -1933,15 +1959,16 @@ function EnterpriseThemePicker() {
     setCurrent(getTheme())
   }, [])
 
-  function applyEnterpriseTheme(id: ThemeId) {
-    setTheme(id)
-    updateSettings({ theme: isDarkTheme(id) ? 'dark' : 'light' })
-    setCurrent(id)
+  function applyEnterpriseTheme(id: ThemeId, event?: React.MouseEvent) {
+    setTheme(id, event, () => {
+      updateSettings({ theme: isDarkTheme(id) ? 'dark' : 'light' })
+      setCurrent(id)
+    })
   }
 
-  function toggleEnterpriseThemeMode() {
+  function toggleEnterpriseThemeMode(event?: React.MouseEvent) {
     const nextMode = currentMode === 'dark' ? 'light' : 'dark'
-    applyEnterpriseTheme(getThemeVariant(current, nextMode))
+    applyEnterpriseTheme(getThemeVariant(current, nextMode), event)
   }
 
   const visibleThemes = ENTERPRISE_THEME_FAMILIES.map((themeId) =>
@@ -1952,20 +1979,20 @@ function EnterpriseThemePicker() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between rounded-lg border border-primary-200 px-3 py-2">
+      <div className="flex items-center justify-between rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.02))] px-3 py-2">
         <div>
-          <p className="text-xs font-semibold text-primary-900 dark:text-neutral-100">
+          <p className="text-xs font-semibold text-[var(--theme-text,#f7f8f8)]">
             {currentMode === 'dark' ? 'Dark mode' : 'Light mode'}
           </p>
-          <p className="text-[11px] text-primary-500 dark:text-neutral-400">
+          <p className="text-[11px] text-[var(--theme-muted,#8a8f98)]">
             Toggle the current theme family between paired light and dark
             variants.
           </p>
         </div>
         <button
           type="button"
-          onClick={toggleEnterpriseThemeMode}
-          className="inline-flex items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-900 transition-colors hover:bg-primary-100"
+          onClick={(e) => toggleEnterpriseThemeMode(e)}
+          className="inline-flex items-center gap-2 rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.1))] bg-[var(--theme-card2,rgba(255,255,255,0.05))] px-3 py-1.5 text-xs font-medium text-[var(--theme-text,#f7f8f8)] transition-colors hover:bg-[var(--theme-border,rgba(255,255,255,0.1))] cursor-pointer"
           aria-label={
             currentMode === 'dark'
               ? 'Switch enterprise theme to light mode'
@@ -1987,27 +2014,27 @@ function EnterpriseThemePicker() {
             <button
               key={t.id}
               type="button"
-              onClick={() => applyEnterpriseTheme(t.id)}
+              onClick={(e) => applyEnterpriseTheme(t.id, e)}
               className={cn(
-                'flex flex-col gap-1.5 rounded-lg border p-2 text-left transition-colors',
+                'flex flex-col gap-1.5 rounded-lg border p-2 text-left transition-all cursor-pointer',
                 isActive
-                  ? 'border-accent-500 bg-accent-50 text-accent-700'
-                  : 'border-primary-200 bg-primary-50/80 hover:bg-primary-100',
+                  ? 'border-[var(--theme-accent,#5e6ad2)] bg-[var(--theme-accent-subtle,rgba(94,106,210,0.12))] text-[var(--theme-text,#f7f8f8)] shadow-2xs'
+                  : 'border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.025))] text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.045))] hover:text-[var(--theme-text,#f7f8f8)]',
               )}
             >
               <ThemeSwatch colors={t.preview} />
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5 w-full">
                 <span className="text-xs">{t.icon}</span>
-                <span className="text-xs font-semibold text-primary-900 dark:text-neutral-100">
+                <span className="text-xs font-semibold text-[var(--theme-text,#f7f8f8)] truncate">
                   {t.label}
                 </span>
                 {isActive && (
-                  <span className="ml-auto text-[9px] font-bold text-accent-600 uppercase tracking-wide">
+                  <span className="ml-auto text-[9px] font-bold text-[var(--theme-accent-secondary,#7170ff)] uppercase tracking-wider shrink-0">
                     Active
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-primary-500 dark:text-neutral-400 leading-tight">
+              <p className="text-[10px] text-[var(--theme-muted,#8a8f98)] leading-tight">
                 {t.desc}
               </p>
             </button>

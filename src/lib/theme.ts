@@ -1,4 +1,8 @@
+import { useEffect, useState } from 'react'
+
 export type ThemeId =
+  | 'dark-minimalist'
+  | 'dark-minimalist-light'
   | 'claude-nous'
   | 'claude-nous-light'
   | 'matrix'
@@ -38,6 +42,18 @@ export const THEMES: Array<{
   description: string
   icon: string
 }> = [
+  {
+    id: 'dark-minimalist',
+    label: 'Minimalist',
+    description: 'Linear modern dark canvas (#08090a) with sleek indigo accent',
+    icon: '✦',
+  },
+  {
+    id: 'dark-minimalist-light',
+    label: 'Minimalist Light',
+    description: 'Ultra-clean white paper with linear indigo framing',
+    icon: '✧',
+  },
   {
     id: 'dracula',
     label: 'Dracula Soft',
@@ -234,12 +250,13 @@ export const THEMES: Array<{
 ]
 
 const STORAGE_KEY = 'claude-theme'
-const DEFAULT_THEME: ThemeId = 'dracula'
+const DEFAULT_THEME: ThemeId = 'dark-minimalist'
 const THEME_SET = new Set<ThemeId>(THEMES.map((theme) => theme.id))
 const LIGHT_THEME_MAP: Record<
   Exclude<ThemeId, `${string}-light`>,
   Extract<ThemeId, `${string}-light`>
 > = {
+  'dark-minimalist': 'dark-minimalist-light',
   'claude-nous': 'claude-nous-light',
   matrix: 'matrix-light',
   'claude-official': 'claude-official-light',
@@ -261,6 +278,7 @@ const DARK_THEME_MAP: Record<
   Extract<ThemeId, `${string}-light`>,
   Exclude<ThemeId, `${string}-light`>
 > = {
+  'dark-minimalist-light': 'dark-minimalist',
   'claude-nous-light': 'claude-nous',
   'matrix-light': 'matrix',
   'claude-official-light': 'claude-official',
@@ -280,6 +298,7 @@ const DARK_THEME_MAP: Record<
 }
 
 const LIGHT_THEMES = new Set<ThemeId>([
+  'dark-minimalist-light',
   'claude-nous-light',
   'matrix-light',
   'claude-official-light',
@@ -329,12 +348,100 @@ export function getTheme(): ThemeId {
   return isValidTheme(stored) ? stored : DEFAULT_THEME
 }
 
-export function setTheme(theme: ThemeId): void {
+/**
+ * Hook to reactively track the current theme and dark/light state across the workspace.
+ */
+export function useCurrentTheme(): { theme: ThemeId; isDark: boolean } {
+  const [theme, setLocalTheme] = useState<ThemeId>(() => getTheme())
+
+  useEffect(() => {
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ theme: ThemeId }>
+      if (customEvent.detail?.theme) {
+        setLocalTheme(customEvent.detail.theme)
+      } else {
+        setLocalTheme(getTheme())
+      }
+    }
+    window.addEventListener('workspace-theme-change', handleThemeChange)
+    window.addEventListener('storage', handleThemeChange)
+    return () => {
+      window.removeEventListener('workspace-theme-change', handleThemeChange)
+      window.removeEventListener('storage', handleThemeChange)
+    }
+  }, [])
+
+  return { theme, isDark: isDarkTheme(theme) }
+}
+
+/**
+ * Apply theme with optional View Transition circular ripple animation (Zero-Flicker).
+ *
+ * IMPORTANT — callers must NOT do additional DOM/state work (updateSettings,
+ * applyTheme, etc.) AFTER calling setTheme. The view transition captures a
+ * DOM snapshot; any React re-render triggered by a concurrent state update
+ * will cancel the animation. setTheme handles localStorage + DOM attrs
+ * atomically inside the startViewTransition callback.
+ *
+ * Pass `onAfterApply` for any React state work that must happen — it runs
+ * inside the transition callback so the snapshot stays consistent.
+ */
+export function setTheme(
+  theme: ThemeId,
+  event?: React.MouseEvent | MouseEvent | null,
+  onAfterApply?: () => void,
+): void {
   const root = document.documentElement
-  root.setAttribute('data-theme', theme)
-  root.classList.remove('light', 'dark', 'system')
   const nextMode = isDarkTheme(theme) ? 'dark' : 'light'
-  root.classList.add(nextMode)
-  root.style.setProperty('color-scheme', nextMode)
-  localStorage.setItem(STORAGE_KEY, theme)
+
+  const applyChanges = () => {
+    root.setAttribute('data-theme', theme)
+    root.classList.remove('light', 'dark', 'system')
+    root.classList.add(nextMode)
+    root.style.setProperty('color-scheme', nextMode)
+    localStorage.setItem(STORAGE_KEY, theme)
+    window.dispatchEvent(
+      new CustomEvent('workspace-theme-change', {
+        detail: { theme, isDark: nextMode === 'dark' },
+      }),
+    )
+    onAfterApply?.()
+  }
+
+  // Fallback for browsers without View Transitions API
+  if (typeof document === 'undefined' || !(document as any).startViewTransition) {
+    applyChanges()
+    return
+  }
+
+  const x = event?.clientX ?? window.innerWidth / 2
+  const y = event?.clientY ?? window.innerHeight / 2
+  const endRadius = Math.hypot(
+    Math.max(x, window.innerWidth - x),
+    Math.max(y, window.innerHeight - y),
+  )
+
+  // Capture "before" snapshot, apply DOM changes, capture "after" snapshot
+  // Must call on document directly — detaching loses `this` binding ("Illegal invocation")
+  const transition = (document as any).startViewTransition(() => {
+    applyChanges()
+  }) as { ready: Promise<void> }
+
+  transition.ready.then(() => {
+    const clipPath = [
+      `circle(0px at ${x}px ${y}px)`,
+      `circle(${endRadius}px at ${x}px ${y}px)`,
+    ]
+    document.documentElement.animate(
+      {
+        clipPath,
+      },
+      {
+        duration: 1150,
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        fill: 'forwards',
+        pseudoElement: '::view-transition-new(root)',
+      },
+    )
+  })
 }

@@ -92,28 +92,22 @@ function ContextBarComponent({
   const isWarning = clampedPct >= 50 && clampedPct < 75
 
   const barColor = isCritical
-    ? 'bg-red-500'
+    ? 'bg-rose-500'
     : isDanger
-      ? 'bg-orange-500'
+      ? 'bg-amber-500'
       : isWarning
-        ? 'bg-yellow-400'
-        : 'bg-emerald-500'
+        ? 'bg-amber-400'
+        : 'bg-[var(--theme-accent,#5e6ad2)]'
 
-  const barBg = isCritical
-    ? 'bg-red-100'
-    : isDanger
-      ? 'bg-orange-100'
-      : isWarning
-        ? 'bg-yellow-100'
-        : 'bg-emerald-100'
+  const barBg = 'bg-[var(--theme-border,rgba(255,255,255,0.08))]'
 
   const textColor = isCritical
-    ? 'text-red-600'
+    ? 'text-rose-500'
     : isDanger
-      ? 'text-orange-600'
+      ? 'text-amber-500'
       : isWarning
-        ? 'text-yellow-600'
-        : 'text-emerald-600'
+        ? 'text-amber-400'
+        : 'text-[var(--theme-accent-secondary,#7170ff)]'
 
   if (isMobile) {
     return (
@@ -125,11 +119,11 @@ function ContextBarComponent({
           onClick={() => setShowLabel((prev) => !prev)}
           aria-label={`Context: ${Math.round(clampedPct)}% used`}
         />
-        {/* Bar — always 3px, never moves */}
-        <div className={cn('w-full h-[3px]', barBg)}>
+        {/* Bar — sleek, thin, theme-aligned */}
+        <div className={cn('w-full h-[2px]', barBg)}>
           <div
             className={cn(
-              'h-full transition-all duration-700 ease-out',
+              'h-full transition-all duration-700 ease-out shadow-[0_0_8px_rgba(94,106,210,0.4)]',
               barColor,
             )}
             style={{ width: `${clampedPct}%` }}
@@ -137,11 +131,11 @@ function ContextBarComponent({
         </div>
         {/* Label floats below bar on tap */}
         {showLabel && (
-          <div className="absolute right-2 top-[5px] z-20 flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary-900/85 shadow-sm animate-in fade-in duration-150">
+          <div className="absolute right-2 top-[5px] z-20 flex items-center gap-1.5 px-2 py-1 rounded-md border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] shadow-xl animate-in fade-in duration-150">
             <span className="text-[10px] font-semibold tabular-nums text-white">
               {Math.round(clampedPct)}%
             </span>
-            <span className="text-[9px] text-white/70 tabular-nums">
+            <span className="text-[9px] text-[var(--theme-muted,#8a8f98)] tabular-nums">
               {formatTokens(ctx.usedTokens)}/{formatTokens(ctx.maxTokens)}
             </span>
           </div>
@@ -155,41 +149,40 @@ function ContextBarComponent({
       <PreviewCardTrigger className="block w-full cursor-pointer">
         <div
           className={cn(
-            'shrink-0 w-full h-2 transition-colors duration-300 relative',
+            'shrink-0 w-full h-[2.5px] transition-colors duration-300 relative',
             barBg,
           )}
         >
           <div
             className={cn(
-              'h-full transition-all duration-700 ease-out',
+              'h-full transition-all duration-700 ease-out shadow-[0_0_8px_rgba(94,106,210,0.3)]',
               barColor,
             )}
             style={{ width: `${clampedPct}%` }}
           />
-          {/* % shown on hover via popup only */}
         </div>
       </PreviewCardTrigger>
 
       <PreviewCardPopup
         align="center"
-        sideOffset={2}
-        className="w-64 px-3 py-2.5 rounded-lg"
+        sideOffset={4}
+        className="w-64 px-3.5 py-3 rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] shadow-2xl backdrop-blur-md"
       >
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-primary-900">
+            <span className="text-[11px] font-semibold tracking-tight text-[var(--theme-text,#f7f8f8)]">
               Context Window
             </span>
             <span
               className={cn(
-                'text-[11px] font-semibold tabular-nums',
+                'text-[11px] font-bold tabular-nums',
                 textColor,
               )}
             >
               {Math.round(clampedPct)}%
             </span>
           </div>
-          <div className={cn('w-full h-2 rounded-full overflow-hidden', barBg)}>
+          <div className={cn('w-full h-1.5 rounded-full overflow-hidden', barBg)}>
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-500',
@@ -198,19 +191,18 @@ function ContextBarComponent({
               style={{ width: `${clampedPct}%` }}
             />
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-primary-500 tabular-nums">
-              {formatTokens(ctx.usedTokens)} / {formatTokens(ctx.maxTokens)}{' '}
-              tokens
+          <div className="flex items-center justify-between text-[10.5px]">
+            <span className="text-[var(--theme-muted,#8a8f98)] tabular-nums font-mono">
+              {formatTokens(ctx.usedTokens)} / {formatTokens(ctx.maxTokens)} tokens
             </span>
             {ctx.model && (
-              <span className="text-[10px] text-primary-400 truncate max-w-[100px]">
+              <span className="text-[var(--theme-muted,#8a8f98)]/80 truncate max-w-[100px] font-mono text-[10px]">
                 {ctx.model}
               </span>
             )}
           </div>
           {isCritical && (
-            <p className="text-[10px] text-red-600 font-medium">
+            <p className="text-[10px] text-rose-500 font-medium">
               Context almost full — consider starting a new chat
             </p>
           )}

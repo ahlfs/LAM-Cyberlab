@@ -149,11 +149,11 @@ function SessionItemComponent({
       }}
       className={cn(
         'group inline-flex items-center justify-between',
-        'w-full text-left pl-1.5 pr-0.5 h-14 rounded-lg transition-colors duration-0',
-        'select-none',
+        'w-full text-left px-2.5 py-1.5 min-h-[38px] rounded-md transition-all duration-150',
+        'select-none border text-xs cursor-pointer',
         active
-          ? 'bg-[var(--theme-card2)] text-[var(--theme-text)]'
-          : 'bg-transparent text-[var(--theme-text)] [&:hover:not(:has(button:hover))]:bg-[var(--theme-card2)]',
+          ? 'bg-[var(--theme-card2,rgba(255,255,255,0.06))] border-[var(--theme-border,rgba(255,255,255,0.08))] text-[var(--theme-text,#f7f8f8)] font-semibold shadow-2xs'
+          : 'bg-transparent border-transparent text-[var(--theme-muted,#8a8f98)] opacity-70 hover:opacity-100 hover:bg-[var(--theme-card2,rgba(255,255,255,0.04))] hover:text-[var(--theme-text,#f7f8f8)]',
       )}
     >
       <div className="flex-1 min-w-0 py-1.5">

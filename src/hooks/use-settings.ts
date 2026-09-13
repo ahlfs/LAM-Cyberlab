@@ -40,7 +40,7 @@ type SettingsState = {
 export const defaultStudioSettings: StudioSettings = {
   claudeUrl: '',
   claudeToken: '',
-  theme: 'system',
+  theme: 'dark',
   accentColor: 'blue',
   showUsageMeter: false,
   editorFontSize: 13,
@@ -120,7 +120,7 @@ export function applyInterfacePreferences(settings: Partial<StudioSettings>) {
 }
 
 export function applyTheme(_theme?: SettingsThemeMode) {
-  setTheme(getTheme())
+  // Theme is applied by setTheme directly with View Transition support
   document.documentElement.setAttribute('data-accent', 'orange')
   applyInterfacePreferences(useSettingsStore.getState().settings)
 }

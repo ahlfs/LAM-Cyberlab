@@ -49,6 +49,7 @@ import type { DashboardOverview } from '@/server/dashboard-aggregator'
 import { getUnavailableReason } from '@/lib/feature-gates'
 import { cn } from '@/lib/utils'
 import { applyTheme, useSettingsStore } from '@/hooks/use-settings'
+import { getThemeVariant, setTheme as applyThemeWithTransition, useCurrentTheme } from '@/lib/theme'
 import { openHamburgerMenu } from '@/components/mobile-hamburger-menu'
 import { useFeatureAvailable } from '@/hooks/use-feature-available'
 
@@ -851,11 +852,7 @@ export function DashboardScreen() {
   const palette = useDashboardPalette()
 
   const updateSettings = useSettingsStore((state) => state.updateSettings)
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof document === 'undefined') return true
-    const dt = document.documentElement.getAttribute('data-theme') || ''
-    return !dt.endsWith('-light')
-  })
+  const { theme: currentTheme, isDark } = useCurrentTheme()
 
   return (
     <div className="min-h-full">
@@ -871,52 +868,31 @@ export function DashboardScreen() {
           className="flex items-center justify-center w-11 h-11 rounded-xl active:bg-white/10 transition-colors touch-manipulation"
         >
           <svg
-            width="20"
-            height="16"
-            viewBox="0 0 20 16"
+            className="w-5 h-5"
             fill="none"
-            className="opacity-70"
-            style={{ color: 'var(--color-ink, #111)' }}
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            style={{ color: 'var(--theme-muted)' }}
           >
             <path
-              d="M1 1.5H19M1 8H19M1 14.5H13"
-              stroke="currentColor"
-              strokeWidth="1.6"
               strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.75}
+              d="M4 6h16M4 12h16M4 18h16"
             />
           </svg>
         </button>
         <button
           type="button"
           aria-label="Toggle theme"
-          onClick={() => {
-            const LIGHT_DARK_PAIRS: Record<string, string> = {
-              'claude-nous': 'claude-nous-light',
-              'claude-nous-light': 'claude-nous',
-              'claude-official': 'claude-official-light',
-              'claude-official-light': 'claude-official',
-              'claude-classic': 'claude-classic-light',
-              'claude-classic-light': 'claude-classic',
-              'claude-slate': 'claude-slate-light',
-              'claude-slate-light': 'claude-slate',
-              dracula: 'dracula-light',
-              'dracula-light': 'dracula',
-            }
-            const cur =
-              document.documentElement.getAttribute('data-theme') ||
-              'claude-official'
-            const nextDataTheme =
-              LIGHT_DARK_PAIRS[cur] ||
-              (isDark ? 'claude-official-light' : 'claude-official')
-            import('@/lib/theme').then(({ setTheme }) => {
-              setTheme(nextDataTheme as any)
+          onClick={(e) => {
+            const nextVariant = getThemeVariant(currentTheme, isDark ? 'light' : 'dark')
+            const nextMode = isDark ? 'light' : 'dark'
+            applyThemeWithTransition(nextVariant, e, () => {
+              updateSettings({ theme: nextMode })
             })
-            const nextMode = nextDataTheme.endsWith('-light') ? 'light' : 'dark'
-            applyTheme(nextMode)
-            updateSettings({ theme: nextMode })
-            setIsDark(nextMode === 'dark')
           }}
-          className="flex items-center justify-center w-11 h-11 rounded-xl active:bg-white/10 transition-colors touch-manipulation"
+          className="flex items-center justify-center w-11 h-11 rounded-xl active:bg-white/10 transition-colors touch-manipulation cursor-pointer"
           style={{ color: 'var(--theme-muted)' }}
         >
           <HugeiconsIcon

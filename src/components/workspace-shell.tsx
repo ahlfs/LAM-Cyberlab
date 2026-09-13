@@ -44,6 +44,7 @@ import { MobilePageHeader } from '@/components/mobile-page-header'
 import { MobileTerminalInput } from '@/components/terminal/mobile-terminal-input'
 import { isTouchDevice } from '@/lib/touch-detect'
 import { ClaudeReconnectBanner } from '@/components/claude-reconnect-banner'
+import { WorkspaceTopbar } from '@/components/layout/workspace-topbar'
 import { useMobileKeyboard } from '@/hooks/use-mobile-keyboard'
 import { SystemMetricsFooter } from '@/components/system-metrics-footer'
 import { CommandPalette } from '@/components/command-palette'
@@ -392,24 +393,31 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           )}
 
           {/* Main content area — renders the matched route */}
-          <main
-            onTouchStart={isMobile ? onTouchStart : undefined}
-            onTouchMove={isMobile ? onTouchMove : undefined}
-            onTouchEnd={isMobile ? onTouchEnd : undefined}
-            className={[
-              'h-full min-h-0 min-w-0 overflow-x-hidden bg-[var(--theme-bg)] relative',
-              isOnChatRoute ? 'overflow-hidden' : 'overflow-y-auto',
-              isMobile && !isOnChatRoute
-                ? 'pb-2'
-                : !isMobile &&
-                    !isChromeFreeSurface &&
-                    !isOnChatRoute &&
-                    settings.showSystemMetricsFooter
-                  ? 'pb-7'
-                  : '',
-            ].join(' ')}
-            data-tour="chat-area"
-          >
+          <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden relative">
+            {!isChromeFreeSurface && !isMobile && (
+              <WorkspaceTopbar
+                sidebarCollapsed={sidebarCollapsed}
+                onToggleSidebar={toggleSidebar}
+              />
+            )}
+            <main
+              onTouchStart={isMobile ? onTouchStart : undefined}
+              onTouchMove={isMobile ? onTouchMove : undefined}
+              onTouchEnd={isMobile ? onTouchEnd : undefined}
+              className={[
+                'h-full min-h-0 min-w-0 overflow-x-hidden bg-[var(--theme-bg)] relative flex-1',
+                isOnChatRoute ? 'overflow-hidden' : 'overflow-y-auto',
+                isMobile && !isOnChatRoute
+                  ? 'pb-2'
+                  : !isMobile &&
+                      !isChromeFreeSurface &&
+                      !isOnChatRoute &&
+                      settings.showSystemMetricsFooter
+                    ? 'pb-7'
+                    : '',
+              ].join(' ')}
+              data-tour="chat-area"
+            >
             {/* Persistent terminal — stays mounted to preserve session across navigation */}
             <div
               className="flex flex-col"
@@ -460,6 +468,7 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
               {children}
             </div>
           </main>
+        </div>
 
           {/* Chat panel — visible on non-chat, non-editor, and non-file-manager routes */}
           {!isOnChatRoute &&

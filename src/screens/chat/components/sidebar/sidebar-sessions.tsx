@@ -77,14 +77,16 @@ export const SidebarSessions = memo(function SidebarSessions({
       className="flex h-full flex-col flex-1 min-h-0 w-full"
       defaultOpen={defaultOpen}
     >
-      <CollapsibleTrigger className="w-full flex items-center gap-1.5 rounded-none px-5 pt-3 pb-1 shrink-0 text-[10px] font-semibold uppercase tracking-wider hover:bg-transparent data-panel-open:text-primary-500">
-        <span className="select-none">Sessions</span>
-        <span className="ml-auto p-0.5 rounded hover:bg-primary-200 dark:hover:bg-primary-800 transition-colors">
+      <CollapsibleTrigger className="group/label w-full flex items-center justify-between rounded-none px-3 pt-3 pb-1 shrink-0 cursor-pointer select-none text-left hover:bg-transparent">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)] group-hover/label:text-[var(--theme-text,#f7f8f8)] transition-colors select-none">
+          Sessions
+        </span>
+        <span className="p-0.5 rounded transition-colors group-hover/label:bg-[var(--theme-card2,rgba(255,255,255,0.05))]">
           <HugeiconsIcon
             icon={ArrowDown01Icon}
             size={12}
             strokeWidth={2}
-            className="text-primary-500 transition-transform duration-150 -rotate-90 group-data-panel-open:rotate-0"
+            className="text-[var(--theme-muted,#8a8f98)] group-hover/label:text-[var(--theme-text,#f7f8f8)] transition-all duration-150 -rotate-90 group-data-panel-open:rotate-0"
           />
         </span>
       </CollapsibleTrigger>

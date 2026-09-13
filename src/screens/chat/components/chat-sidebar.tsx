@@ -81,65 +81,9 @@ import {
   MenuTrigger,
 } from '@/components/ui/menu'
 import { applyTheme, useSettingsStore } from '@/hooks/use-settings'
+import { getThemeVariant, setTheme as applyThemeWithTransition, useCurrentTheme } from '@/lib/theme'
 
 type WorkspaceStats = Record<string, unknown>
-
-function ThemeToggleMini() {
-  const _theme = useSettingsStore((state) => state.settings.theme)
-  const updateSettings = useSettingsStore((state) => state.updateSettings)
-  void _theme
-  // Detect dark/light from actual data-theme attribute
-  const currentDataTheme =
-    typeof document !== 'undefined'
-      ? document.documentElement.getAttribute('data-theme') || 'dracula'
-      : 'dracula'
-  const isDark = !currentDataTheme.endsWith('-light')
-
-  // Map between dark and light counterparts — must include all theme families
-  const LIGHT_DARK_PAIRS: Record<string, string> = {
-    'claude-nous': 'claude-nous-light',
-    'claude-nous-light': 'claude-nous',
-    'claude-official': 'claude-official-light',
-    'claude-official-light': 'claude-official',
-    'claude-classic': 'claude-classic-light',
-    'claude-classic-light': 'claude-classic',
-    'claude-slate': 'claude-slate-light',
-    'claude-slate-light': 'claude-slate',
-    dracula: 'dracula-light',
-    'dracula-light': 'dracula',
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        // Fall back to current family rather than dropping the user into claude-official
-        const nextDataTheme =
-          LIGHT_DARK_PAIRS[currentDataTheme] ||
-          (isDark
-            ? `${currentDataTheme}-light`
-            : currentDataTheme.replace(/-light$/, ''))
-        // Import and call setTheme to persist and apply
-        import('@/lib/theme').then(({ setTheme }) => {
-          setTheme(nextDataTheme as any)
-        })
-        // Also update settings hook
-        const nextMode = nextDataTheme.endsWith('-light') ? 'light' : 'dark'
-        applyTheme(nextMode)
-        updateSettings({ theme: nextMode })
-      }}
-      className="shrink-0 rounded-lg p-1.5 transition-colors hover:opacity-80"
-      style={{ color: 'var(--theme-muted)' }}
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-    >
-      <HugeiconsIcon
-        icon={isDark ? Sun02Icon : Moon02Icon}
-        size={16}
-        strokeWidth={1.5}
-      />
-    </button>
-  )
-}
 
 type ChatSidebarProps = {
   sessions: Array<SessionMeta>
@@ -198,31 +142,40 @@ function NavItem({
   onSelectSession?: () => void
 }) {
   const cls = cn(
-    buttonVariants({ variant: 'ghost', size: 'sm' }),
-    'w-full h-auto min-h-11 gap-2.5 py-2 md:min-h-0',
-    isCollapsed ? 'justify-center px-0' : 'justify-start px-3',
+    'group/nav relative flex w-full h-8.5 items-center gap-2.5 px-2.5 text-xs transition-all duration-150 rounded-md cursor-pointer select-none',
+    isCollapsed ? 'justify-center px-0' : 'justify-start',
     item.active
-      ? 'bg-[var(--theme-accent-subtle)] text-accent-500 hover:bg-[var(--theme-accent-subtle)]'
-      : 'text-primary-900 hover:bg-primary-200 dark:hover:bg-primary-800',
+      ? 'bg-[var(--theme-card2,rgba(255,255,255,0.06))] text-[var(--theme-text,#f7f8f8)] font-semibold border border-[var(--theme-border,rgba(255,255,255,0.08))] shadow-2xs'
+      : 'bg-transparent border border-transparent text-[var(--theme-muted,#8a8f98)] opacity-70 hover:opacity-100 hover:bg-[var(--theme-card2,rgba(255,255,255,0.04))] hover:text-[var(--theme-text,#f7f8f8)]',
   )
 
   const iconEl =
     item.badge === 'error-dot' ? (
-      <span className="relative inline-flex size-5 shrink-0 items-center justify-center">
+      <span className="relative inline-flex size-4 shrink-0 items-center justify-center">
         <HugeiconsIcon
           icon={item.icon as any}
-          size={20}
-          strokeWidth={1.5}
-          className="size-5 shrink-0"
+          size={16}
+          strokeWidth={item.active ? 1.9 : 1.6}
+          className={cn(
+            'size-3.5 shrink-0 transition-colors',
+            item.active
+              ? 'text-[var(--theme-text,#f7f8f8)]'
+              : 'text-[var(--theme-muted,#8a8f98)] group-hover/nav:text-[var(--theme-text,#f7f8f8)]',
+          )}
         />
         <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-red-500" />
       </span>
     ) : (
       <HugeiconsIcon
         icon={item.icon as any}
-        size={20}
-        strokeWidth={1.5}
-        className="size-5 shrink-0"
+        size={16}
+        strokeWidth={item.active ? 1.9 : 1.6}
+        className={cn(
+          'size-3.5 shrink-0 transition-colors',
+          item.active
+            ? 'text-[var(--theme-text,#f7f8f8)]'
+            : 'text-[var(--theme-muted,#8a8f98)] group-hover/nav:text-[var(--theme-text,#f7f8f8)]',
+        )}
       />
     )
 
@@ -385,7 +338,6 @@ function SectionLabel({
   collapsible,
   expanded,
   onToggle,
-  navigateTo,
 }: {
   label: string
   isCollapsed: boolean
@@ -397,46 +349,31 @@ function SectionLabel({
 }) {
   if (isCollapsed) return null
 
-  const labelContent = (
-    <span className="text-[10px] font-semibold uppercase tracking-wider text-primary-500 dark:text-neutral-400 select-none">
-      {label}
-    </span>
-  )
-
-  if (collapsible) {
+  if (collapsible && onToggle) {
     return (
-      <motion.div
+      <motion.button
+        type="button"
         layout
         transition={{ layout: transition }}
-        className="flex items-center gap-1.5 px-3 pt-3 pb-1 w-full"
+        onClick={onToggle}
+        className="group/label flex w-full items-center justify-between px-3 pt-3 pb-1 cursor-pointer select-none text-left"
+        aria-label={expanded ? `Collapse ${label}` : `Expand ${label}`}
       >
-        {navigateTo ? (
-          <Link
-            to={navigateTo}
-            className="text-[10px] font-semibold uppercase tracking-wider text-primary-500 dark:text-neutral-400 hover:text-primary-700 dark:hover:text-neutral-200 select-none transition-colors"
-          >
-            {label}
-          </Link>
-        ) : (
-          labelContent
-        )}
-        <button
-          type="button"
-          onClick={onToggle}
-          className="ml-auto p-0.5 rounded hover:bg-primary-200 dark:hover:bg-primary-800 transition-colors"
-          aria-label={expanded ? `Collapse ${label}` : `Expand ${label}`}
-        >
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)] group-hover/label:text-[var(--theme-text,#f7f8f8)] transition-colors">
+          {label}
+        </span>
+        <span className="p-0.5 rounded transition-colors group-hover/label:bg-[var(--theme-card2,rgba(255,255,255,0.05))]">
           <HugeiconsIcon
             icon={ArrowDown01Icon}
             size={12}
             strokeWidth={2}
             className={cn(
-              'text-primary-500 transition-transform duration-150',
+              'text-[var(--theme-muted,#8a8f98)] group-hover/label:text-[var(--theme-text,#f7f8f8)] transition-transform duration-150',
               expanded ? 'rotate-0' : '-rotate-90',
             )}
           />
-        </button>
-      </motion.div>
+        </span>
+      </motion.button>
     )
   }
 
@@ -446,16 +383,9 @@ function SectionLabel({
       transition={{ layout: transition }}
       className="px-3 pt-3 pb-1"
     >
-      {navigateTo ? (
-        <Link
-          to={navigateTo}
-          className="text-[10px] font-semibold uppercase tracking-wider text-primary-500 dark:text-neutral-400 hover:text-primary-700 dark:hover:text-neutral-200 select-none transition-colors"
-        >
-          {label}
-        </Link>
-      ) : (
-        labelContent
-      )}
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)] select-none">
+        {label}
+      </span>
     </motion.div>
   )
 }
@@ -622,37 +552,44 @@ export function ChatSidebarComponent(
   const echoStudioEnabled = useSettingsStore(
     (state) => state.settings.experimentalEchoStudio,
   )
-  const mainRoutes = ['/chat', '/new', '/files', '/terminal']
-  const knowledgeRoutes = ['/memory', '/skills']
-  const systemRoutes = ['/settings', '/logs']
+  const workspaceRoutes = ['/dashboard', '/chat', '/new', '/editor', '/tasks', '/projects']
+  const agentSwarmRoutes = ['/conductor', '/swarm', '/swarm2', '/operations', '/jobs', '/profiles']
+  const knowledgeRoutes = ['/memory', '/graph', '/links', '/skills', '/mcp']
+  const infraRoutes = ['/terminal', '/files', '/file-manager', '/system', '/remote-access', '/echo-studio']
 
   useEffect(() => {
-    if (mainRoutes.includes(pathname)) setLastRoute('main', pathname)
+    if (workspaceRoutes.includes(pathname)) setLastRoute('workspace', pathname)
+    if (agentSwarmRoutes.includes(pathname)) setLastRoute('agent-swarm', pathname)
     if (knowledgeRoutes.includes(pathname)) setLastRoute('knowledge', pathname)
-    if (systemRoutes.includes(pathname)) setLastRoute('system', pathname)
+    if (infraRoutes.includes(pathname)) setLastRoute('infra', pathname)
   }, [pathname])
 
-  const mainNav = getLastRoute('main') || '/chat'
+  const workspaceNav = getLastRoute('workspace') || '/dashboard'
+  const agentSwarmNav = getLastRoute('agent-swarm') || '/conductor'
   const knowledgeNav = getLastRoute('knowledge') || '/memory'
-  const _systemNav = getLastRoute('system') || '/settings'
+  const infraNav = getLastRoute('infra') || '/terminal'
 
   const transition = {
     duration: 0.15,
     ease: isCollapsed ? 'easeIn' : 'easeOut',
   } as const
 
-  // Collapsible section states
-  const [mainExpanded, toggleMain] = usePersistedBool(
-    'claude-sidebar-main-expanded',
+  // Collapsible section states (Workspace, Agent Swarm, Knowledge & Brain, Infrastructure)
+  const [workspaceExpanded, toggleWorkspace] = usePersistedBool(
+    'claude-sidebar-workspace-expanded',
+    true,
+  )
+  const [agentSwarmExpanded, toggleAgentSwarm] = usePersistedBool(
+    'claude-sidebar-agent-swarm-expanded',
     true,
   )
   const [knowledgeExpanded, toggleKnowledge] = usePersistedBool(
     'claude-sidebar-knowledge-expanded',
     true,
   )
-  const [_systemExpanded, _toggleSystem] = usePersistedBool(
-    'claude-sidebar-system-expanded',
-    false,
+  const [infraExpanded, toggleInfra] = usePersistedBool(
+    'claude-sidebar-infra-expanded',
+    true,
   )
 
   const [renameDialogOpen, setRenameDialogOpen] = useState(false)
@@ -755,7 +692,7 @@ export function ChatSidebarComponent(
 
   const asideProps = {
     className: cn(
-      'border-r h-full overflow-hidden flex flex-col theme-sidebar theme-border',
+      'border-r h-full overflow-hidden flex flex-col theme-sidebar theme-border select-none',
       isMobile && 'fixed inset-y-0 left-0 z-50 shadow-2xl',
       isMobile && isCollapsed && 'pointer-events-none',
     ),
@@ -826,7 +763,8 @@ export function ChatSidebarComponent(
 
   const isDashboardActive = pathname === '/dashboard'
 
-  const mainItems: Array<NavItemDef> = [
+  // 1. Workspace
+  const workspaceItems: Array<NavItemDef> = [
     {
       kind: 'link',
       to: '/dashboard',
@@ -841,7 +779,117 @@ export function ChatSidebarComponent(
       label: t('nav.chat'),
       active: isChatActive,
     },
+    {
+      kind: 'link',
+      to: '/editor',
+      icon: SourceCodeSquareIcon,
+      label: 'Code Editor',
+      active: isEditorActive,
+    },
+    {
+      kind: 'link',
+      to: '/tasks',
+      icon: CheckListIcon,
+      label: 'Tasks',
+      active: isTasksActive,
+    },
+    {
+      kind: 'link',
+      to: '/projects',
+      icon: CodeIcon,
+      label: 'Projects',
+      active: isProjectsActive,
+    },
+  ]
 
+  // 2. Agent Swarm
+  const agentSwarmItems: Array<NavItemDef> = [
+    {
+      kind: 'link',
+      to: '/conductor',
+      icon: Rocket01Icon,
+      label: 'Conductor',
+      active: isConductorActive,
+    },
+    {
+      kind: 'link',
+      to: '/swarm',
+      icon: UserGroupIcon,
+      label: 'Swarm',
+      active: isSwarmActive,
+    },
+    {
+      kind: 'link',
+      to: '/operations',
+      icon: UserMultipleIcon,
+      label: 'Operations',
+      active: isOperationsActive,
+    },
+    {
+      kind: 'link',
+      to: '/jobs',
+      icon: Clock01Icon,
+      label: t('nav.jobs'),
+      active: isJobsActive,
+    },
+    {
+      kind: 'link',
+      to: '/profiles',
+      icon: UserMultipleIcon,
+      label: t('nav.profiles'),
+      active: pathname === '/profiles',
+    },
+  ]
+
+  // 3. Knowledge & Brain
+  const knowledgeItems: Array<NavItemDef> = [
+    {
+      kind: 'link',
+      to: '/memory',
+      icon: BrainIcon,
+      label: t('nav.memory'),
+      active: isMemoryActive,
+    },
+    {
+      kind: 'link',
+      to: '/graph',
+      icon: Atom02Icon,
+      label: 'Concept Graph',
+      active: isGraphActive,
+    },
+    {
+      kind: 'link',
+      to: '/links',
+      icon: Link01Icon,
+      label: 'Graph Links',
+      active: isLinksActive,
+    },
+    {
+      kind: 'link',
+      to: '/skills',
+      icon: PuzzleIcon,
+      label: t('nav.skills'),
+      active: isSkillsActive,
+      dataTour: 'skills',
+    },
+    {
+      kind: 'link',
+      to: '/mcp',
+      icon: McpServerIcon,
+      label: 'MCP Registry',
+      active: isMcpActive,
+    },
+  ]
+
+  // 4. Infrastructure
+  const infraItems: Array<NavItemDef> = [
+    {
+      kind: 'link',
+      to: '/terminal',
+      icon: ComputerTerminal01Icon,
+      label: t('nav.terminal'),
+      active: isTerminalActive,
+    },
     {
       kind: 'link',
       to: '/files',
@@ -858,66 +906,10 @@ export function ChatSidebarComponent(
     },
     {
       kind: 'link',
-      to: '/terminal',
-      icon: ComputerTerminal01Icon,
-      label: t('nav.terminal'),
-      active: isTerminalActive,
-    },
-    {
-      kind: 'link',
-      to: '/jobs',
-      icon: Clock01Icon,
-      label: t('nav.jobs'),
-      active: isJobsActive,
-    },
-    {
-      kind: 'link',
-      to: '/tasks',
-      icon: CheckListIcon,
-      label: 'Tasks',
-      active: isTasksActive,
-    },
-    {
-      kind: 'link',
-      to: '/conductor',
-      icon: Rocket01Icon,
-      label: 'Conductor',
-      active: isConductorActive,
-    },
-    {
-      kind: 'link',
-      to: '/operations',
-      icon: UserMultipleIcon,
-      label: 'Operations',
-      active: isOperationsActive,
-    },
-    {
-      kind: 'link',
-      to: '/swarm',
-      icon: UserGroupIcon,
-      label: 'Swarm',
-      active: isSwarmActive,
-    },
-    {
-      kind: 'link',
       to: '/system',
       icon: CpuIcon,
-      label: 'System',
+      label: 'System Health',
       active: isSystemActive,
-    },
-    {
-      kind: 'link',
-      to: '/projects',
-      icon: CodeIcon,
-      label: 'Projects',
-      active: isProjectsActive,
-    },
-    {
-      kind: 'link',
-      to: '/editor',
-      icon: SourceCodeSquareIcon,
-      label: 'Code Editor',
-      active: isEditorActive,
     },
     {
       kind: 'link',
@@ -939,54 +931,6 @@ export function ChatSidebarComponent(
       : []),
   ]
 
-  const knowledgeItems: Array<NavItemDef> = [
-    {
-      kind: 'link',
-      to: '/memory',
-      icon: BrainIcon,
-      label: t('nav.memory'),
-      active: isMemoryActive,
-    },
-    {
-      kind: 'link',
-      to: '/graph',
-      icon: Atom02Icon,
-      label: 'Graph',
-      active: isGraphActive,
-    },
-    {
-      kind: 'link',
-      to: '/links',
-      icon: Link01Icon,
-      label: 'Links',
-      active: isLinksActive,
-    },
-    {
-      kind: 'link',
-      to: '/skills',
-      icon: PuzzleIcon,
-      label: t('nav.skills'),
-      active: isSkillsActive,
-      dataTour: 'skills',
-    },
-    {
-      kind: 'link',
-      to: '/mcp',
-      icon: McpServerIcon,
-      label: 'MCP',
-      active: isMcpActive,
-    },
-    {
-      kind: 'link',
-      to: '/profiles',
-      icon: UserMultipleIcon,
-      label: t('nav.profiles'),
-      active: pathname === '/profiles',
-    },
-  ]
-
-  const systemItems: Array<NavItemDef> = []
-
   return (
     <motion.aside
       ref={(node) => {
@@ -997,10 +941,10 @@ export function ChatSidebarComponent(
         width: isVisuallyCollapsed
           ? isMobile
             ? 0
-            : 48
+            : 52
           : isMobile
             ? '85vw'
-            : 300,
+            : 260,
       }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className={cn(
@@ -1008,7 +952,7 @@ export function ChatSidebarComponent(
         isMobile && isCollapsed && 'pointer-events-none overflow-hidden',
       )}
       data-tour="sidebar-container"
-      style={isMobile ? { maxWidth: 360 } : undefined}
+      style={isMobile ? { maxWidth: 320 } : undefined}
       onMouseEnter={() => {
         if (sidebarHoverExpand && !isMobile && isCollapsed) {
           setIsHoverExpanded(true)
@@ -1020,11 +964,12 @@ export function ChatSidebarComponent(
       aria-hidden={isMobile && isCollapsed ? true : undefined}
       {...(isMobile && isCollapsed ? { inert: true } : {})}
     >
-      {/* ── Header ──────────────────────────────────────────────────── */}
+      {/* ── Header: Machined Branding (LAM Router Design Standard) ── */}
       <motion.div
         layout
         transition={{ layout: transition }}
-        className="relative flex h-12 items-center px-2"
+        className="relative flex h-13 min-h-[52px] shrink-0 items-center justify-between border-b px-3.5"
+        style={{ borderColor: 'var(--theme-border)' }}
       >
         <AnimatePresence initial={false}>
           {!isVisuallyCollapsed ? (
@@ -1033,64 +978,41 @@ export function ChatSidebarComponent(
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={transition}
+              className="flex items-center min-w-0 flex-1 pr-2"
             >
               <Link
                 to="/chat"
-                className={cn(
-                  buttonVariants({ variant: 'ghost', size: 'sm' }),
-                  'w-full pl-1.5 justify-start gap-2',
-                )}
+                className="group flex w-full items-center gap-2.5 rounded-lg py-1 transition-colors text-left"
               >
+                {/* Logo Avatar: Clean, borderless and properly sized */}
                 <img
                   src="/claude-avatar.webp"
-                  alt="LAM Cyberlab"
-                  className="size-6 rounded-lg"
+                  alt="LAM Cyberlab Logo"
+                  className="size-7 rounded-lg object-contain shrink-0 transition-transform duration-200 group-hover:scale-105"
                 />
-                <span
-                  className="text-sm font-semibold tracking-tight"
-                  style={{ color: 'var(--theme-text)' }}
-                >
-                  LAM Cyberlab
-                </span>
+                <div className="flex flex-col text-left leading-tight min-w-0">
+                  <span
+                    className="truncate font-semibold text-[13px] tracking-tight transition-colors group-hover:text-[var(--theme-accent-secondary,#7170ff)]"
+                    style={{ color: 'var(--theme-text)' }}
+                  >
+                    LAM Cyberlab
+                  </span>
+                  <span className="text-[9.5px] font-mono font-medium tracking-tight mt-0.5 truncate text-[var(--theme-muted,#8a8f98)]">
+                    Autonomous Workspace
+                  </span>
+                </div>
               </Link>
             </motion.div>
-          ) : null}
+          ) : (
+            <div className="flex items-center justify-center w-full">
+              <img
+                src="/claude-avatar.webp"
+                alt="LAM Cyberlab Logo"
+                className="size-7 rounded-lg object-contain shrink-0"
+              />
+            </div>
+          )}
         </AnimatePresence>
-        <TooltipProvider>
-          <TooltipRoot>
-            <TooltipTrigger
-              onClick={handleSidebarToggle}
-              render={
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  aria-label={
-                    isVisuallyCollapsed ? 'Open Sidebar' : 'Close Sidebar'
-                  }
-                  className="absolute right-2 top-1/2 shrink-0 -translate-y-1/2 opacity-80 hover:opacity-100"
-                  data-tour="sidebar-collapse-toggle"
-                >
-                  {isVisuallyCollapsed ? (
-                    <HugeiconsIcon
-                      icon={ArrowRight01Icon}
-                      size={18}
-                      strokeWidth={1.75}
-                    />
-                  ) : (
-                    <HugeiconsIcon
-                      icon={ArrowLeft01Icon}
-                      size={18}
-                      strokeWidth={1.75}
-                    />
-                  )}
-                </Button>
-              }
-            />
-            <TooltipContent side="right">
-              {isVisuallyCollapsed ? 'Open Sidebar' : 'Close Sidebar'}
-            </TooltipContent>
-          </TooltipRoot>
-        </TooltipProvider>
       </motion.div>
 
       {/* ── Search (ChatGPT-style, above sections) ─────────────────── */}
@@ -1111,7 +1033,7 @@ export function ChatSidebarComponent(
 
       {/* ── New Session button ──────────────────────────────────────── */}
       {!isVisuallyCollapsed && (
-        <div className="px-2 pb-1">
+        <div className="px-2 pb-2">
           <Link
             to="/chat/$sessionKey"
             params={{ sessionKey: 'new' }}
@@ -1119,20 +1041,25 @@ export function ChatSidebarComponent(
               onSelectSession?.()
             }}
             className={cn(
-              buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'w-full justify-start gap-2.5 px-3 py-2 text-primary-900 hover:bg-primary-200 dark:hover:bg-primary-800',
-              isNewSessionActive &&
-                'bg-[var(--theme-accent-subtle)] text-accent-500 hover:bg-[var(--theme-accent-subtle)]',
+              'group/new flex w-full h-8.5 items-center justify-start gap-2.5 px-2.5 rounded-md text-xs transition-all duration-150 select-none border cursor-pointer',
+              isNewSessionActive
+                ? 'bg-[var(--theme-card2,rgba(255,255,255,0.06))] text-[var(--theme-text,#f7f8f8)] font-semibold border-[var(--theme-border,rgba(255,255,255,0.08))] shadow-2xs'
+                : 'bg-transparent border-transparent text-[var(--theme-muted,#8a8f98)] opacity-70 hover:opacity-100 hover:bg-[var(--theme-card2,rgba(255,255,255,0.04))] hover:text-[var(--theme-text,#f7f8f8)]',
             )}
             data-tour="new-session"
           >
             <HugeiconsIcon
               icon={PencilEdit02Icon}
-              size={20}
-              strokeWidth={1.5}
-              className="size-5 shrink-0"
+              size={16}
+              strokeWidth={isNewSessionActive ? 1.9 : 1.6}
+              className={cn(
+                'size-3.5 shrink-0 transition-colors',
+                isNewSessionActive
+                  ? 'text-[var(--theme-text,#f7f8f8)]'
+                  : 'text-[var(--theme-muted,#8a8f98)] group-hover/new:text-[var(--theme-text,#f7f8f8)]',
+              )}
             />
-            <span>New Session</span>
+            <span className="truncate">New Session</span>
           </Link>
         </div>
       )}
@@ -1141,31 +1068,48 @@ export function ChatSidebarComponent(
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-swipe scrollbar-thin flex flex-col">
         {/* Navigation sections */}
         <div className={cn('shrink-0 space-y-0.5 px-2', isMobile && 'order-2')}>
+          {/* 1. Workspace */}
           <SectionLabel
-            label="Main"
+            label="Workspace"
             isCollapsed={isVisuallyCollapsed}
             transition={transition}
             collapsible
-            expanded={mainExpanded}
-            onToggle={toggleMain}
-            navigateTo={mainNav}
+            expanded={workspaceExpanded}
+            onToggle={toggleWorkspace}
           />
           <CollapsibleSection
-            expanded={mainExpanded || isCollapsed}
-            items={mainItems}
+            expanded={workspaceExpanded || isCollapsed}
+            items={workspaceItems}
             isCollapsed={isVisuallyCollapsed}
             transition={transition}
             onSelectSession={onSelectSession}
           />
 
+          {/* 2. Agent Swarm */}
           <SectionLabel
-            label="Knowledge"
+            label="Agent Swarm"
+            isCollapsed={isVisuallyCollapsed}
+            transition={transition}
+            collapsible
+            expanded={agentSwarmExpanded}
+            onToggle={toggleAgentSwarm}
+          />
+          <CollapsibleSection
+            expanded={agentSwarmExpanded || isCollapsed}
+            items={agentSwarmItems}
+            isCollapsed={isVisuallyCollapsed}
+            transition={transition}
+            onSelectSession={onSelectSession}
+          />
+
+          {/* 3. Knowledge & Brain */}
+          <SectionLabel
+            label="Knowledge & Brain"
             isCollapsed={isVisuallyCollapsed}
             transition={transition}
             collapsible
             expanded={knowledgeExpanded}
             onToggle={toggleKnowledge}
-            navigateTo={knowledgeNav}
           />
           <CollapsibleSection
             expanded={knowledgeExpanded || isCollapsed}
@@ -1175,10 +1119,18 @@ export function ChatSidebarComponent(
             onSelectSession={onSelectSession}
           />
 
-          {/* System */}
+          {/* 4. Infrastructure */}
+          <SectionLabel
+            label="Infrastructure"
+            isCollapsed={isVisuallyCollapsed}
+            transition={transition}
+            collapsible
+            expanded={infraExpanded}
+            onToggle={toggleInfra}
+          />
           <CollapsibleSection
-            expanded={true}
-            items={systemItems}
+            expanded={infraExpanded || isCollapsed}
+            items={infraItems}
             isCollapsed={isVisuallyCollapsed}
             transition={transition}
             onSelectSession={onSelectSession}
@@ -1217,13 +1169,16 @@ export function ChatSidebarComponent(
       </div>
       {/* end scrollable body */}
 
-      {/* ── Footer with User Menu ─────────────────────────────────── */}
-      <div className="px-2 py-2.5 border-t shrink-0 theme-border theme-panel">
+      {/* ── Footer with User Menu (LAM Router Style) ───────────────── */}
+      <div
+        className="px-2.5 py-3 border-t shrink-0 flex items-center justify-between"
+        style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-sidebar)' }}
+      >
         {/* User card + actions */}
         <div
           className={cn(
-            'flex items-center rounded-lg transition-colors',
-            isVisuallyCollapsed ? 'flex-col gap-2 py-2' : 'gap-2.5 px-2 py-1.5',
+            'flex items-center rounded-lg transition-colors w-full',
+            isVisuallyCollapsed ? 'flex-col gap-2 py-1' : 'justify-between gap-1.5',
           )}
         >
           {/* User menu trigger */}
@@ -1231,12 +1186,12 @@ export function ChatSidebarComponent(
             <MenuTrigger
               data-tour="settings"
               className={cn(
-                'flex items-center gap-2.5 rounded-lg py-1 transition-colors hover:bg-primary-200 dark:hover:bg-neutral-800 flex-1 min-w-0',
+                'flex items-center gap-2 rounded-lg py-1 transition-colors hover:bg-[var(--theme-card2,rgba(255,255,255,0.05))] flex-1 min-w-0',
                 isVisuallyCollapsed ? 'justify-center px-0' : 'px-1.5',
               )}
             >
               <UserAvatar
-                size={28}
+                size={26}
                 src={profileAvatarDataUrl}
                 alt={profileDisplayName}
               />
@@ -1249,7 +1204,7 @@ export function ChatSidebarComponent(
                     transition={transition}
                     className="flex-1 min-w-0 flex items-center gap-1.5"
                   >
-                    <span className="block truncate text-sm font-medium text-primary-900 dark:text-neutral-100">
+                    <span className="block truncate text-xs font-semibold" style={{ color: 'var(--theme-text)' }}>
                       {profileDisplayName}
                     </span>
                     <StatusDot />
@@ -1278,30 +1233,30 @@ export function ChatSidebarComponent(
 
           {/* Settings + Theme toggle */}
           {!isVisuallyCollapsed && (
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-0.5 shrink-0">
               <button
                 type="button"
                 onClick={() => handleOpenSettings('claude')}
-                className="shrink-0 rounded-lg p-1.5 text-primary-400 hover:bg-primary-200 dark:hover:bg-neutral-800 hover:text-primary-600 dark:hover:text-neutral-300 transition-colors"
+                className="shrink-0 rounded-md p-1.5 text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.05))] hover:text-[var(--theme-text,#f7f8f8)] transition-colors cursor-pointer"
                 aria-label="Settings"
+                title="Settings"
               >
                 <HugeiconsIcon
                   icon={Settings01Icon}
-                  size={16}
-                  strokeWidth={1.5}
+                  size={15}
+                  strokeWidth={1.75}
                 />
               </button>
-              <ThemeToggleMini />
               {showLogout && (
                 <AlertDialogRoot>
                   <AlertDialogTrigger
-                    className="shrink-0 rounded-lg p-1.5 text-primary-400 hover:bg-primary-200 dark:hover:bg-neutral-800 hover:text-primary-600 dark:hover:text-neutral-300 transition-colors"
+                    className="shrink-0 rounded-md p-1.5 text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.05))] hover:text-[var(--theme-danger,#f43f5e)] transition-colors"
                     aria-label="Logout"
                   >
                     <HugeiconsIcon
                       icon={Logout01Icon}
-                      size={16}
-                      strokeWidth={1.5}
+                      size={15}
+                      strokeWidth={1.75}
                     />
                   </AlertDialogTrigger>
                   <AlertDialogContent className="p-5">

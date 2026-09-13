@@ -45,8 +45,10 @@ import { LoginScreen } from '@/components/auth/login-screen'
 // (production) and vite.config.ts (dev/preview). Leave it that way.
 
 const THEME_STORAGE_KEY = 'claude-theme'
-const DEFAULT_THEME = 'dracula'
+const DEFAULT_THEME = 'dark-minimalist'
 const VALID_THEMES = [
+  'dark-minimalist',
+  'dark-minimalist-light',
   'claude-nous',
   'claude-nous-light',
   'claude-official',
@@ -89,7 +91,7 @@ const themeScript = `
     const root = document.documentElement
     const storedTheme = localStorage.getItem('${THEME_STORAGE_KEY}')
     const theme = ${JSON.stringify(VALID_THEMES)}.includes(storedTheme) ? storedTheme : '${DEFAULT_THEME}'
-    const lightThemes = ['claude-nous-light', 'claude-official-light', 'claude-classic-light', 'claude-slate-light', 'dracula-light', 'matrix-light', 'scifi-light', 'discord-nitro-light', 'arctic-light', 'synthwave-light', 'biolab-light', 'monokai-light', 'tokyonight-light', 'crimson-light', 'deusex-light', 'highcontrast-light']
+    const lightThemes = ['dark-minimalist-light', 'claude-nous-light', 'claude-official-light', 'claude-classic-light', 'claude-slate-light', 'dracula-light', 'matrix-light', 'scifi-light', 'discord-nitro-light', 'arctic-light', 'synthwave-light', 'biolab-light', 'monokai-light', 'tokyonight-light', 'crimson-light', 'deusex-light', 'highcontrast-light']
     const isDark = !lightThemes.includes(theme)
     root.classList.remove('light', 'dark', 'system')
     root.classList.add(isDark ? 'dark' : 'light')
@@ -146,7 +148,7 @@ const themeColorScript = `
       'highcontrast-light': '#FFFFFF',
     }
     const nextColor = colors[theme] || colors['${DEFAULT_THEME}']
-    const lightThemes = ['claude-nous-light', 'claude-official-light', 'claude-classic-light', 'claude-slate-light', 'dracula-light', 'matrix-light', 'scifi-light', 'discord-nitro-light', 'arctic-light', 'synthwave-light', 'biolab-light', 'monokai-light', 'tokyonight-light', 'crimson-light', 'deusex-light', 'highcontrast-light']
+    const lightThemes = ['dark-minimalist-light', 'claude-nous-light', 'claude-official-light', 'claude-classic-light', 'claude-slate-light', 'dracula-light', 'matrix-light', 'scifi-light', 'discord-nitro-light', 'arctic-light', 'synthwave-light', 'biolab-light', 'monokai-light', 'tokyonight-light', 'crimson-light', 'deusex-light', 'highcontrast-light']
     const isDark = !lightThemes.includes(String(theme))
 
     let meta = document.querySelector('meta[name="theme-color"]')

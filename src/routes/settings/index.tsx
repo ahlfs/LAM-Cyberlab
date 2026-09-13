@@ -127,6 +127,20 @@ const THEME_PREVIEWS: Record<
   ThemeId,
   { bg: string; panel: string; border: string; accent: string; text: string }
 > = {
+  'dark-minimalist': {
+    bg: '#08090a',
+    panel: '#0d0e11',
+    border: 'rgba(255,255,255,0.08)',
+    accent: '#5e6ad2',
+    text: '#f7f8f8',
+  },
+  'dark-minimalist-light': {
+    bg: '#f7f8f8',
+    panel: '#ffffff',
+    border: '#e2e4e8',
+    accent: '#5e6ad2',
+    text: '#08090a',
+  },
   'claude-nous': {
     bg: '#031a1a',
     panel: '#082224',
@@ -357,10 +371,11 @@ function WorkspaceThemePicker() {
   const { updateSettings } = useSettings()
   const [current, setCurrent] = useState<ThemeId>(() => getTheme())
 
-  function applyWorkspaceTheme(id: ThemeId) {
-    setTheme(id)
-    updateSettings({ theme: isDarkTheme(id) ? 'dark' : 'light' })
-    setCurrent(id)
+  function applyWorkspaceTheme(id: ThemeId, event?: React.MouseEvent) {
+    setTheme(id, event, () => {
+      updateSettings({ theme: isDarkTheme(id) ? 'dark' : 'light' })
+      setCurrent(id)
+    })
   }
 
   return (
@@ -368,31 +383,31 @@ function WorkspaceThemePicker() {
       {THEMES.map((t) => {
         const isActive = current === t.id
         return (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => applyWorkspaceTheme(t.id)}
-            className={cn(
-              'flex min-h-[112px] flex-col gap-2.5 rounded-xl border p-3.5 text-left transition-all',
-              isActive
-                ? 'border-[var(--theme-accent)] bg-[var(--theme-accent-subtle)] text-[var(--theme-text)] shadow-sm'
-                : 'border-[var(--theme-border)] bg-[var(--theme-card)] text-[var(--theme-text)] hover:-translate-y-0.5 hover:bg-[var(--theme-card2)]',
-            )}
-          >
-            <PageThemeSwatch colors={THEME_PREVIEWS[t.id]} />
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs">{t.icon}</span>
-              <span className="text-xs font-semibold">{t.label}</span>
-              {isActive && (
-                <span className="ml-auto text-[9px] font-bold uppercase tracking-wide text-[var(--theme-accent)]">
-                  Active
-                </span>
+            <button
+              key={t.id}
+              type="button"
+              onClick={(e) => applyWorkspaceTheme(t.id, e)}
+              className={cn(
+                'flex min-h-[112px] flex-col gap-2.5 rounded-xl border p-3.5 text-left transition-all cursor-pointer',
+                isActive
+                  ? 'border-[var(--theme-accent,#5e6ad2)] bg-[var(--theme-accent-subtle,rgba(94,106,210,0.12))] text-[var(--theme-text,#f7f8f8)] shadow-2xs'
+                  : 'border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.025))] text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.045))] hover:text-[var(--theme-text,#f7f8f8)]',
               )}
-            </div>
-            <p className="text-[10px] leading-tight text-[var(--theme-muted)]">
-              {t.description}
-            </p>
-          </button>
+            >
+              <PageThemeSwatch colors={THEME_PREVIEWS[t.id]} />
+              <div className="flex items-center gap-1.5 w-full">
+                <span className="text-xs">{t.icon}</span>
+                <span className="text-xs font-semibold text-[var(--theme-text,#f7f8f8)] truncate">{t.label}</span>
+                {isActive && (
+                  <span className="ml-auto text-[9px] font-bold uppercase tracking-wider text-[var(--theme-accent-secondary,#7170ff)] shrink-0">
+                    Active
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] leading-tight text-[var(--theme-muted,#8a8f98)]">
+                {t.description}
+              </p>
+            </button>
         )
       })}
     </div>

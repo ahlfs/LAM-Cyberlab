@@ -1,0 +1,192 @@
+/* ════════════════════════════════════════════════════════════════════
+  Dark Minimalist Theme (LAM Router & Linear Parity)
+  Dark:  Linear Deep Canvas #08090a, Violet/Indigo #5e6ad2 accent
+  Light: Minimal Clean Paper #ffffff, Deep Indigo #5e6ad2 accent
+  ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Dark Minimalist (Dark) ─────────────────────────────────────────── */
+[data-theme='dark-minimalist'] {
+  color-scheme: dark !important;
+
+  /* Canvas & Layout Hierarchy */
+  --theme-bg: #08090a;
+  --theme-sidebar: #08090a;
+  --theme-panel: #0d0e11;
+  --theme-card: rgba(255, 255, 255, 0.025);
+  --theme-card2: rgba(255, 255, 255, 0.045);
+  --theme-border: rgba(255, 255, 255, 0.08);
+  --theme-border-subtle: rgba(255, 255, 255, 0.05);
+  --theme-text: #f7f8f8;
+  --theme-muted: #8a8f98;
+  --theme-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --theme-shadow-2: 0 6px 16px rgba(0, 0, 0, 0.6);
+  --theme-shadow-3: 0 16px 36px rgba(0, 0, 0, 0.7);
+  --theme-glass: rgba(8, 9, 10, 0.95);
+
+  /* Linear Purple / Violet Accent Suite (#5e6ad2 / #7170ff) */
+  --theme-focus: #5e6ad2;
+  --theme-accent: #5e6ad2;
+  --theme-accent-secondary: #7170ff;
+  --theme-accent-subtle: rgba(94, 106, 210, 0.12);
+  --theme-accent-border: rgba(94, 106, 210, 0.3);
+  --theme-active: #7170ff;
+  --theme-link: #828fff;
+  --theme-success: #1f7a5f;
+  --theme-warning: #f59e0b;
+  --theme-danger: #f43f5e;
+  --theme-stripe: rgba(255, 255, 255, 0.04);
+  --theme-header-bg: #08090a;
+  --theme-header-border: rgba(255, 255, 255, 0.08);
+
+  /* Chat & Composer */
+  --chat-user-bg: rgba(94, 106, 210, 0.15);
+  --chat-user-border: rgba(94, 106, 210, 0.35);
+  --chat-user-foreground: #f7f8f8;
+  --chat-assistant-bg: rgba(255, 255, 255, 0.02);
+  --chat-assistant-border: rgba(255, 255, 255, 0.06);
+  --chat-assistant-foreground: #f7f8f8;
+  --composer-bg: #0d0e11;
+  --composer-border: rgba(255, 255, 255, 0.08);
+  --composer-placeholder: #8a8f98;
+
+  /* Tool Cards & Code Blocks */
+  --tool-card-bg: rgba(255, 255, 255, 0.02);
+  --tool-card-border: rgba(255, 255, 255, 0.07);
+  --tool-card-title: #f7f8f8;
+  --tool-card-muted: #8a8f98;
+  --code-bg: #0d0e11;
+  --code-border: rgba(255, 255, 255, 0.08);
+  --code-foreground: #f7f8f8;
+  --theme-input: rgba(255, 255, 255, 0.03);
+}
+
+/* ── Dark Minimalist Light Mode ─────────────────────────────────────── */
+[data-theme='dark-minimalist-light'] {
+  color-scheme: light !important;
+
+  --theme-bg: #f7f8f8;
+  --theme-sidebar: #f1f2f4;
+  --theme-panel: #ffffff;
+  --theme-card: #ffffff;
+  --theme-card2: #f1f2f4;
+  --theme-border: #e2e4e8;
+  --theme-border-subtle: #eceef1;
+  --theme-text: #08090a;
+  --theme-muted: #646a73;
+  --theme-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --theme-shadow-2: 0 6px 16px rgba(0, 0, 0, 0.06);
+  --theme-shadow-3: 0 16px 36px rgba(0, 0, 0, 0.08);
+  --theme-glass: rgba(247, 248, 248, 0.9);
+
+  --theme-focus: #5e6ad2;
+  --theme-accent: #5e6ad2;
+  --theme-accent-secondary: #7170ff;
+  --theme-accent-subtle: rgba(94, 106, 210, 0.08);
+  --theme-accent-border: rgba(94, 106, 210, 0.25);
+  --theme-active: #5e6ad2;
+  --theme-link: #5e6ad2;
+  --theme-success: #1f7a5f;
+  --theme-warning: #d97706;
+  --theme-danger: #e11d48;
+  --theme-stripe: rgba(0, 0, 0, 0.03);
+  --theme-header-bg: #ffffff;
+  --theme-header-border: #e2e4e8;
+
+  --chat-user-bg: rgba(94, 106, 210, 0.1);
+  --chat-user-border: rgba(94, 106, 210, 0.25);
+  --chat-user-foreground: #08090a;
+  --chat-assistant-bg: #ffffff;
+  --chat-assistant-border: #e2e4e8;
+  --chat-assistant-foreground: #08090a;
+  --composer-bg: #ffffff;
+  --composer-border: #e2e4e8;
+  --composer-placeholder: #8a8f98;
+
+  --tool-card-bg: #f7f8f8;
+  --tool-card-border: #e2e4e8;
+  --tool-card-title: #08090a;
+  --tool-card-muted: #646a73;
+  --code-bg: #f1f2f4;
+  --code-border: #e2e4e8;
+  --code-foreground: #08090a;
+  --theme-input: #ffffff;
+}
+
+/* ── Body Overrides ─────────────────────────────────────────────────── */
+[data-theme='dark-minimalist'] html,
+[data-theme='dark-minimalist'] body,
+[data-theme='dark-minimalist'] #root,
+[data-theme='dark-minimalist'] .dark {
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+[data-theme='dark-minimalist-light'] html,
+[data-theme='dark-minimalist-light'] body,
+[data-theme='dark-minimalist-light'] #root,
+[data-theme='dark-minimalist-light'] .light {
+  background-color: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+/* ── Tailwind Token Remaps — Dark ───────────────────────────────────── */
+[data-theme='dark-minimalist'] {
+  --color-primary-50: var(--theme-panel) !important;
+  --color-primary-100: var(--theme-card) !important;
+  --color-primary-200: var(--theme-border-subtle) !important;
+  --color-primary-300: var(--theme-border) !important;
+  --color-primary-400: var(--theme-muted) !important;
+  --color-primary-500: var(--theme-muted) !important;
+  --color-primary-600: var(--theme-muted) !important;
+  --color-primary-700: var(--theme-text) !important;
+  --color-primary-800: var(--theme-text) !important;
+  --color-primary-900: var(--theme-text) !important;
+  --color-primary-950: var(--theme-text) !important;
+  --color-surface: var(--theme-bg) !important;
+  --color-surface-deep: var(--theme-bg) !important;
+  --color-ink: var(--theme-text) !important;
+  --color-accent-400: var(--theme-accent-secondary) !important;
+  --color-accent-500: var(--theme-accent) !important;
+  --color-accent-600: var(--theme-accent) !important;
+}
+
+/* ── Tailwind Token Remaps — Light ──────────────────────────────────── */
+[data-theme='dark-minimalist-light'] {
+  --color-primary-50: var(--theme-card) !important;
+  --color-primary-100: var(--theme-card2) !important;
+  --color-primary-200: var(--theme-border) !important;
+  --color-primary-300: var(--theme-border-subtle) !important;
+  --color-primary-400: var(--theme-muted) !important;
+  --color-primary-500: var(--theme-muted) !important;
+  --color-primary-600: var(--theme-muted) !important;
+  --color-primary-700: var(--theme-text) !important;
+  --color-primary-800: var(--theme-text) !important;
+  --color-primary-900: var(--theme-text) !important;
+  --color-primary-950: var(--theme-text) !important;
+  --color-surface: var(--theme-bg) !important;
+  --color-surface-deep: var(--theme-bg) !important;
+  --color-ink: var(--theme-text) !important;
+  --color-accent-400: var(--theme-accent-secondary) !important;
+  --color-accent-500: var(--theme-accent) !important;
+  --color-accent-600: var(--theme-accent) !important;
+  --color-white: var(--theme-card) !important;
+}
+
+/* ── Focus Rings & Accents ──────────────────────────────────────────── */
+[data-theme='dark-minimalist'] :focus-visible {
+  outline-color: rgba(94, 106, 210, 0.65);
+}
+
+[data-theme='dark-minimalist'] {
+  --color-amber-50: rgba(94, 106, 210, 0.1) !important;
+  --color-amber-100: rgba(94, 106, 210, 0.18) !important;
+  --color-amber-200: rgba(94, 106, 210, 0.28) !important;
+  --color-amber-300: rgba(94, 106, 210, 0.4) !important;
+  --color-amber-400: #7170ff !important;
+  --color-amber-500: #5e6ad2 !important;
+  --color-amber-600: #4b55be !important;
+  --color-amber-700: #f7f8f8 !important;
+  --color-amber-800: #f7f8f8 !important;
+  --color-amber-900: #ffffff !important;
+  --color-amber-950: #ffffff !important;
+}
