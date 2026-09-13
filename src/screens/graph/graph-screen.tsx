@@ -573,7 +573,7 @@ function CanvasRenderer({
       daily: { x: 220, y: 180 },
     }
 
-    // 2D Force Simulation (Sleeps when alpha reaches equilibrium)
+    // 2D Force Simulation
     const sim = d3
       .forceSimulation(simNodes, 2)
       .force(
@@ -613,28 +613,18 @@ function CanvasRenderer({
           .radius((d: any) => getNodeRadius(d.connections) + 18)
           .iterations(3),
       )
-      .alphaDecay(0.025)
-      .alphaMin(0.005)
 
-    sim.on('tick', () => {
-      // If user is actively hovering during simulation movement, sync cursor and hover state
-      if (lastPointerPosRef.current) {
-        const { screenX, screenY } = lastPointerPosRef.current
-        const hit = getNodeAtScreenPos(screenX, screenY)
-        if (hoveredNodeIdRef.current !== (hit ? hit.id : null)) {
-          hoveredNodeIdRef.current = hit ? hit.id : null
-          onHover(hit ? hit.id : null)
-        }
-      }
-      renderFrame()
-    })
+    // Pre-warm the simulation layout synchronously (120 iterations)
+    // so nodes are ALREADY cleanly structured into their equilibrium positions instantly!
+    sim.stop()
+    for (let i = 0; i < 140; i++) {
+      sim.tick()
+    }
 
     simulationRef.current = sim
 
-    if (!isInitializedRef.current) {
-      isInitializedRef.current = true
-      sim.alpha(0.8).restart()
-    }
+    // Initial instant frame render at equilibrium
+    renderFrame()
 
     return () => {
       sim.stop()
@@ -669,6 +659,7 @@ function CanvasRenderer({
         hitNode.fy = hitNode.y
 
         if (simulationRef.current) {
+          simulationRef.current.on('tick', renderFrame)
           simulationRef.current.alphaTarget(0.3).restart()
         }
       } else {
@@ -724,6 +715,9 @@ function CanvasRenderer({
         transformRef.current.isDraggingNode = false
         if (simulationRef.current) {
           simulationRef.current.alphaTarget(0)
+          simulationRef.current.on('end', () => {
+            simulationRef.current?.on('tick', null)
+          })
         }
       }
 
