@@ -462,57 +462,68 @@ function CanvasRenderer({
     [screenToWorld],
   )
 
-  // React to selectedNodeId: smooth animated zoom to fit node + all its connected neighbors
+  // React to selectedNodeId: smooth animated zoom to fit node + all its connected neighbors (or zoom back out when null)
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || !selectedNodeId) return
+    if (!canvas) return
 
-    const nodes = simNodesRef.current
-    const targetNode = nodes.find((n) => n.id === selectedNodeId)
-    if (!targetNode || targetNode.x === undefined || targetNode.y === undefined) return
+    let desiredPanX = 0
+    let desiredPanY = 0
+    let desiredZoom = 1
 
-    const neighbors = neighborMap.get(selectedNodeId) || new Set<string>()
-    const clusterNodes: SimNode[] = [targetNode]
+    if (selectedNodeId) {
+      const nodes = simNodesRef.current
+      const targetNode = nodes.find((n) => n.id === selectedNodeId)
+      if (!targetNode || targetNode.x === undefined || targetNode.y === undefined) return
 
-    for (let i = 0; i < nodes.length; i++) {
-      const n = nodes[i]
-      if (neighbors.has(n.id) && n.x !== undefined && n.y !== undefined) {
-        clusterNodes.push(n)
+      const neighbors = neighborMap.get(selectedNodeId) || new Set<string>()
+      const clusterNodes: SimNode[] = [targetNode]
+
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i]
+        if (neighbors.has(n.id) && n.x !== undefined && n.y !== undefined) {
+          clusterNodes.push(n)
+        }
       }
+
+      // Compute bounding box around cluster
+      let minX = Infinity
+      let maxX = -Infinity
+      let minY = Infinity
+      let maxY = -Infinity
+
+      for (let i = 0; i < clusterNodes.length; i++) {
+        const cn = clusterNodes[i]
+        const r = getNodeRadius(cn.connections) + 36
+        if (cn.x - r < minX) minX = cn.x - r
+        if (cn.x + r > maxX) maxX = cn.x + r
+        if (cn.y - r < minY) minY = cn.y - r
+        if (cn.y + r > maxY) maxY = cn.y + r
+      }
+
+      const bboxWidth = Math.max(100, maxX - minX)
+      const bboxHeight = Math.max(100, maxY - minY)
+      const clusterCenterX = (minX + maxX) / 2
+      const clusterCenterY = (minY + maxY) / 2
+
+      const width = canvas.clientWidth
+      const height = canvas.clientHeight
+
+      // Account for right-side inspector drawer (~380px)
+      const availableWidth = width > 800 ? width - 380 : width
+      const padding = 70
+      const zoomX = (availableWidth - padding) / bboxWidth
+      const zoomY = (height - padding) / bboxHeight
+      desiredZoom = Math.max(0.65, Math.min(2.5, Math.min(zoomX, zoomY)))
+
+      desiredPanX = -clusterCenterX * desiredZoom - (width > 800 ? 120 : 0)
+      desiredPanY = -clusterCenterY * desiredZoom
+    } else {
+      // Zoom back out to natural full overview when unselected (close button clicked or background clicked)
+      desiredPanX = 0
+      desiredPanY = 0
+      desiredZoom = 1
     }
-
-    // Compute bounding box around cluster
-    let minX = Infinity
-    let maxX = -Infinity
-    let minY = Infinity
-    let maxY = -Infinity
-
-    for (let i = 0; i < clusterNodes.length; i++) {
-      const cn = clusterNodes[i]
-      const r = getNodeRadius(cn.connections) + 36
-      if (cn.x - r < minX) minX = cn.x - r
-      if (cn.x + r > maxX) maxX = cn.x + r
-      if (cn.y - r < minY) minY = cn.y - r
-      if (cn.y + r > maxY) maxY = cn.y + r
-    }
-
-    const bboxWidth = Math.max(100, maxX - minX)
-    const bboxHeight = Math.max(100, maxY - minY)
-    const clusterCenterX = (minX + maxX) / 2
-    const clusterCenterY = (minY + maxY) / 2
-
-    const width = canvas.clientWidth
-    const height = canvas.clientHeight
-
-    // Account for right-side inspector drawer (~380px)
-    const availableWidth = width > 800 ? width - 380 : width
-    const padding = 70
-    const zoomX = (availableWidth - padding) / bboxWidth
-    const zoomY = (height - padding) / bboxHeight
-    const desiredZoom = Math.max(0.65, Math.min(2.5, Math.min(zoomX, zoomY)))
-
-    const desiredPanX = -clusterCenterX * desiredZoom - (width > 800 ? 120 : 0)
-    const desiredPanY = -clusterCenterY * desiredZoom
 
     const startPanX = transformRef.current.panX
     const startPanY = transformRef.current.panY
