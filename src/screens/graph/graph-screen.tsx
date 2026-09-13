@@ -310,70 +310,37 @@ function CanvasRenderer({
         ctx.stroke()
       }
 
-      // 3. Smart Obsidian LOD (Level-of-Detail) with Spatial Collision Culling & Clean Truncation
-      // At default zoom (< 1.2): ONLY hovered/active nodes, search matches, and major hubs (connections >= 14)
-      // At 1.2 <= zoom < 2.0: Highlighted + hubs with connections >= 8 + projects
-      // At zoom >= 2.0: All visible nodes (with strict collision culling)
-      const isEligibleByZoom =
-        isHighlighted ||
-        zoom >= 2.8 ||
-        (zoom >= 2.0 && node.connections >= 4) ||
-        (zoom >= 1.3 && (node.connections >= 8 || node.type === 'project')) ||
-        (zoom < 1.3 && (node.connections >= 14 || (node.type === 'project' && node.connections >= 3)))
-
-      const shouldRenderLabel = showLabels && !isFaded && isEligibleByZoom
+      // 3. Smart Obsidian LOD: Show label ONLY when hovered/clicked/active or highlighted in search
+      const shouldRenderLabel = showLabels && !isFaded && isHighlighted
 
       if (shouldRenderLabel) {
-        const fontSize = Math.max(9, Math.min(11, 10 / Math.sqrt(zoom)))
+        const fontSize = Math.max(9, Math.min(12, 11 / Math.sqrt(zoom)))
         ctx.font = `${isCenter ? '600' : '500'} ${fontSize}px Inter, -apple-system, sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'top'
 
         const rawTitle = node.title || node.id
-        const labelText =
-          !isCenter && rawTitle.length > 24
-            ? `${rawTitle.slice(0, 22)}…`
-            : rawTitle
-        const textY = node.y + radius + 4
+        const labelText = rawTitle
+        const textY = node.y + radius + 5
 
         const textMetrics = ctx.measureText(labelText)
         const textWidth = textMetrics.width
         const textHeight = fontSize * 1.25
 
         const box = {
-          x1: node.x - textWidth / 2 - 6,
-          y1: textY - 1,
-          x2: node.x + textWidth / 2 + 6,
-          y2: textY + textHeight + 2,
-        }
-
-        // Spatial collision check — prevent overlapping labels unless highlighted
-        if (!isHighlighted) {
-          let hasCollision = false
-          for (let b = 0; b < drawnLabelBoxes.length; b++) {
-            const drawn = drawnLabelBoxes[b]
-            if (
-              !(
-                box.x2 < drawn.x1 ||
-                box.x1 > drawn.x2 ||
-                box.y2 < drawn.y1 ||
-                box.y1 > drawn.y2
-              )
-            ) {
-              hasCollision = true
-              break
-            }
-          }
-          if (hasCollision) continue
+          x1: node.x - textWidth / 2 - 8,
+          y1: textY - 2,
+          x2: node.x + textWidth / 2 + 8,
+          y2: textY + textHeight + 3,
         }
 
         drawnLabelBoxes.push(box)
 
         // Pill contrast background
         ctx.fillStyle = isDark
-          ? 'rgba(11, 13, 19, 0.94)'
-          : 'rgba(255, 255, 255, 0.94)'
-        ctx.globalAlpha = 0.95
+          ? 'rgba(11, 13, 19, 0.95)'
+          : 'rgba(255, 255, 255, 0.95)'
+        ctx.globalAlpha = 0.98
         ctx.fillRect(
           box.x1,
           box.y1,
@@ -381,14 +348,20 @@ function CanvasRenderer({
           box.y2 - box.y1,
         )
 
-        ctx.fillStyle = isCenter
-          ? '#ffffff'
-          : isHighlighted
-            ? nodeColor
-            : isDark
-              ? '#f1f5f9'
-              : '#0f172a'
-        ctx.globalAlpha = isHighlighted ? 1.0 : 0.9
+        ctx.strokeStyle = isCenter
+          ? (CATEGORY_CONFIG[(node.type?.toLowerCase() || 'concept') as GraphCategory]?.color || '#f8fafc')
+          : (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)')
+        ctx.lineWidth = isCenter ? 1.5 : 1
+        ctx.strokeRect(
+          box.x1,
+          box.y1,
+          box.x2 - box.x1,
+          box.y2 - box.y1,
+        )
+
+        // Text
+        ctx.globalAlpha = 1
+        ctx.fillStyle = isDark ? '#ffffff' : '#09090b'
         ctx.fillText(labelText, node.x, textY)
       }
     }
@@ -578,17 +551,26 @@ function CanvasRenderer({
     }
   }, [nodesData, edgesData])
 
-  // Mouse / Drag Handlers (Live Spring Tension with Local Reheat)
+  // Mouse / Drag & Click Handlers
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+
+    let clickStartX = 0
+    let clickStartY = 0
+    let clickedNodeCandidate: SimNode | null = null
 
     const handleMouseDown = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect()
       const screenX = e.clientX - rect.left
       const screenY = e.clientY - rect.top
 
+      clickStartX = e.clientX
+      clickStartY = e.clientY
+
       const hitNode = getNodeAtScreenPos(screenX, screenY)
+      clickedNodeCandidate = hitNode
+
       if (hitNode) {
         // Dragging a node (Reheats physics organically)
         transformRef.current.isDraggingNode = true
@@ -637,6 +619,10 @@ function CanvasRenderer({
       const screenX = e.clientX - rect.left
       const screenY = e.clientY - rect.top
 
+      const dx = Math.abs(e.clientX - clickStartX)
+      const dy = Math.abs(e.clientY - clickStartY)
+      const isPureClick = dx < 6 && dy < 6
+
       if (transformRef.current.isDraggingNode) {
         if (transformRef.current.draggedNode) {
           transformRef.current.draggedNode.fx = null
@@ -647,15 +633,15 @@ function CanvasRenderer({
         if (simulationRef.current) {
           simulationRef.current.alphaTarget(0)
         }
-      } else if (transformRef.current.isDragging) {
+      }
+
+      if (transformRef.current.isDragging) {
         transformRef.current.isDragging = false
-        // Detect pure click
-        const dx = Math.abs(e.clientX - transformRef.current.dragStartX)
-        const dy = Math.abs(e.clientY - transformRef.current.dragStartY)
-        if (dx < 4 && dy < 4) {
-          const hitNode = getNodeAtScreenPos(screenX, screenY)
-          onClick(hitNode ? hitNode.id : null)
-        }
+      }
+
+      if (isPureClick) {
+        const hitNode = getNodeAtScreenPos(screenX, screenY) || clickedNodeCandidate
+        onClick(hitNode ? hitNode.id : null)
       }
     }
 
