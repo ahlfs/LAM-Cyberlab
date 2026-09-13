@@ -387,24 +387,30 @@ function CanvasRenderer({
     }
   }, [])
 
-  // Find Nearest Node Under Cursor
+  // Find Nearest Node Under Cursor (Generous hit radius so moving nodes are easily caught without stutter)
   const getNodeAtScreenPos = useCallback(
     (screenX: number, screenY: number): SimNode | null => {
       const { x, y } = screenToWorld(screenX, screenY)
       const zoom = transformRef.current.zoom
       const nodes = simNodesRef.current
 
+      let closestNode: SimNode | null = null
+      let closestDistSq = Infinity
+
       for (let i = nodes.length - 1; i >= 0; i--) {
         const node = nodes[i]
         const radius = getNodeRadius(node.connections)
-        const hitRadius = Math.max(radius + 4, 12 / zoom)
+        // Dynamic generous tolerance (minimum 22px in screen space)
+        const hitRadius = Math.max(radius + 8, 22 / zoom)
         const dx = node.x - x
         const dy = node.y - y
-        if (dx * dx + dy * dy <= hitRadius * hitRadius) {
-          return node
+        const distSq = dx * dx + dy * dy
+        if (distSq <= hitRadius * hitRadius && distSq < closestDistSq) {
+          closestDistSq = distSq
+          closestNode = node
         }
       }
-      return null
+      return closestNode
     },
     [screenToWorld],
   )
@@ -573,7 +579,7 @@ function CanvasRenderer({
       daily: { x: 220, y: 180 },
     }
 
-    // 2D Force Simulation
+    // 2D Force Simulation (Obsidian-Style Organic Spring Decay)
     const sim = d3
       .forceSimulation(simNodes, 2)
       .force(
@@ -581,50 +587,53 @@ function CanvasRenderer({
         d3
           .forceLink(simLinks)
           .id((d: any) => d.id)
-          .distance((d: any) => 70 + Math.sqrt((d.source.connections || 0) + (d.target.connections || 0)) * 10)
-          .strength(0.45),
+          .distance((d: any) => 65 + Math.sqrt((d.source.connections || 0) + (d.target.connections || 0)) * 8)
+          .strength(0.4),
       )
       .force(
         'charge',
         d3
           .forceManyBody()
-          .strength((d: any) => (d.connections > 0 ? -260 - (d.connections || 0) * 15 : -80))
-          .distanceMax(700),
+          .strength((d: any) => (d.connections > 0 ? -220 - (d.connections || 0) * 12 : -70))
+          .distanceMax(650),
       )
       .force(
         'clusterX',
         d3.forceX((d: any) => {
           const cat = (d.type?.toLowerCase() || 'concept') as string
           return CLUSTER_CENTERS[cat]?.x || 0
-        }).strength((d: any) => (d.connections > 0 ? 0.06 : 0.22))
+        }).strength((d: any) => (d.connections > 0 ? 0.05 : 0.2))
       )
       .force(
         'clusterY',
         d3.forceY((d: any) => {
           const cat = (d.type?.toLowerCase() || 'concept') as string
           return CLUSTER_CENTERS[cat]?.y || 0
-        }).strength((d: any) => (d.connections > 0 ? 0.06 : 0.22))
+        }).strength((d: any) => (d.connections > 0 ? 0.05 : 0.2))
       )
       .force('center', d3.forceCenter(0, 0).strength(0.02))
       .force(
         'collision',
         d3
           .forceCollide()
-          .radius((d: any) => getNodeRadius(d.connections) + 18)
+          .radius((d: any) => getNodeRadius(d.connections) + 16)
           .iterations(3),
       )
+      .alphaDecay(0.022)
+      .alphaMin(0.005)
 
-    // Pre-warm the simulation layout synchronously (120 iterations)
-    // so nodes are ALREADY cleanly structured into their equilibrium positions instantly!
-    sim.stop()
-    for (let i = 0; i < 140; i++) {
-      sim.tick()
-    }
+    sim.on('tick', () => {
+      renderFrame()
+    })
 
     simulationRef.current = sim
 
-    // Initial instant frame render at equilibrium
-    renderFrame()
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true
+      sim.alpha(0.7).restart()
+    } else {
+      renderFrame()
+    }
 
     return () => {
       sim.stop()
@@ -692,7 +701,10 @@ function CanvasRenderer({
       } else {
         const hitNode = getNodeAtScreenPos(screenX, screenY)
         canvas.style.cursor = hitNode ? 'pointer' : 'grab'
-        onHover(hitNode ? hitNode.id : null)
+        if (hoveredNodeIdRef.current !== (hitNode ? hitNode.id : null)) {
+          hoveredNodeIdRef.current = hitNode ? hitNode.id : null
+          onHover(hitNode ? hitNode.id : null)
+        }
         renderFrame()
       }
     }
