@@ -151,7 +151,7 @@ function CanvasRenderer({
   onZoomOutRef: React.MutableRefObject<(() => void) | null>
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const { isDark } = useCurrentTheme()
+  const { isDark, theme } = useCurrentTheme()
 
   const simNodesRef = useRef<SimNode[]>([])
   const simLinksRef = useRef<SimLink[]>([])
@@ -540,10 +540,14 @@ function CanvasRenderer({
     requestAnimationFrame(animateZoom)
   }, [selectedNodeId, neighborMap, renderFrame])
 
-  // Redraw when visual state changes (without restarting simulation)
+  // Redraw when visual state changes (theme, isDark, search, selection, labels)
   useEffect(() => {
-    renderFrame()
-  }, [renderFrame])
+    // Next animation frame ensures CSS variables on documentElement are fully applied
+    const raf = requestAnimationFrame(() => {
+      renderFrame()
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [renderFrame, theme, isDark, showLabels, searchHighlightIds, selectedNodeId])
 
   // Initialize and Update Force Simulation (ONLY on dataset identity change)
   useEffect(() => {
