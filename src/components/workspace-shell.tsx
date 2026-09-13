@@ -57,9 +57,6 @@ const TerminalWorkspace = lazy(() =>
   })),
 )
 
-export const DESKTOP_SIDEBAR_BACKDROP_CLASS =
-  'fixed left-0 bottom-0 top-[var(--titlebar-h,0px)] w-[300px] z-10 bg-black/10 backdrop-blur-[1px]'
-
 type WorkspaceShellProps = {
   children?: React.ReactNode
 }
@@ -215,8 +212,6 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     (search as any)?.mode === 'embed'
   const isChromeFreeSurface = isEmbeddedSurface
   const hideChatSidebar = isOnChatRoute && chatFocusMode
-  const showDesktopSidebarBackdrop =
-    !isChromeFreeSurface && !isMobile && !isOnChatRoute && !sidebarCollapsed
 
   const isNewChat = activeFriendlyId === 'new'
 
@@ -488,15 +483,6 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
           !isOnEditorRoute &&
           !isOnFileManagerRoute &&
           !isMobile && <ChatPanelToggle />}
-
-        {showDesktopSidebarBackdrop ? (
-          <button
-            type="button"
-            aria-label="Collapse navigation sidebar"
-            onClick={() => setSidebarCollapsed(true)}
-            className={DESKTOP_SIDEBAR_BACKDROP_CLASS}
-          />
-        ) : null}
 
         {!authState.checked ? (
           <ConnectionStartupScreen onConnected={handleStartupConnected} />

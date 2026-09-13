@@ -41,18 +41,21 @@ export function LoginScreen() {
 
   // A geometric dot pattern for the background
   const DotGrid = () => (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center opacity-30">
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center opacity-20">
       <div
         className="w-[200vw] h-[200vh] absolute"
         style={{
           backgroundImage:
-            'radial-gradient(var(--theme-primary-400) 1.5px, transparent 1.5px)',
+            'radial-gradient(var(--theme-muted, rgba(255,255,255,0.2)) 1.5px, transparent 1.5px)',
           backgroundSize: '24px 24px',
           backgroundPosition: '0 0',
         }}
       />
       <motion.div
-        className="w-[150vw] h-[150vh] absolute bg-gradient-to-tr from-transparent via-primary-200/20 to-accent-500/10"
+        className="w-[150vw] h-[150vh] absolute"
+        style={{
+          background: 'radial-gradient(circle, var(--theme-accent-subtle, rgba(94,106,210,0.15)) 0%, transparent 60%)',
+        }}
         animate={{
           rotate: [0, 360],
           scale: [1, 1.1, 1],
@@ -69,7 +72,7 @@ export function LoginScreen() {
   if (!mounted) return null
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-primary-50 px-4 overflow-hidden selection:bg-accent-500 selection:text-white">
+    <div className="relative flex min-h-screen items-center justify-center bg-[var(--theme-bg,#08090a)] px-4 overflow-hidden text-[var(--theme-text,#f7f8f8)]">
       <DotGrid />
 
       <motion.div
@@ -83,11 +86,14 @@ export function LoginScreen() {
           delay: 0.1,
         }}
       >
-        <div className="overflow-hidden rounded-2xl bg-primary-100 p-10 border-2 border-primary-200/50 shadow-2xl shadow-primary-900/10 ring-1 ring-primary-300/30 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-2xl bg-[var(--theme-card,rgba(255,255,255,0.02))] p-8 sm:p-10 border border-[var(--theme-border,rgba(255,255,255,0.08))] shadow-2xl backdrop-blur-md">
           {/* Logo & Header */}
-          <div className="mb-10 flex flex-col items-center justify-center text-center">
+          <div className="mb-8 flex flex-col items-center justify-center text-center">
             <motion.div
-              className="flex items-center justify-center mb-6 h-16 w-16 rounded-2xl overflow-hidden shadow-[0_0_24px_-4px_var(--theme-accent-500)]"
+              className="flex items-center justify-center mb-5 h-16 w-16 rounded-2xl overflow-hidden shadow-2xl border border-[var(--theme-border,rgba(255,255,255,0.1))]"
+              style={{
+                boxShadow: '0 0 25px var(--theme-accent-subtle, rgba(94,106,210,0.25))',
+              }}
               initial={{ scale: 0.8, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{
@@ -98,13 +104,13 @@ export function LoginScreen() {
               }}
             >
               <img
-                src="/claude-logo.png"
+                src="/claude-avatar.webp"
                 alt="LAM Cyberlab Logo"
                 className="w-full h-full object-cover"
               />
             </motion.div>
             <motion.h1
-              className="text-3xl font-extrabold tracking-tight text-primary-900"
+              className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--theme-text,#f7f8f8)]"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
@@ -112,7 +118,7 @@ export function LoginScreen() {
               LAM Cyberlab
             </motion.h1>
             <motion.p
-              className="mt-2 text-sm font-medium text-primary-600"
+              className="mt-1.5 text-xs font-mono text-[var(--theme-muted,#8a8f98)]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
@@ -124,7 +130,7 @@ export function LoginScreen() {
           {/* Form */}
           <motion.form
             onSubmit={handleSubmit}
-            className="space-y-6"
+            className="space-y-4"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
@@ -134,8 +140,8 @@ export function LoginScreen() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter Password"
-                className="w-full rounded-xl border-2 border-primary-200 bg-primary-50/50 px-5 py-3.5 text-primary-900 placeholder-primary-400 font-medium outline-none transition-all focus:border-accent-500 focus:bg-primary-50 focus:ring-4 focus:ring-accent-500/20 group-hover:border-primary-300"
+                placeholder="Enter workspace password..."
+                className="w-full rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-bg,#08090a)] px-4 py-3 text-xs sm:text-sm text-[var(--theme-text,#f7f8f8)] placeholder-[var(--theme-muted,#8a8f98)] font-medium outline-none transition-all focus:border-[var(--theme-accent,#5e6ad2)] focus:ring-2 focus:ring-[var(--theme-accent,#5e6ad2)]/30"
                 disabled={loading}
                 autoFocus
               />
@@ -149,7 +155,7 @@ export function LoginScreen() {
                   exit={{ opacity: 0, height: 0, y: -10 }}
                   className="overflow-hidden"
                 >
-                  <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-600 border border-red-500/20">
+                  <div className="rounded-xl bg-red-500/10 px-3.5 py-2.5 text-xs font-semibold text-red-300 border border-red-500/20">
                     {error}
                   </div>
                 </motion.div>
@@ -159,9 +165,9 @@ export function LoginScreen() {
             <motion.button
               type="submit"
               disabled={loading || !password}
-              whileHover={!loading && password ? { scale: 1.02 } : {}}
-              whileTap={!loading && password ? { scale: 0.98 } : {}}
-              className="w-full relative overflow-hidden rounded-xl bg-accent-500 px-4 py-3.5 font-bold text-white shadow-[0_4px_14px_0_var(--theme-accent-500)] transition-all hover:bg-accent-600 focus:outline-none focus:ring-4 focus:ring-accent-500/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-accent-500"
+              whileHover={!loading && password ? { scale: 1.01 } : {}}
+              whileTap={!loading && password ? { scale: 0.99 } : {}}
+              className="w-full relative overflow-hidden rounded-xl bg-[var(--theme-accent,#5e6ad2)] px-4 py-3 text-xs sm:text-sm font-semibold text-white shadow-lg transition-all hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent,#5e6ad2)]/50 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
             >
               <span className={loading ? 'opacity-0' : 'opacity-100'}>
                 Authenticate Access
@@ -185,8 +191,8 @@ export function LoginScreen() {
                       transition={{
                         repeat: Infinity,
                         duration: 0.6,
+                        delay: 0.2,
                         ease: 'easeInOut',
-                        delay: 0.1,
                       }}
                     />
                     <motion.div
@@ -195,8 +201,8 @@ export function LoginScreen() {
                       transition={{
                         repeat: Infinity,
                         duration: 0.6,
+                        delay: 0.4,
                         ease: 'easeInOut',
-                        delay: 0.2,
                       }}
                     />
                   </div>
@@ -208,7 +214,7 @@ export function LoginScreen() {
 
         {/* Footer */}
         <motion.p
-          className="mt-8 text-center text-xs font-semibold text-primary-500"
+          className="mt-6 text-center text-xs font-mono text-[var(--theme-muted,#8a8f98)]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
@@ -218,7 +224,7 @@ export function LoginScreen() {
             href="https://github.com/NousResearch/hermes-agent"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-accent-500 hover:text-accent-600 transition-colors underline decoration-accent-500/30 underline-offset-4 hover:decoration-accent-500"
+            className="text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] hover:underline transition-colors"
           >
             Hermes Agent
           </a>

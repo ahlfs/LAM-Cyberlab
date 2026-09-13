@@ -144,14 +144,14 @@ export const HierarchicalModelPicker: React.FC<
             isMobile ? 'py-3 text-sm' : 'py-2 text-xs sm:text-sm'
           } rounded-lg text-left transition-all duration-150 cursor-pointer ${
             isActive
-              ? 'bg-accent-50 text-accent-700 font-semibold dark:bg-accent-900/30 dark:text-accent-300 border-l-2 border-accent-500 shadow-sm'
-              : 'text-neutral-700 hover:bg-neutral-100/80 dark:text-neutral-300 dark:hover:bg-neutral-800/60 hover:text-neutral-900 dark:hover:text-neutral-100'
+              ? 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold border-l-2 border-[var(--theme-accent,#5e6ad2)] shadow-2xs'
+              : 'text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] hover:text-[var(--theme-text,#f7f8f8)]'
           }`}
           title={entry.id}
         >
           <span className="flex-1 truncate">{entry.name || entry.id}</span>
           {entry.isLocal && (
-            <span className="text-[10px] text-neutral-400 px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 font-normal shrink-0">
+            <span className="text-[10px] text-[var(--theme-muted,#8a8f98)] px-1.5 py-0.5 rounded-full bg-[var(--theme-card2,rgba(255,255,255,0.05))] font-normal shrink-0 border border-[var(--theme-border,rgba(255,255,255,0.08))]">
               local
             </span>
           )}
@@ -164,10 +164,10 @@ export const HierarchicalModelPicker: React.FC<
             e.stopPropagation()
             togglePin(entry.id)
           }}
-          className={`absolute right-2 rounded p-1.5 transition-opacity ${
+          className={`absolute right-2 rounded p-1.5 transition-opacity cursor-pointer ${
             pinned
-              ? 'text-accent-500 opacity-90 hover:opacity-100'
-              : 'text-neutral-400 opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:text-accent-500'
+              ? 'text-[var(--theme-accent,#5e6ad2)] opacity-100'
+              : 'text-[var(--theme-muted,#8a8f98)] opacity-0 group-hover:opacity-70 hover:!opacity-100 hover:text-[var(--theme-accent,#5e6ad2)]'
           }`}
           aria-label={pinned ? `Unpin ${entry.name}` : `Pin ${entry.name}`}
         >
@@ -204,30 +204,30 @@ export const HierarchicalModelPicker: React.FC<
           style={{ paddingLeft: `${depth * 12 + 10}px` }}
           className={`flex w-full items-center gap-2 py-1.5 pr-3 text-left font-medium text-xs uppercase tracking-wider rounded-md transition-colors cursor-pointer ${
             isExpanded
-              ? 'text-neutral-800 dark:text-neutral-200 bg-neutral-100/50 dark:bg-neutral-800/40'
-              : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 hover:bg-neutral-100/40 dark:hover:bg-neutral-800/20'
+              ? 'text-[var(--theme-text,#f7f8f8)] bg-[var(--theme-card2,rgba(255,255,255,0.05))] font-semibold'
+              : 'text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.04))]'
           }`}
         >
           <HugeiconsIcon
             icon={isExpanded ? ArrowDown01Icon : ArrowRight01Icon}
             size={13}
-            className="shrink-0 text-neutral-400"
+            className="shrink-0 text-[var(--theme-muted,#8a8f98)]"
           />
           <HugeiconsIcon
             icon={Folder01Icon}
             size={14}
-            className="shrink-0 text-primary-500/80 dark:text-primary-400/80"
+            className="shrink-0 text-[var(--theme-accent,#5e6ad2)]"
           />
-          <span className="flex-1 truncate font-semibold lowercase font-mono">
+          <span className="flex-1 truncate lowercase font-mono">
             {group.name}
           </span>
-          <span className="text-[10px] text-neutral-400 font-normal px-1.5 py-0.2 rounded bg-neutral-200/50 dark:bg-neutral-800">
+          <span className="text-[10px] text-[var(--theme-muted,#8a8f98)] font-normal px-1.5 py-0.2 rounded bg-[var(--theme-card2,rgba(255,255,255,0.05))] border border-[var(--theme-border,rgba(255,255,255,0.06))]">
             {group.totalModels}
           </span>
         </button>
 
         {isExpanded && (
-          <div className="space-y-0.5 border-l border-neutral-200/60 dark:border-neutral-800/80 ml-3.5 pl-0.5 my-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
+          <div className="space-y-0.5 border-l border-[var(--theme-border,rgba(255,255,255,0.08))] ml-3.5 pl-0.5 my-0.5 animate-in fade-in slide-in-from-top-1 duration-150">
             {group.children.map((childNode) =>
               isGroupNode(childNode)
                 ? renderGroup(childNode, depth + 1)
@@ -248,7 +248,7 @@ export const HierarchicalModelPicker: React.FC<
 
   return (
     <div
-      className="flex flex-col w-full"
+      className="flex flex-col w-full text-[var(--theme-text,#f7f8f8)]"
       onClick={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
     >
@@ -258,7 +258,7 @@ export const HierarchicalModelPicker: React.FC<
           <HugeiconsIcon
             icon={Search01Icon}
             size={14}
-            className="absolute left-2.5 text-neutral-400 pointer-events-none"
+            className="absolute left-2.5 text-[var(--theme-muted,#8a8f98)] pointer-events-none"
           />
           <input
             type="text"
@@ -266,13 +266,13 @@ export const HierarchicalModelPicker: React.FC<
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.stopPropagation()}
             placeholder={searchPlaceholder}
-            className="w-full rounded-lg border border-neutral-200 bg-neutral-50 dark:bg-neutral-800/60 dark:border-neutral-700/80 pl-8 pr-7 py-1.5 text-xs text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500/50 transition-all"
+            className="w-full rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-bg,#08090a)] pl-8 pr-7 py-1.5 text-xs text-[var(--theme-text,#f7f8f8)] placeholder-[var(--theme-muted,#8a8f98)] focus:border-[var(--theme-accent,#5e6ad2)] focus:outline-none focus:ring-1 focus:ring-[var(--theme-accent,#5e6ad2)]/50 transition-all"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+              className="absolute right-2 text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] cursor-pointer"
               aria-label="Clear search"
             >
               <HugeiconsIcon icon={Cancel01Icon} size={13} />
@@ -285,8 +285,8 @@ export const HierarchicalModelPicker: React.FC<
       <div className="space-y-1 overflow-y-auto px-1">
         {/* Pinned Section */}
         {filteredPinned.length > 0 && (
-          <div className="mb-2 border-b border-neutral-100 dark:border-neutral-800 pb-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+          <div className="mb-2 border-b border-[var(--theme-border,rgba(255,255,255,0.08))] pb-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)]">
               <svg
                 width="12"
                 height="12"
@@ -294,7 +294,7 @@ export const HierarchicalModelPicker: React.FC<
                 fill="currentColor"
                 stroke="currentColor"
                 strokeWidth="2"
-                className="text-accent-500"
+                className="text-[var(--theme-accent,#5e6ad2)]"
               >
                 <path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z" />
               </svg>
@@ -311,7 +311,7 @@ export const HierarchicalModelPicker: React.FC<
           </div>
         ) : (
           filteredPinned.length === 0 && (
-            <div className="p-4 text-center text-xs text-neutral-500">
+            <div className="p-4 text-center text-xs text-[var(--theme-muted,#8a8f98)]">
               No matching models found.
             </div>
           )

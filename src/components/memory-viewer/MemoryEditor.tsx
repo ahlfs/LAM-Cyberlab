@@ -3,6 +3,8 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { FloppyDiskIcon, LockIcon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import { useCurrentTheme } from '@/lib/theme'
+import { defineMonacoThemes, resolveMonacoTheme } from '@/lib/monaco-theme'
 
 type SaveState = 'saved' | 'saving' | 'unsaved' | 'error'
 
@@ -39,7 +41,7 @@ function getStatusLabel(
   return `Saved at ${formatted}`
 }
 
-function MemoryEditor({
+export function MemoryEditor({
   path,
   content,
   loading,
@@ -47,7 +49,7 @@ function MemoryEditor({
   readOnly,
   saveState,
   lastSavedAt,
-  theme,
+  theme: _themeProp,
   editorFontSize,
   editorWordWrap,
   editorMinimap,
@@ -55,6 +57,8 @@ function MemoryEditor({
   onSave,
   onToggleReadOnly,
 }: MemoryEditorProps) {
+  const { theme: currentTheme } = useCurrentTheme()
+  const monacoTheme = resolveMonacoTheme(currentTheme)
   const disabled = !path || loading || Boolean(error)
 
   return (
@@ -103,10 +107,14 @@ function MemoryEditor({
         ) : (
           <Editor
             height="100%"
-            theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
+            theme={monacoTheme}
             language="markdown"
             path={path || 'memory.md'}
             value={content}
+            onMount={(_editor, monaco) => {
+              defineMonacoThemes(monaco)
+              monaco.editor.setTheme(monacoTheme)
+            }}
             onChange={function onChangeEditor(nextValue) {
               onChangeContent(nextValue || '')
             }}
@@ -124,5 +132,3 @@ function MemoryEditor({
     </section>
   )
 }
-
-export { MemoryEditor }

@@ -16,6 +16,7 @@ import {
   Scissor01Icon,
   ClipboardIcon,
   Edit02Icon,
+  Link01Icon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 import { FileIcon } from '@/components/ui/file-icon'
@@ -100,6 +101,8 @@ function TreeNode({
   onPaste,
   onRename,
   onDelete,
+  onAttachFile,
+  onCopyPath,
 }: {
   entry: FileEntry
   depth: number
@@ -115,6 +118,8 @@ function TreeNode({
   onPaste?: (target: FileEntry | null) => void
   onRename?: (entry: FileEntry) => void
   onDelete?: (entry: FileEntry) => void
+  onAttachFile?: (entry: FileEntry) => void
+  onCopyPath?: (entry: FileEntry) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const isFolder = entry.type === 'folder'
@@ -254,6 +259,8 @@ function TreeNode({
               onPaste={onPaste}
               onRename={onRename}
               onDelete={onDelete}
+              onAttachFile={onAttachFile}
+              onCopyPath={onCopyPath}
             />
           ))}
         </div>
@@ -275,6 +282,8 @@ export function FileTree({
   onCut,
   onPaste,
   onRename,
+  onAttachFile,
+  onCopyPath,
   changedFiles = [],
 }: {
   selectedPath: string | null
@@ -287,6 +296,8 @@ export function FileTree({
   onCut?: (entry: FileEntry) => void
   onPaste?: (target: FileEntry | null) => void
   onRename?: (entry: FileEntry) => void
+  onAttachFile?: (entry: FileEntry) => void
+  onCopyPath?: (entry: FileEntry) => void
   changedFiles?: Array<{ path: string; status: string; staged: boolean }>
 }) {
   const [entries, setEntries] = useState<FileEntry[]>([])
@@ -432,6 +443,8 @@ export function FileTree({
           onPaste={onPaste}
           onRename={onRename}
           onDelete={onDelete}
+          onAttachFile={onAttachFile}
+          onCopyPath={onCopyPath}
         />
       ))}
 
@@ -449,6 +462,44 @@ export function FileTree({
         >
           {contextMenu.entry && (
             <>
+              {/* Attach File Address to Chat Prompt */}
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-[var(--theme-card2)] transition-colors text-[var(--theme-accent,#5e6ad2)] font-semibold cursor-pointer"
+                onClick={() => {
+                  onAttachFile?.(contextMenu.entry!)
+                  setContextMenu((prev) => ({ ...prev, isOpen: false }))
+                }}
+              >
+                <HugeiconsIcon
+                  icon={Link01Icon}
+                  size={14}
+                  className="opacity-90"
+                />
+                <span>Attach File</span>
+              </button>
+
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-[var(--theme-card2)] transition-colors cursor-pointer"
+                onClick={() => {
+                  onCopyPath?.(contextMenu.entry!)
+                  setContextMenu((prev) => ({ ...prev, isOpen: false }))
+                }}
+              >
+                <HugeiconsIcon
+                  icon={Copy01Icon}
+                  size={14}
+                  className="opacity-70"
+                />
+                <span>Copy Path</span>
+              </button>
+
+              <div
+                className="my-1 border-t opacity-30"
+                style={{ borderColor: 'var(--theme-border)' }}
+              />
+
               <button
                 type="button"
                 className="flex items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-[var(--theme-card2)] transition-colors"

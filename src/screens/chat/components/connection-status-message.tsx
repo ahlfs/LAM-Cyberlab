@@ -114,33 +114,33 @@ export function ConnectionStatusMessage({
   return (
     <div
       className={cn(
-        'mx-auto max-w-lg rounded-lg border px-3 py-2 transition-all duration-300',
+        'mx-auto max-w-lg rounded-xl border px-3.5 py-2.5 transition-all duration-300 shadow-sm',
         isChecking
-          ? 'border-primary-200 bg-primary-50 text-primary-600'
-          : 'border-amber-200 bg-amber-50 text-amber-800',
+          ? 'border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.02))] text-[var(--theme-text,#f7f8f8)]'
+          : 'border-amber-500/30 bg-amber-500/10 text-amber-200',
         fadingOut && 'opacity-0 translate-y-[-4px]',
         className,
       )}
       role="alert"
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2.5">
         <HugeiconsIcon
           icon={isChecking ? WifiDisconnected01Icon : Alert02Icon}
           size={16}
-          strokeWidth={1.5}
+          strokeWidth={1.75}
           className={cn(
             'mt-0.5 shrink-0',
-            isChecking ? 'text-primary-500' : 'text-amber-600',
+            isChecking ? 'text-[var(--theme-accent,#5e6ad2)]' : 'text-amber-400',
           )}
         />
         <div className="flex-1 text-xs">
-          <p className="font-medium">
+          <p className="font-semibold text-[var(--theme-text,#f7f8f8)]">
             {isChecking ? 'Connecting to Hermes Agent...' : errorInfo.title}
           </p>
           {!isChecking ? (
             <>
-              <p className="mt-0.5 text-amber-700">{errorInfo.description}</p>
-              <p className="mt-1 font-medium text-amber-800">
+              <p className="mt-0.5 text-amber-300/80 leading-relaxed">{errorInfo.description}</p>
+              <p className="mt-1 font-medium text-amber-300">
                 {errorInfo.action}
               </p>
             </>
@@ -150,7 +150,7 @@ export function ConnectionStatusMessage({
           <button
             type="button"
             onClick={onRetry}
-            className="shrink-0 rounded-md border border-amber-300 bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:hover:bg-amber-900/30"
+            className="shrink-0 rounded-md border border-amber-500/40 bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-200 transition-colors hover:bg-amber-500/30 cursor-pointer"
           >
             Retry
           </button>

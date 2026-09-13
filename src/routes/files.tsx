@@ -18,7 +18,9 @@ import {
 import { usePageTitle } from '@/hooks/use-page-title'
 import { FileExplorerSidebar } from '@/components/file-explorer'
 import type { FileEntry } from '@/components/file-explorer/file-explorer-sidebar'
-import { resolveTheme, useSettings } from '@/hooks/use-settings'
+import { useSettings } from '@/hooks/use-settings'
+import { useCurrentTheme } from '@/lib/theme'
+import { defineMonacoThemes, resolveMonacoTheme } from '@/lib/monaco-theme'
 
 const PLACEHOLDER_VALUE = `// Files workspace
 // Click a file in the tree to load it into this editor.
@@ -129,7 +131,8 @@ function FilesRoute() {
   const [renderMarkdown, setRenderMarkdown] = useState(true)
   const [saving, setSaving] = useState(false)
   const [savedFlash, setSavedFlash] = useState(false)
-  const resolvedTheme = resolveTheme(settings.theme)
+  const { theme: currentTheme } = useCurrentTheme()
+  const monacoTheme = resolveMonacoTheme(currentTheme)
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)')
@@ -384,9 +387,13 @@ function FilesRoute() {
             ) : (
               <Editor
                 height="100%"
-                theme={resolvedTheme === 'dark' ? 'vs-dark' : 'vs-light'}
+                theme={monacoTheme}
                 language={editorLanguage}
                 value={editorValue}
+                onMount={(_editor, monaco) => {
+                  defineMonacoThemes(monaco)
+                  monaco.editor.setTheme(monacoTheme)
+                }}
                 onChange={(value) => {
                   if (!loaded) return
                   setLoaded({

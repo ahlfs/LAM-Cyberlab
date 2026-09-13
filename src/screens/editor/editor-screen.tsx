@@ -45,6 +45,8 @@ import {
   SidebarLeft01Icon,
   StarIcon,
   Message02Icon,
+  ViewIcon,
+  ViewOffIcon,
 } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/toast'
@@ -59,6 +61,9 @@ import { Button } from '@/components/ui/button'
 import { FileTree, type FileEntry } from './components/file-tree'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { useChatSessions } from '@/screens/chat/hooks/use-chat-sessions'
+import { useCurrentTheme } from '@/lib/theme'
+import { defineMonacoThemes, resolveMonacoTheme } from '@/lib/monaco-theme'
+import { CHAT_ATTACH_FILE_EVENT } from '@/screens/chat/chat-events'
 
 const EditorTerminal = lazy(() =>
   import('./components/editor-terminal').then((m) => ({
@@ -240,6 +245,30 @@ export function EditorScreen() {
   } | null>(null)
 
   const activeFile = tabs.find((t) => t.path === activeTab) ?? null
+
+  const { theme: currentTheme } = useCurrentTheme()
+  const monacoTheme = resolveMonacoTheme(currentTheme)
+
+  const [showMinimap, setShowMinimap] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true
+    const stored = localStorage.getItem('lam-editor-minimap')
+    return stored !== null ? stored === 'true' : true
+  })
+
+  const toggleMinimap = useCallback(() => {
+    setShowMinimap((prev) => {
+      const next = !prev
+      localStorage.setItem('lam-editor-minimap', String(next))
+      return next
+    })
+  }, [])
+
+  useEffect(() => {
+    if (monacoRef.current) {
+      defineMonacoThemes(monacoRef.current)
+      monacoRef.current.editor.setTheme(monacoTheme)
+    }
+  }, [monacoTheme])
 
   /* ── Fetch Changed Files List (Git Status + Unsaved Dirty Files) ────── */
   const fetchChangedFiles = useCallback(async () => {
@@ -604,6 +633,22 @@ export function EditorScreen() {
   )
 
   /* ── Context Menu Actions ─────────────────────────────────────────── */
+
+  const handleAttachFile = useCallback((entry: FileEntry) => {
+    window.dispatchEvent(
+      new CustomEvent(CHAT_ATTACH_FILE_EVENT, {
+        detail: { path: entry.path, name: entry.name },
+      }),
+    )
+    if (!chatOpen) {
+      setChatOpen(true)
+    }
+  }, [chatOpen])
+
+  const handleCopyPath = useCallback((entry: FileEntry) => {
+    navigator.clipboard.writeText(entry.path)
+    toast(`Copied path: ${entry.path}`, { type: 'success' })
+  }, [])
 
   const handleCopy = useCallback((entry: FileEntry) => {
     setClipboard({ type: 'copy', entry })
@@ -1088,6 +1133,8 @@ export function EditorScreen() {
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
     monacoRef.current = monaco
+    defineMonacoThemes(monaco)
+    monaco.editor.setTheme(monacoTheme)
     // Trigger decoration calculation immediately after mounting
     setEditorVersion((v) => v + 1)
   }
@@ -1253,11 +1300,13 @@ export function EditorScreen() {
 
       {/* Folder Selection Modal */}
       <DialogRoot open={folderModalOpen} onOpenChange={setFolderModalOpen}>
-        <DialogContent>
+        <DialogContent className="border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] text-[var(--theme-text,#f7f8f8)] shadow-2xl">
           <div className="p-5 flex flex-col max-h-[85vh] w-full max-w-lg">
-            <DialogTitle className="mb-1">Open Folder</DialogTitle>
-            <DialogDescription className="mb-3">
-              Select a workspace or project folder to open in the editor.
+            <DialogTitle className="mb-1 text-sm font-semibold text-[var(--theme-text,#f7f8f8)]">
+              Open Folder / Project
+            </DialogTitle>
+            <DialogDescription className="mb-3 text-xs text-[var(--theme-muted,#8a8f98)]">
+              Select a workspace or project folder to open in the code editor.
             </DialogDescription>
 
             {/* Search project bar */}
@@ -1265,37 +1314,32 @@ export function EditorScreen() {
               <HugeiconsIcon
                 icon={Search01Icon}
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--theme-muted,#8a8f98)] pointer-events-none"
               />
               <input
                 type="text"
                 value={folderSearchQuery}
                 onChange={(e) => setFolderSearchQuery(e.target.value)}
-                placeholder="Search projects by name or path..."
-                className="w-full rounded-lg border bg-white/5 pl-9 pr-3 py-1.5 text-xs outline-none transition-colors focus:border-[var(--theme-accent)]"
-                style={{
-                  borderColor: 'var(--theme-border)',
-                  color: 'var(--theme-text)',
-                }}
+                placeholder="Search projects by name, branch, or path..."
+                className="w-full rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-bg,#08090a)] pl-9 pr-8 py-1.5 text-xs text-[var(--theme-text,#f7f8f8)] placeholder-[var(--theme-muted,#8a8f98)] outline-none transition-colors focus:border-[var(--theme-accent,#5e6ad2)]"
               />
               {folderSearchQuery && (
                 <button
                   type="button"
                   onClick={() => setFolderSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-white/10"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] cursor-pointer"
+                  aria-label="Clear search"
                 >
                   <HugeiconsIcon
                     icon={Cancel01Icon}
                     size={12}
-                    className="text-primary-400"
                   />
                 </button>
               )}
             </div>
 
             <div
-              className="flex-1 overflow-y-auto rounded-lg border bg-primary-50/50 p-1 divide-y divide-primary-100"
-              style={{ borderColor: 'var(--theme-border)' }}
+              className="flex-1 overflow-y-auto rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.02))] p-1 divide-y divide-[var(--theme-border,rgba(255,255,255,0.06))]"
             >
               {/* Root workspace option (only if matching search) */}
               {(!folderSearchQuery || 'root workspace'.includes(folderSearchQuery.toLowerCase())) && (
@@ -1303,8 +1347,8 @@ export function EditorScreen() {
                   type="button"
                   onClick={() => handleSelectFolder('')}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary-100',
-                    selectedFolder === '' && 'bg-primary-100/80 font-medium',
+                    'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] cursor-pointer',
+                    selectedFolder === '' && 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] font-medium',
                   )}
                   style={{
                     color:
@@ -1319,8 +1363,8 @@ export function EditorScreen() {
                     style={{ color: 'var(--theme-warning, #f59e0b)' }}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-xs">Root Workspace</div>
-                    <div className="font-mono text-[10px] text-primary-500">
+                    <div className="font-semibold text-xs text-[var(--theme-text,#f7f8f8)]">Root Workspace</div>
+                    <div className="font-mono text-[10px] text-[var(--theme-muted,#8a8f98)]">
                       /home/ahlfs/workspace
                     </div>
                   </div>
@@ -1335,6 +1379,7 @@ export function EditorScreen() {
                   return (
                     project.name.toLowerCase().includes(q) ||
                     project.path.toLowerCase().includes(q) ||
+                    (project.branch && project.branch.toLowerCase().includes(q)) ||
                     project.frameworkLabel.toLowerCase().includes(q)
                   )
                 })
@@ -1346,12 +1391,15 @@ export function EditorScreen() {
                 })
                 .map((project) => {
                   const isFav = favoriteProjectPaths.includes(project.path)
+                  const isGit = Boolean(project.branch)
+                  const isSelected = selectedFolder === project.path
+
                   return (
                     <div
                       key={project.path}
                       className={cn(
-                        'flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-primary-100/80 group',
-                        selectedFolder === project.path && 'bg-primary-100 font-medium',
+                        'flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] group',
+                        isSelected && 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] font-medium',
                       )}
                     >
                       <button
@@ -1360,26 +1408,20 @@ export function EditorScreen() {
                           e.stopPropagation()
                           toggleFavoriteProject(project.path)
                         }}
-                        className="p-1 rounded text-primary-400 hover:text-amber-400 transition-colors"
+                        className="p-1 rounded text-[var(--theme-muted,#8a8f98)] hover:text-amber-400 transition-colors cursor-pointer"
                         title={isFav ? 'Remove from favorites' : 'Mark as favorite'}
                       >
                         <HugeiconsIcon
                           icon={StarIcon}
                           size={14}
-                          className={cn(isFav ? 'text-amber-400 fill-amber-400' : 'text-primary-300')}
+                          className={cn(isFav ? 'text-amber-400 fill-amber-400' : 'text-[var(--theme-muted,#8a8f98)] opacity-50 group-hover:opacity-100')}
                         />
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleSelectFolder(project.path)}
-                        className="flex-1 flex items-center gap-2.5 text-left min-w-0"
-                        style={{
-                          color:
-                            selectedFolder === project.path
-                              ? 'var(--theme-accent)'
-                              : 'var(--theme-text)',
-                        }}
+                        className="flex-1 flex items-center gap-2.5 text-left min-w-0 cursor-pointer"
                       >
                         <HugeiconsIcon
                           icon={Folder01Icon}
@@ -1387,12 +1429,37 @@ export function EditorScreen() {
                           style={{ color: 'var(--theme-warning, #f59e0b)' }}
                         />
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-xs font-semibold">{project.name}</div>
-                          <div className="truncate font-mono text-[10px] text-primary-500">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span
+                              className={cn(
+                                'truncate text-xs font-semibold',
+                                isSelected
+                                  ? 'text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))]'
+                                  : 'text-[var(--theme-text,#f7f8f8)]',
+                              )}
+                            >
+                              {project.name}
+                            </span>
+                            {isGit && (
+                              <span
+                                className="inline-flex items-center gap-1 rounded px-1.5 py-0.2 text-[9.5px] font-mono font-medium border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.06))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] shrink-0"
+                                title={`Git repository connected (branch: ${project.branch})`}
+                              >
+                                <HugeiconsIcon
+                                  icon={GitBranchIcon}
+                                  size={10}
+                                  strokeWidth={2}
+                                  className="text-[var(--theme-accent,#5e6ad2)]"
+                                />
+                                {project.branch}
+                              </span>
+                            )}
+                          </div>
+                          <div className="truncate font-mono text-[10px] text-[var(--theme-muted,#8a8f98)]">
                             {project.path}
                           </div>
                         </div>
-                        <span className="shrink-0 rounded-md border border-primary-200 bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-500">
+                        <span className="shrink-0 rounded-md border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.05))] px-2 py-0.5 text-[10px] font-bold uppercase text-[var(--theme-muted,#8a8f98)]">
                           {project.frameworkLabel}
                         </span>
                       </button>
@@ -1401,7 +1468,7 @@ export function EditorScreen() {
                 })}
 
               {projects.length === 0 && (
-                <div className="px-3 py-6 text-center text-sm text-primary-500">
+                <div className="px-3 py-6 text-center text-sm text-[var(--theme-muted,#8a8f98)]">
                   No projects detected.
                 </div>
               )}
@@ -1520,6 +1587,8 @@ export function EditorScreen() {
           onCut={handleCut}
           onPaste={handlePaste}
           onRename={handleRename}
+          onAttachFile={handleAttachFile}
+          onCopyPath={handleCopyPath}
           changedFiles={isGitRepo ? gitStatusFiles : []}
         />
       </div>
@@ -1529,119 +1598,148 @@ export function EditorScreen() {
   const editorElement = (
     <>
       <div className="flex h-full w-full flex-col overflow-hidden">
-        {/* Tab bar */}
+        {/* Tab bar: Separated Scrollable Tabs (Left) and Pinned Action Toolbar (Right) */}
         <div
-          className="flex h-10 shrink-0 items-center gap-0 border-b overflow-x-auto"
+          className="flex h-9 shrink-0 items-center justify-between border-b select-none relative"
           style={{
             borderColor: 'var(--theme-border)',
             background: 'var(--theme-card)',
           }}
         >
-          {/* Sidebar toggle (when collapsed) */}
-          {!sidebarOpen && (
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              className="flex h-full items-center px-3 transition-colors hover:bg-[var(--theme-card2)]"
-            >
-              <HugeiconsIcon
-                icon={Menu01Icon}
-                size={16}
-                style={{ color: 'var(--theme-muted)' }}
-              />
-            </button>
-          )}
-
-          {/* Tabs */}
-          {tabs.map((tab) => (
-            <button
-              key={tab.path}
-              type="button"
-              onClick={() => setActiveTab(tab.path)}
-              className={cn(
-                'group flex h-full items-center gap-2 border-r px-3 text-[12px] font-medium transition-colors',
-                tab.path === activeTab
-                  ? 'bg-[var(--theme-bg,#08090a)] text-[var(--theme-text,#f7f8f8)] font-medium shadow-2xs'
-                  : 'text-[var(--theme-muted,#8a8f98)] opacity-70 hover:opacity-100 hover:bg-[var(--theme-card2,rgba(255,255,255,0.04))] hover:text-[var(--theme-text,#f7f8f8)]',
-              )}
-              style={{ borderColor: 'var(--theme-border)' }}
-            >
-              <HugeiconsIcon
-                icon={File01Icon}
-                size={13}
-                className={cn(
-                  'shrink-0 transition-opacity',
-                  tab.path === activeTab ? 'opacity-100 text-[var(--theme-accent-secondary,#7170ff)]' : 'opacity-60'
-                )}
-              />
-              <span className="max-w-[120px] truncate">{tab.name}</span>
-              {tab.dirty && (
-                <span
-                  className="inline-block size-2 rounded-full shrink-0"
-                  style={{ background: 'var(--theme-accent, #60a5fa)' }}
-                />
-              )}
-              <span
-                onClick={(e) => closeTab(tab.path, e)}
-                className="ml-1 shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:bg-[var(--theme-card2)] group-hover:opacity-80"
+          {/* Left: Scrollable File Tabs */}
+          <div className="flex flex-1 min-w-0 h-full items-center overflow-x-auto scrollbar-none">
+            {/* Sidebar toggle (when collapsed) */}
+            {!sidebarOpen && (
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                className="flex h-full items-center px-3 transition-colors hover:bg-[var(--theme-card2)] shrink-0 border-r"
+                style={{ borderColor: 'var(--theme-border)' }}
+                title="Open Explorer Sidebar"
               >
-                <HugeiconsIcon icon={Cancel01Icon} size={12} />
-              </span>
-            </button>
-          ))}
+                <HugeiconsIcon
+                  icon={Menu01Icon}
+                  size={15}
+                  style={{ color: 'var(--theme-muted)' }}
+                />
+              </button>
+            )}
 
-          {/* Spacer + actions */}
-          <div className="flex-1" />
+            {/* Tabs */}
+            {tabs.map((tab) => (
+              <button
+                key={tab.path}
+                type="button"
+                onClick={() => setActiveTab(tab.path)}
+                className={cn(
+                  'group flex h-full shrink-0 items-center gap-2 border-r px-3 text-[12px] font-medium transition-colors cursor-pointer',
+                  tab.path === activeTab
+                    ? 'bg-[var(--theme-bg,#08090a)] text-[var(--theme-text,#f7f8f8)] font-medium shadow-2xs'
+                    : 'text-[var(--theme-muted,#8a8f98)] opacity-70 hover:opacity-100 hover:bg-[var(--theme-card2,rgba(255,255,255,0.04))] hover:text-[var(--theme-text,#f7f8f8)]',
+                )}
+                style={{ borderColor: 'var(--theme-border)' }}
+                title={tab.path}
+              >
+                <HugeiconsIcon
+                  icon={File01Icon}
+                  size={13}
+                  className={cn(
+                    'shrink-0 transition-opacity',
+                    tab.path === activeTab ? 'opacity-100 text-[var(--theme-accent-secondary,#7170ff)]' : 'opacity-60'
+                  )}
+                />
+                <span className="max-w-[130px] truncate">{tab.name}</span>
+                {tab.dirty && (
+                  <span
+                    className="inline-block size-2 rounded-full shrink-0"
+                    style={{ background: 'var(--theme-accent, #60a5fa)' }}
+                  />
+                )}
+                <span
+                  onClick={(e) => closeTab(tab.path, e)}
+                  className="ml-1 shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:bg-[var(--theme-card2)] group-hover:opacity-80 cursor-pointer"
+                >
+                  <HugeiconsIcon icon={Cancel01Icon} size={12} />
+                </span>
+              </button>
+            ))}
+          </div>
 
-          {/* Save button */}
-          {activeFile?.dirty && (
+          {/* Right: Pinned Static Action Toolbar (Never pushed out of view) */}
+          <div
+            className="flex shrink-0 items-center gap-1.5 px-2 h-full border-l z-10"
+            style={{
+              borderColor: 'var(--theme-border)',
+              background: 'var(--theme-card)',
+            }}
+          >
+            {/* Save button */}
+            {activeFile?.dirty && (
+              <button
+                type="button"
+                onClick={() => void saveFile()}
+                disabled={saving}
+                className="flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors hover:opacity-80 disabled:opacity-50 cursor-pointer"
+                style={{
+                  borderColor: 'var(--theme-border)',
+                  background: 'var(--theme-card2)',
+                  color: 'var(--theme-text)',
+                }}
+              >
+                <HugeiconsIcon icon={FloppyDiskIcon} size={13} />
+                <span>{saving ? 'Saving…' : 'Save'}</span>
+              </button>
+            )}
+
+            {/* Minimap Toggle */}
             <button
               type="button"
-              onClick={() => void saveFile()}
-              disabled={saving}
-              className="mr-2 flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors hover:opacity-80 disabled:opacity-50"
-              style={{
-                borderColor: 'var(--theme-border)',
-                background: 'var(--theme-card)',
-                color: 'var(--theme-ink)',
-              }}
+              onClick={toggleMinimap}
+              className={cn(
+                'flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer',
+                showMinimap
+                  ? 'border-[var(--theme-border,rgba(255,255,255,0.08))] text-[var(--theme-text,#f7f8f8)] bg-[var(--theme-card2,rgba(255,255,255,0.06))]'
+                  : 'border-transparent text-[var(--theme-muted,#8a8f98)] opacity-60 hover:opacity-100 hover:bg-[var(--theme-card2,rgba(255,255,255,0.04))]',
+              )}
+              title={showMinimap ? 'Hide Minimap' : 'Show Minimap'}
+              aria-label={showMinimap ? 'Hide Minimap' : 'Show Minimap'}
             >
-              <HugeiconsIcon icon={FloppyDiskIcon} size={14} />
-              <span>{saving ? 'Saving…' : 'Save'}</span>
+              <HugeiconsIcon icon={showMinimap ? ViewIcon : ViewOffIcon} size={13} />
+              <span className="hidden xl:inline">Map</span>
             </button>
-          )}
 
-          {/* Terminal Toggle */}
-          <button
-            type="button"
-            onClick={toggleTerminal}
-            className={cn(
-              'mr-1 flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors',
-              terminalOpen
-                ? 'border-[var(--theme-accent)]/40 bg-[var(--theme-accent)]/15 text-[var(--theme-accent)]'
-                : 'border-[var(--theme-border)] text-[var(--theme-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-card2)]',
-            )}
-            title={terminalOpen ? 'Hide Terminal (` Ctrl+` )' : 'Open Terminal (` Ctrl+` )'}
-          >
-            <HugeiconsIcon icon={ComputerTerminal01Icon} size={14} />
-            <span className="hidden sm:inline">Terminal</span>
-          </button>
+            {/* Terminal Toggle */}
+            <button
+              type="button"
+              onClick={toggleTerminal}
+              className={cn(
+                'flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer',
+                terminalOpen
+                  ? 'border-[var(--theme-accent,#5e6ad2)]/40 bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold'
+                  : 'border-[var(--theme-border,rgba(255,255,255,0.08))] text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))]',
+              )}
+              title={terminalOpen ? 'Hide Terminal (` Ctrl+` )' : 'Open Terminal (` Ctrl+` )'}
+            >
+              <HugeiconsIcon icon={ComputerTerminal01Icon} size={13} />
+              <span className="hidden sm:inline">Terminal</span>
+            </button>
 
-          {/* Code Agent Chat Toggle */}
-          <button
-            type="button"
-            onClick={() => setChatOpen((prev) => !prev)}
-            className={cn(
-              'mr-2 flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors',
-              chatOpen
-                ? 'border-[var(--theme-accent)]/40 bg-[var(--theme-accent)]/15 text-[var(--theme-accent)]'
-                : 'border-[var(--theme-border)] text-[var(--theme-muted)] hover:text-[var(--theme-text)] hover:bg-[var(--theme-card2)]',
-            )}
-            title={chatOpen ? 'Hide Code Agent Panel' : 'Show Code Agent Panel'}
-          >
-            <HugeiconsIcon icon={Message02Icon} size={14} />
-            <span className="hidden sm:inline">Code Agent</span>
-          </button>
+            {/* Code Agent Chat Toggle */}
+            <button
+              type="button"
+              onClick={() => setChatOpen((prev) => !prev)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer',
+                chatOpen
+                  ? 'border-[var(--theme-accent,#5e6ad2)]/40 bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold'
+                  : 'border-[var(--theme-border,rgba(255,255,255,0.08))] text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))]',
+              )}
+              title={chatOpen ? 'Hide Code Agent Panel' : 'Show Code Agent Panel'}
+            >
+              <HugeiconsIcon icon={Message02Icon} size={13} />
+              <span className="hidden sm:inline">Code Agent</span>
+            </button>
+          </div>
         </div>
 
         {/* ── Editor + Terminal split ─────────────────────────────── */}
@@ -1705,7 +1803,7 @@ export function EditorScreen() {
                 height="100%"
                 language={activeFile.language}
                 value={activeFile.content}
-                theme="vs-dark"
+                theme={monacoTheme}
                 onChange={handleContentChange}
                 onMount={handleEditorMount}
                 options={{
@@ -1713,7 +1811,7 @@ export function EditorScreen() {
                   fontFamily:
                     "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, monospace",
                   fontLigatures: true,
-                  minimap: { enabled: true, side: 'right' },
+                  minimap: { enabled: showMinimap, side: 'right' },
                   scrollBeyondLastLine: false,
                   wordWrap: 'off',
                   lineNumbers: 'on',

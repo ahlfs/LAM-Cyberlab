@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import {
   ArrowDown01Icon,
   Cancel01Icon,
+  File01Icon,
+  Folder01Icon,
   Idea01Icon,
 } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -109,6 +111,35 @@ function getWordBoundaryIndex(text: string, wordCount: number): number {
   }
 
   return text.length
+}
+
+function parseAttachedReferences(text: string): {
+  cleanedText: string
+  attachedFiles: Array<{ name: string; path: string }>
+  attachedWorkspaces: Array<{ name: string; path: string }>
+} {
+  const attachedFiles: Array<{ name: string; path: string }> = []
+  const attachedWorkspaces: Array<{ name: string; path: string }> = []
+
+  let cleaned = text.replace(/\[Attached File:\s*([^\]]+)\]/g, (_, path) => {
+    const trimmed = String(path).trim()
+    const name = trimmed.split('/').pop() || trimmed
+    attachedFiles.push({ name, path: trimmed })
+    return ''
+  })
+
+  cleaned = cleaned.replace(/\[Attached Workspace:\s*([^\]]+)\]/g, (_, path) => {
+    const trimmed = String(path).trim()
+    const name = trimmed.split('/').filter(Boolean).pop() || trimmed
+    attachedWorkspaces.push({ name, path: trimmed })
+    return ''
+  })
+
+  return {
+    cleanedText: cleaned.trim(),
+    attachedFiles,
+    attachedWorkspaces,
+  }
 }
 
 type StreamToolCall = {
@@ -2517,6 +2548,13 @@ function MessageItemComponent({
   const isUser = role === 'user'
   const execNotification = isUser ? readExecNotification(message) : null
   const timestamp = getMessageTimestamp(message)
+
+  const userAttachedRefs = useMemo(() => {
+    if (!isUser || !displayText) {
+      return { cleanedText: displayText, attachedFiles: [], attachedWorkspaces: [] }
+    }
+    return parseAttachedReferences(displayText)
+  }, [isUser, displayText])
   const attachments = Array.isArray(message.attachments)
     ? message.attachments.filter(
         (attachment) => attachmentSource(attachment).length > 0,
@@ -3102,9 +3140,59 @@ function MessageItemComponent({
                 ))}
               </div>
             )}
+            {/* Attached References (Files / Workspaces) Header Cards */}
+            {isUser &&
+              (userAttachedRefs.attachedFiles.length > 0 ||
+                userAttachedRefs.attachedWorkspaces.length > 0) && (
+                <div className="flex flex-wrap gap-2 mb-2.5">
+                  {userAttachedRefs.attachedWorkspaces.map((ws, idx) => (
+                    <div
+                      key={`ws-${idx}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.1))] bg-[var(--theme-card2,rgba(255,255,255,0.06))] px-3 py-2 text-xs text-[var(--theme-text,#f7f8f8)] shadow-sm max-w-full text-left"
+                    >
+                      <span className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 shrink-0">
+                        <HugeiconsIcon icon={Folder01Icon} size={15} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-xs text-[var(--theme-text,#f7f8f8)] truncate">
+                            {ws.name}
+                          </span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase">
+                            Workspace
+                          </span>
+                        </div>
+                        <div className="text-[10px] font-mono text-[var(--theme-muted,#8a8f98)] truncate mt-0.5">
+                          {ws.path}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {userAttachedRefs.attachedFiles.map((file, idx) => (
+                    <div
+                      key={`file-${idx}`}
+                      className="inline-flex items-center gap-2 rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.1))] bg-[var(--theme-card2,rgba(255,255,255,0.06))] px-3 py-2 text-xs text-[var(--theme-text,#f7f8f8)] shadow-sm max-w-full text-left"
+                    >
+                      <span className="p-1.5 rounded-lg bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] shrink-0">
+                        <HugeiconsIcon icon={File01Icon} size={15} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-xs text-[var(--theme-text,#f7f8f8)] truncate">
+                          {file.name}
+                        </div>
+                        <div className="text-[10px] font-mono text-[var(--theme-muted,#8a8f98)] truncate mt-0.5">
+                          {file.path}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             {hasText &&
               (isUser ? (
-                <span className="text-pretty">{displayText}</span>
+                userAttachedRefs.cleanedText.length > 0 ? (
+                  <span className="text-pretty">{userAttachedRefs.cleanedText}</span>
+                ) : null
               ) : hasRevealedText ? (
                 <div className="relative">
                   {assistantCorruptionWarning ? (

@@ -4,6 +4,7 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Atom02Icon,
+  CheckmarkCircle01Icon,
   CodeIcon,
   BrainIcon,
   Building01Icon,
@@ -46,7 +47,7 @@ import { SidebarSessions } from './sidebar/sidebar-sessions'
 import type { ChatOpenSettingsDetail } from '../chat-events'
 import type { SessionMeta } from '../types'
 import { t } from '@/lib/i18n'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertDialogRoot,
   AlertDialogTrigger,
@@ -484,14 +485,44 @@ export function ChatSidebarComponent(
   } = props
   const { settingsOpen, settingsSection, setSettingsOpen, handleOpenSettings } =
     useSidebarSettings()
-  const profileDisplayName = useChatSettingsStore(selectChatProfileDisplayName)
-  const profileAvatarDataUrl = useChatSettingsStore(
-    selectChatProfileAvatarDataUrl,
-  )
   const { deleteSession } = useDeleteSession()
   const { renameSession } = useRenameSession()
   const openSearchModal = useSearchModal((state) => state.openModal)
   const isSearchModalOpen = useSearchModal((state) => state.isOpen)
+
+  const queryClient = useQueryClient()
+  const profilesQuery = useQuery({
+    queryKey: ['profiles', 'sidebar'],
+    queryFn: async () => {
+      const res = await fetch('/api/profiles/list')
+      if (!res.ok) throw new Error('failed')
+      return await res.json()
+    },
+    staleTime: 15_000,
+  })
+
+  const profileActivateMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await fetch('/api/profiles/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      })
+      if (!response.ok) throw new Error('failed')
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['profiles'] }),
+        queryClient.invalidateQueries({ queryKey: ['workspace'] }),
+        queryClient.invalidateQueries({ queryKey: ['claude', 'models'] }),
+      ])
+    },
+  })
+
+  const activePersonaName =
+    profilesQuery.data?.activeProfile ||
+    profilesQuery.data?.profiles?.find((p: any) => p.active)?.name ||
+    'Misa Amane'
   const pathname = useRouterState({
     select: function selectPathname(state) {
       return state.location.pathname
@@ -1169,32 +1200,36 @@ export function ChatSidebarComponent(
       </div>
       {/* end scrollable body */}
 
-      {/* ── Footer with User Menu (LAM Router Style) ───────────────── */}
+      {/* ── Footer: Active Agent Profile (LAM Router Standard) ── */}
       <div
-        className="px-2.5 py-3 border-t shrink-0 flex items-center justify-between"
+        className="px-2.5 py-2.5 border-t shrink-0 flex items-center justify-between"
         style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-sidebar)' }}
       >
-        {/* User card + actions */}
         <div
           className={cn(
             'flex items-center rounded-lg transition-colors w-full',
             isVisuallyCollapsed ? 'flex-col gap-2 py-1' : 'justify-between gap-1.5',
           )}
         >
-          {/* User menu trigger */}
+          {/* Active Profile Switcher */}
           <MenuRoot>
             <MenuTrigger
-              data-tour="settings"
+              data-tour="active-profile"
               className={cn(
-                'flex items-center gap-2 rounded-lg py-1 transition-colors hover:bg-[var(--theme-card2,rgba(255,255,255,0.05))] flex-1 min-w-0',
+                'group/profile flex items-center gap-2 rounded-lg py-1 transition-colors hover:bg-[var(--theme-card2,rgba(255,255,255,0.05))] flex-1 min-w-0 cursor-pointer text-left',
                 isVisuallyCollapsed ? 'justify-center px-0' : 'px-1.5',
               )}
             >
-              <UserAvatar
-                size={26}
-                src={profileAvatarDataUrl}
-                alt={profileDisplayName}
-              />
+              {/* Profile Avatar Badge */}
+              <div
+                className="size-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 border border-[var(--theme-border,rgba(255,255,255,0.1))] text-white shadow-2xs"
+                style={{
+                  background: 'linear-gradient(135deg, var(--theme-accent, #5e6ad2), var(--theme-accent-secondary, #7170ff))',
+                }}
+              >
+                {activePersonaName.charAt(0).toUpperCase()}
+              </div>
+
               <AnimatePresence initial={false} mode="wait">
                 {!isVisuallyCollapsed && (
                   <motion.div
@@ -1202,36 +1237,79 @@ export function ChatSidebarComponent(
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={transition}
-                    className="flex-1 min-w-0 flex items-center gap-1.5"
+                    className="flex-1 min-w-0 flex flex-col justify-center leading-tight"
                   >
-                    <span className="block truncate text-xs font-semibold" style={{ color: 'var(--theme-text)' }}>
-                      {profileDisplayName}
-                    </span>
-                    <StatusDot />
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="truncate text-xs font-semibold text-[var(--theme-text,#f7f8f8)] group-hover/profile:text-[var(--theme-accent-secondary,#7170ff)] transition-colors">
+                        {activePersonaName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                      <span className="text-[9.5px] font-mono text-[var(--theme-muted,#8a8f98)] truncate">
+                        Active Profile
+                      </span>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </MenuTrigger>
-            <MenuContent side="top" align="start" className="min-w-[200px]">
+
+            <MenuContent
+              side="top"
+              align="start"
+              className="min-w-[220px] max-w-[280px] p-1.5 border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] shadow-2xl rounded-xl text-[var(--theme-text,#f7f8f8)]"
+            >
+              <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)]">
+                Switch Agent Profile
+              </div>
+
+              <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                {(profilesQuery.data?.profiles ?? []).map((profile: any) => {
+                  const isSelected = profile.name === activePersonaName
+                  return (
+                    <MenuItem
+                      key={profile.name}
+                      onClick={() => {
+                        if (!isSelected) {
+                          profileActivateMutation.mutate(profile.name)
+                        }
+                      }}
+                      className={cn(
+                        'flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors cursor-pointer',
+                        isSelected
+                          ? 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold'
+                          : 'text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] hover:text-[var(--theme-text,#f7f8f8)]',
+                      )}
+                    >
+                      <span className="truncate">{profile.name}</span>
+                      {isSelected ? (
+                        <HugeiconsIcon
+                          icon={CheckmarkCircle01Icon}
+                          size={13}
+                          className="text-[var(--theme-accent,#5e6ad2)] shrink-0 ml-2"
+                        />
+                      ) : null}
+                    </MenuItem>
+                  )
+                })}
+              </div>
+
+              <div className="h-px bg-[var(--theme-border,rgba(255,255,255,0.08))] my-1.5" />
+
               <MenuItem
-                onClick={function onOpenSettings() {
+                onClick={() => {
                   handleOpenSettings('claude')
                 }}
-                className="justify-between"
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] cursor-pointer"
               >
-                <span className="flex items-center gap-2">
-                  <HugeiconsIcon
-                    icon={Settings01Icon}
-                    size={20}
-                    strokeWidth={1.5}
-                  />
-                  Settings
-                </span>
+                <HugeiconsIcon icon={Settings01Icon} size={14} />
+                <span>Workspace Settings</span>
               </MenuItem>
             </MenuContent>
           </MenuRoot>
 
-          {/* Settings + Theme toggle */}
+          {/* Quick Settings & Logout Actions */}
           {!isVisuallyCollapsed && (
             <div className="flex items-center gap-0.5 shrink-0">
               <button
@@ -1250,8 +1328,9 @@ export function ChatSidebarComponent(
               {showLogout && (
                 <AlertDialogRoot>
                   <AlertDialogTrigger
-                    className="shrink-0 rounded-md p-1.5 text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.05))] hover:text-[var(--theme-danger,#f43f5e)] transition-colors"
+                    className="shrink-0 rounded-md p-1.5 text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.05))] hover:text-[var(--theme-danger,#f43f5e)] transition-colors cursor-pointer"
                     aria-label="Logout"
+                    title="Logout"
                   >
                     <HugeiconsIcon
                       icon={Logout01Icon}

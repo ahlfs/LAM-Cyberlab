@@ -212,7 +212,7 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-6 py-10 text-white bg-[#0A0E1A] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#0A0E1A] to-[#0A0E1A]"
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto px-6 py-10 text-[var(--theme-text,#f7f8f8)] bg-[var(--theme-bg,#08090a)] transition-colors duration-300"
       style={{
         fontFamily: 'Inter, system-ui, sans-serif',
       }}
@@ -220,22 +220,33 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
       <div className="flex w-full max-w-lg flex-col items-center text-center">
         {/* Avatar with glowing ring */}
         <div className="relative mb-8 group">
-          <div className="absolute -inset-1 rounded-[1.25rem] bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-60 blur-md animate-pulse" />
+          <div
+            className="absolute -inset-1 rounded-[1.25rem] opacity-50 blur-md animate-pulse"
+            style={{
+              background: 'radial-gradient(circle, var(--theme-accent,#5e6ad2) 0%, transparent 70%)',
+            }}
+          />
           <img
             src="/claude-avatar.webp"
-            alt="Hermes Agent"
-            className="relative h-24 w-24 rounded-2xl object-cover shadow-[0_0_40px_rgba(99,102,241,0.3)] border border-white/10"
+            alt="LAM Cyberlab"
+            className="relative h-24 w-24 rounded-2xl object-cover shadow-2xl border border-[var(--theme-border,rgba(255,255,255,0.1))]"
+            style={{
+              boxShadow: '0 0 30px var(--theme-accent-subtle, rgba(94,106,210,0.25))',
+            }}
           />
         </div>
 
-        <h1 className="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 mb-2">
+        <h1 className="text-3xl font-extrabold tracking-tight text-[var(--theme-text,#f7f8f8)] mb-1">
           LAM Cyberlab
         </h1>
+        <p className="text-xs font-mono text-[var(--theme-muted,#8a8f98)] mb-2">
+          Autonomous Workspace
+        </p>
 
         {/* Connecting spinner */}
         <div
           className={[
-            'mt-6 flex flex-col items-center gap-4 text-sm text-white/70 transition-all duration-500',
+            'mt-6 flex flex-col items-center gap-3 transition-all duration-500',
             showFailureState
               ? 'opacity-0 scale-95 h-0 overflow-hidden'
               : 'opacity-100 scale-100',
@@ -243,11 +254,11 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
           aria-hidden={showFailureState}
         >
           <div className="flex gap-2 items-center justify-center h-8">
-            <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-[bounce_1.4s_infinite_0s]" />
-            <div className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-[bounce_1.4s_infinite_0.2s]" />
-            <div className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-[bounce_1.4s_infinite_0.4s]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[var(--theme-accent,#5e6ad2)] opacity-80 animate-[bounce_1.4s_infinite_0s]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] opacity-90 animate-[bounce_1.4s_infinite_0.2s]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[var(--theme-accent,#5e6ad2)] opacity-100 animate-[bounce_1.4s_infinite_0.4s]" />
           </div>
-          <span className="font-medium tracking-widest uppercase text-[10px] text-indigo-200/70">
+          <span className="font-semibold tracking-wider uppercase text-[11px] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))]">
             Connecting to Backend...
           </span>
         </div>
@@ -261,11 +272,11 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
               : 'max-h-0 translate-y-2 opacity-0',
           ].join(' ')}
         >
-          <div className="w-full rounded-3xl border border-white/10 bg-white/5 p-5 text-left shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-sm">
-            <p className="text-base font-medium text-white">
+          <div className="w-full rounded-2xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.02))] p-5 text-left shadow-2xl backdrop-blur-sm">
+            <p className="text-base font-semibold text-[var(--theme-text,#f7f8f8)]">
               Welcome! Let&apos;s connect your backend
             </p>
-            <p className="mt-2 text-sm leading-6 text-white/60">
+            <p className="mt-2 text-xs leading-relaxed text-[var(--theme-muted,#8a8f98)]">
               LAM Cyberlab works with any OpenAI-compatible backend. Hermes
               Agent gateway APIs unlock enhanced features automatically when
               they are available.
@@ -278,16 +289,16 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
                 disabled={serverStarting}
                 onClick={handleAutoStart}
                 className={[
-                  'w-full rounded-xl px-5 py-3 text-sm font-semibold transition',
+                  'w-full rounded-xl px-5 py-2.5 text-xs font-semibold transition-all cursor-pointer shadow-sm',
                   serverStarting
-                    ? 'cursor-not-allowed bg-indigo-900/70 text-indigo-200'
-                    : 'bg-indigo-500 text-white hover:bg-indigo-400',
+                    ? 'cursor-not-allowed opacity-60 bg-[var(--theme-card2)] text-[var(--theme-muted)]'
+                    : 'bg-[var(--theme-accent,#5e6ad2)] text-white hover:opacity-90',
                 ].join(' ')}
               >
                 {serverStarting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white/90" />
-                    Detecting...
+                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white/90" />
+                    Detecting Hermes Agent...
                   </span>
                 ) : (
                   'Auto-Start Hermes Agent Gateway'
@@ -300,11 +311,11 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
                   className={[
                     'mt-3 rounded-xl border p-3',
                     serverError
-                      ? 'border-red-500/20 bg-red-950/30'
-                      : 'border-emerald-500/20 bg-emerald-950/30',
+                      ? 'border-red-500/30 bg-red-500/10 text-red-300'
+                      : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
                   ].join(' ')}
                 >
-                  <pre className="whitespace-pre-wrap font-mono text-xs leading-5 text-white/70">
+                  <pre className="whitespace-pre-wrap font-mono text-xs leading-5">
                     {serverLog.join('\n')}
                   </pre>
                 </div>
@@ -313,15 +324,15 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
 
             {/* Divider */}
             <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-white/10" />
+              <div className="h-px flex-1 bg-[var(--theme-border,rgba(255,255,255,0.08))]" />
               <button
                 type="button"
                 onClick={() => setShowManual(!showManual)}
-                className="text-xs font-medium text-white/50 transition hover:text-white/70"
+                className="text-xs font-medium text-[var(--theme-muted,#8a8f98)] transition hover:text-[var(--theme-text,#f7f8f8)] cursor-pointer"
               >
                 {showManual ? 'Hide' : 'Show'} manual setup
               </button>
-              <div className="h-px flex-1 bg-white/10" />
+              <div className="h-px flex-1 bg-[var(--theme-border,rgba(255,255,255,0.08))]" />
             </div>
 
             {/* Manual setup steps */}
@@ -331,49 +342,49 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
                 showManual ? 'max-h-[40rem] opacity-100' : 'max-h-0 opacity-0',
               ].join(' ')}
             >
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {steps.map((step, idx) => (
                   <div
                     key={idx}
-                    className="rounded-xl border border-white/8 bg-black/20 p-4"
+                    className="rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.04))] p-3.5"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-bold text-indigo-300">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[10px] font-bold text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] border border-[var(--theme-accent,#5e6ad2)]/30">
                           {idx + 1}
                         </span>
-                        <span className="text-sm font-medium text-white/90">
+                        <span className="text-xs font-semibold text-[var(--theme-text,#f7f8f8)]">
                           {step.title}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleCopy(step.command, idx)}
-                        className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white/80"
+                        className="shrink-0 rounded-md border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.04))] px-2 py-0.5 text-[11px] font-medium text-[var(--theme-muted,#8a8f98)] transition hover:text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card2)] cursor-pointer"
                       >
                         {copiedIdx === idx ? '✓ Copied' : 'Copy'}
                       </button>
                     </div>
-                    <pre className="mt-2 overflow-x-auto rounded-lg bg-black/40 p-3 font-mono text-xs leading-5 text-white/80">
+                    <pre className="mt-2 overflow-x-auto rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.06))] bg-[var(--theme-bg,#08090a)] p-2.5 font-mono text-[11px] leading-5 text-[var(--theme-text,#f7f8f8)]">
                       <code>{step.command}</code>
                     </pre>
                     {step.note ? (
-                      <p className="mt-2 text-xs text-white/40">{step.note}</p>
+                      <p className="mt-1.5 text-[10.5px] text-[var(--theme-muted,#8a8f98)]">{step.note}</p>
                     ) : null}
                   </div>
                 ))}
               </div>
 
               {/* Env var hint */}
-              <div className="mt-4 rounded-xl border border-white/6 bg-white/3 p-3">
-                <p className="text-xs font-medium text-white/50">
+              <div className="mt-3 rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.03))] p-3">
+                <p className="text-[11px] font-medium text-[var(--theme-muted,#8a8f98)]">
                   Point{' '}
-                  <code className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-white/70">
+                  <code className="rounded border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2)] px-1 py-0.5 font-mono text-[var(--theme-text,#f7f8f8)]">
                     HERMES_API_URL
                   </code>{' '}
                   at any OpenAI-compatible backend:
                 </p>
-                <pre className="mt-2 overflow-x-auto font-mono text-xs text-white/60">
+                <pre className="mt-1.5 overflow-x-auto font-mono text-[10.5px] text-[var(--theme-muted,#8a8f98)]">
                   HERMES_API_URL=http://your-server:8642 pnpm dev
                 </pre>
               </div>
@@ -382,7 +393,7 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
         </div>
 
         {!showFailureState ? (
-          <p className="mt-6 text-xs text-white/45">
+          <p className="mt-6 text-xs text-[var(--theme-muted,#8a8f98)]">
             This page auto-refreshes when a compatible backend is detected
           </p>
         ) : null}

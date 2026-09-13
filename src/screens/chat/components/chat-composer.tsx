@@ -7,6 +7,7 @@ import {
   Cancel01Icon,
   Delete01Icon,
   DocumentCodeIcon,
+  File01Icon,
   Folder01Icon,
   Mic01Icon,
   StopIcon,
@@ -66,6 +67,7 @@ import { setLocalModelOverride } from '@/screens/chat/local-model-override'
 import { formatModelName } from '@/lib/format-model-name'
 import { HierarchicalModelPicker } from './hierarchical-model-picker'
 import type { HierarchicalModelItem } from './model-hierarchy'
+import { CHAT_ATTACH_FILE_EVENT, type ChatAttachFileDetail } from '../chat-events'
 
 type ChatComposerAttachment = {
   id: string
@@ -1576,6 +1578,40 @@ function ChatComposerComponent({
     [insertText, setComposerValue],
   )
 
+  useEffect(() => {
+    function handleAttachFileEvent(event: Event) {
+      const detail = (event as CustomEvent<ChatAttachFileDetail>).detail
+      if (!detail?.path) return
+      const fileName = detail.name || detail.path.split('/').pop() || 'file'
+
+      const newAttachment: ChatComposerAttachment = {
+        id: `file-ref-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        name: fileName,
+        contentType: 'text/plain',
+        size: 0,
+        dataUrl: undefined,
+        kind: 'file',
+        previewUrl: undefined,
+      }
+      ;(newAttachment as any).filePath = detail.path
+
+      setAttachments((prev) => {
+        if (prev.some((a) => (a as any).filePath === detail.path)) {
+          return prev
+        }
+        return [...prev, newAttachment]
+      })
+
+      toast(`Attached file address: ${fileName}`, { type: 'success' })
+      focusPrompt()
+    }
+
+    window.addEventListener(CHAT_ATTACH_FILE_EVENT, handleAttachFileEvent)
+    return () => {
+      window.removeEventListener(CHAT_ATTACH_FILE_EVENT, handleAttachFileEvent)
+    }
+  }, [focusPrompt])
+
   const handleRemoveAttachment = useCallback((id: string) => {
     setAttachments((prev) => prev.filter((attachment) => attachment.id !== id))
   }, [])
@@ -1813,24 +1849,31 @@ function ChatComposerComponent({
     (event: React.MouseEvent) => {
       event.preventDefault()
       if (!activeWorkspacePath) return
-      const textToInsert = `[Workspace: ${activeWorkspacePath}] `
-      if (promptRef.current) {
-        const el = promptRef.current
-        const start = el.selectionStart
-        const end = el.selectionEnd
-        const current = value
-        const next = current.slice(0, start) + textToInsert + current.slice(end)
-        setComposerValue(next)
-        setTimeout(() => {
-          el.selectionStart = el.selectionEnd = start + textToInsert.length
-          el.focus()
-        }, 0)
-      } else {
-        setComposerValue(value + textToInsert)
-        focusPrompt()
+      const folderName =
+        activeWorkspacePath.split('/').filter(Boolean).pop() || 'Workspace'
+
+      const newAttachment: ChatComposerAttachment = {
+        id: `ws-ref-${Date.now()}`,
+        name: folderName,
+        contentType: 'application/x-directory',
+        size: 0,
+        dataUrl: undefined,
+        kind: 'file',
+        previewUrl: undefined,
       }
+      ;(newAttachment as any).workspacePath = activeWorkspacePath
+      ;(newAttachment as any).isWorkspace = true
+
+      setAttachments((prev) => {
+        if (prev.some((a) => (a as any).workspacePath === activeWorkspacePath)) {
+          return prev
+        }
+        return [...prev, newAttachment]
+      })
+      toast(`Attached workspace: ${folderName}`, { type: 'success' })
+      focusPrompt()
     },
-    [activeWorkspacePath, value, setComposerValue, focusPrompt],
+    [activeWorkspacePath, focusPrompt],
   )
 
   const handleAttachActiveFile = useCallback(
@@ -2403,8 +2446,8 @@ function ChatComposerComponent({
         ) : null}
 
         {attachments.length > 0 ? (
-          <div className="px-3">
-            <div className="flex flex-wrap gap-3">
+          <div className="px-3 pt-2 pb-1">
+            <div className="flex flex-wrap items-center gap-2">
               {attachments.map((attachment) => {
                 const isImageAttachment =
                   Boolean(attachment.previewUrl) &&
@@ -2415,55 +2458,95 @@ function ChatComposerComponent({
                     key={attachment.id}
                     className={cn(
                       'group relative',
-                      isImageAttachment ? 'w-28' : 'w-auto max-w-[16rem]',
+                      isImageAttachment ? 'w-24' : 'w-auto max-w-[18rem]',
                     )}
                   >
                     {isImageAttachment ? (
-                      <button
-                        type="button"
-                        className="aspect-square w-full overflow-hidden rounded-xl border border-primary-200 bg-primary-50"
-                        onClick={() =>
-                          setPreviewImage({
-                            url: attachment.previewUrl || '',
-                            name: attachment.name || 'Attached image',
-                          })
-                        }
-                        aria-label={`Preview ${attachment.name || 'image'}`}
-                      >
-                        <img
-                          src={attachment.previewUrl}
-                          alt={attachment.name || 'Attached image'}
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
+                      <div className="relative overflow-hidden rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.04))]">
+                        <button
+                          type="button"
+                          className="aspect-square w-full overflow-hidden cursor-pointer"
+                          onClick={() =>
+                            setPreviewImage({
+                              url: attachment.previewUrl || '',
+                              name: attachment.name || 'Attached image',
+                            })
+                          }
+                          aria-label={`Preview ${attachment.name || 'image'}`}
+                        >
+                          <img
+                            src={attachment.previewUrl}
+                            alt={attachment.name || 'Attached image'}
+                            className="h-full w-full object-cover"
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Remove attachment"
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            handleRemoveAttachment(attachment.id)
+                          }}
+                          className="absolute right-1 top-1 z-10 inline-flex size-5 items-center justify-center rounded-full bg-black/70 text-white hover:bg-red-600 transition-colors cursor-pointer"
+                          title="Remove image"
+                        >
+                          <HugeiconsIcon
+                            icon={Cancel01Icon}
+                            size={12}
+                            strokeWidth={2}
+                          />
+                        </button>
+                      </div>
                     ) : (
-                      <div className="rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-700">
-                        <span className="mr-1">📄</span>
-                        <span className="truncate">{attachment.name}</span>
+                      <div className="flex items-center gap-2 rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.04))] px-2.5 py-1.5 text-xs text-[var(--theme-text,#f7f8f8)] shadow-2xs">
+                        <span
+                          className={cn(
+                            'p-1 rounded shrink-0',
+                            (attachment as any).isWorkspace
+                              ? 'bg-emerald-500/15 text-emerald-400'
+                              : 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))]',
+                          )}
+                        >
+                          <HugeiconsIcon
+                            icon={(attachment as any).isWorkspace ? Folder01Icon : File01Icon}
+                            size={14}
+                          />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate font-semibold text-xs text-[var(--theme-text,#f7f8f8)]" title={attachment.name}>
+                              {attachment.name}
+                            </span>
+                            {(attachment as any).isWorkspace && (
+                              <span className="text-[9px] font-mono px-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                Workspace
+                              </span>
+                            )}
+                          </div>
+                          <div className="truncate text-[10px] font-mono text-[var(--theme-muted,#8a8f98)]">
+                            {(attachment as any).workspacePath || (attachment as any).filePath || formatFileSize(attachment.size)}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label="Remove attachment"
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            handleRemoveAttachment(attachment.id)
+                          }}
+                          className="p-1 rounded-md text-[var(--theme-muted,#8a8f98)] hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0 cursor-pointer"
+                          title="Remove attachment"
+                        >
+                          <HugeiconsIcon
+                            icon={Cancel01Icon}
+                            size={13}
+                            strokeWidth={2}
+                          />
+                        </button>
                       </div>
                     )}
-                    <button
-                      type="button"
-                      aria-label="Remove attachment"
-                      onClick={(event) => {
-                        event.preventDefault()
-                        event.stopPropagation()
-                        handleRemoveAttachment(attachment.id)
-                      }}
-                      className="absolute right-1 top-1 z-10 inline-flex size-6 items-center justify-center rounded-full bg-primary-900/80 text-primary-50 opacity-100 md:opacity-0 transition-opacity md:group-hover:opacity-100 focus-visible:opacity-100"
-                    >
-                      <HugeiconsIcon
-                        icon={Cancel01Icon}
-                        size={20}
-                        strokeWidth={1.5}
-                      />
-                    </button>
-                    <div className="mt-1 truncate text-xs font-medium text-primary-700">
-                      {attachment.name}
-                    </div>
-                    <div className="text-[11px] text-primary-400">
-                      {formatFileSize(attachment.size)}
-                    </div>
                   </div>
                 )
               })}
@@ -2779,13 +2862,13 @@ function ChatComposerComponent({
                     />
                     <div
                       ref={mobileModelPickerRef}
-                      className="fixed bottom-0 left-0 right-0 z-[210] rounded-t-2xl bg-white shadow-2xl pb-safe dark:bg-neutral-900 animate-in slide-in-from-bottom-10 duration-200"
+                      className="fixed bottom-0 left-0 right-0 z-[210] rounded-t-2xl border-t border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] shadow-2xl pb-safe text-[var(--theme-text,#f7f8f8)] animate-in slide-in-from-bottom-10 duration-200"
                       role="dialog"
                       aria-label="Select model"
                       onClick={(event) => event.stopPropagation()}
                     >
-                      <div className="mx-auto mt-3 mb-4 h-1 w-10 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-                      <div className="px-4 pb-2 text-sm font-semibold text-neutral-500 dark:text-neutral-400">
+                      <div className="mx-auto mt-3 mb-4 h-1 w-10 rounded-full bg-[var(--theme-border,rgba(255,255,255,0.15))]" />
+                      <div className="px-4 pb-2 text-sm font-semibold text-[var(--theme-muted,#8a8f98)]">
                         Model
                       </div>
                       <div className="pb-4 max-h-[60dvh] overflow-y-auto overflow-x-hidden">
@@ -2795,8 +2878,8 @@ function ChatComposerComponent({
                             modelsQuery.data?.currentProvider ?? ''
                           if (allModels.length === 0) {
                             return (
-                              <div className="p-4 text-center text-sm text-neutral-500">
-                                <p className="font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                              <div className="p-4 text-center text-sm text-[var(--theme-muted,#8a8f98)]">
+                                <p className="font-medium text-[var(--theme-text,#f7f8f8)] mb-1">
                                   No models available
                                 </p>
                                 <p className="text-xs">
@@ -3056,192 +3139,185 @@ function ChatComposerComponent({
                                 setIsThinkingMenuOpen(false)
                                 setIsModelMenuOpen(false)
                               }}
-                              disabled={
-                                disabled || profileActivateMutation.isPending
-                              }
-                              className="inline-flex h-8 max-w-[8rem] items-center gap-1.5 rounded-full bg-primary-100/70 px-2.5 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-200/80 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-primary-800/60"
-                              title={
-                                activeProfile
-                                  ? `${activeProfile.name}${profileMeta(activeProfile) ? ` · ${profileMeta(activeProfile)}` : ''}`
-                                  : activeProfileName
-                              }
+                              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.05))] px-2.5 text-xs font-medium text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card,rgba(255,255,255,0.1))] transition-colors cursor-pointer"
+                              title={`Agent profile: ${activeProfileName}`}
                             >
-                              <svg
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                              >
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                <circle cx="12" cy="7" r="4" />
-                              </svg>
-                              <span className="truncate">
-                                {activeProfileName}
-                              </span>
-                              <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
-                            </button>
-                            {isProfileMenuOpen && (
-                              <div className="absolute bottom-full left-0 z-[200] mb-2 min-w-[14rem] overflow-hidden rounded-xl border border-neutral-200 bg-white p-1 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150 dark:border-neutral-700 dark:bg-neutral-900">
-                                <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                                  Agent profile
-                                </div>
-                                {(profilesQuery.data?.profiles ?? []).map(
-                                  (profile) => {
-                                    const selected =
-                                      profile.name === activeProfileName
-                                    return (
-                                      <button
-                                        key={profile.name}
-                                        type="button"
-                                        onClick={() => {
-                                          if (selected) {
-                                            setIsProfileMenuOpen(false)
-                                            return
-                                          }
-                                          profileActivateMutation.mutate(
-                                            profile.name,
-                                          )
-                                        }}
-                                        className={cn(
-                                          'flex w-full flex-col rounded-lg px-3 py-2 text-left text-sm transition-colors',
-                                          selected
-                                            ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-neutral-50'
-                                            : 'text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800/60',
-                                        )}
-                                      >
-                                        <span className="flex items-center gap-2">
-                                          <span className="truncate font-medium">
-                                            {profile.name}
+                                <svg
+                                  width="13"
+                                  height="13"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                  <circle cx="12" cy="7" r="4" />
+                                </svg>
+                                <span className="truncate">
+                                  {activeProfileName}
+                                </span>
+                                <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
+                              </button>
+                              {isProfileMenuOpen && (
+                                <div className="absolute bottom-full left-0 z-[200] mb-2 min-w-[14rem] overflow-hidden rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] p-1 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 text-[var(--theme-text,#f7f8f8)]">
+                                  <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)]">
+                                    Agent profile
+                                  </div>
+                                  {(profilesQuery.data?.profiles ?? []).map(
+                                    (profile) => {
+                                      const selected =
+                                        profile.name === activeProfileName
+                                      return (
+                                        <button
+                                          key={profile.name}
+                                          type="button"
+                                          onClick={() => {
+                                            if (selected) {
+                                              setIsProfileMenuOpen(false)
+                                              return
+                                            }
+                                            profileActivateMutation.mutate(
+                                              profile.name,
+                                            )
+                                          }}
+                                          className={cn(
+                                            'flex w-full flex-col rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer',
+                                            selected
+                                              ? 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold border-l-2 border-[var(--theme-accent,#5e6ad2)]'
+                                              : 'text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] hover:text-[var(--theme-text,#f7f8f8)]',
+                                          )}
+                                        >
+                                          <span className="flex items-center gap-2">
+                                            <span className="truncate font-medium">
+                                              {profile.name}
+                                            </span>
+                                            {selected ? (
+                                              <span className="text-[10px] text-[var(--theme-accent,#5e6ad2)]">
+                                                active
+                                              </span>
+                                            ) : null}
                                           </span>
-                                          {selected ? (
-                                            <span className="text-[10px] text-accent-500">
-                                              active
+                                          {profileMeta(profile) ? (
+                                            <span className="mt-0.5 max-w-[12rem] truncate text-[11px] text-[var(--theme-muted,#8a8f98)]">
+                                              {profileMeta(profile)}
                                             </span>
                                           ) : null}
-                                        </span>
-                                        {profileMeta(profile) ? (
-                                          <span className="mt-0.5 max-w-[12rem] truncate text-[11px] text-neutral-500">
-                                            {profileMeta(profile)}
-                                          </span>
+                                        </button>
+                                      )
+                                    },
+                                  )}
+                                  {profilesQuery.isError ? (
+                                    <div className="px-3 py-2 text-xs text-red-500">
+                                      Failed to load profiles
+                                    </div>
+                                  ) : null}
+                                </div>
+                              )}
+                              </div>
+
+                              <div
+                              className="relative flex min-w-0 items-center"
+                              ref={thinkingMenuRef}
+                              >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsThinkingMenuOpen((open) => !open)
+                                  setIsProfileMenuOpen(false)
+                                  setIsModelMenuOpen(false)
+                                }}
+                                className={cn(
+                                  'inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.05))] px-2.5 text-xs font-medium text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card,rgba(255,255,255,0.1))] transition-colors cursor-pointer',
+                                  thinkingLevel === 'off' && 'opacity-70',
+                                )}
+                                title={`Reasoning effort: ${thinkingLabel(thinkingLevel)}`}
+                              >
+                                <svg
+                                  width="13"
+                                  height="13"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
+                                  <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
+                                </svg>
+                                <span>{thinkingLabel(thinkingLevel)}</span>
+                                <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
+                              </button>
+                              {isThinkingMenuOpen && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-[9999]"
+                                    onClick={() => setIsThinkingMenuOpen(false)}
+                                  />
+                                  <div className="absolute bottom-full left-0 z-[10000] mb-2 min-w-[10rem] overflow-hidden rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] p-1 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 text-[var(--theme-text,#f7f8f8)]">
+                                    {(
+                                      [
+                                        ['off', 'None'],
+                                        ['low', 'Low'],
+                                        ['medium', 'Medium'],
+                                        ['high', 'High'],
+                                      ] as Array<[ThinkingLevel, string]>
+                                    ).map(([level, label]) => (
+                                      <button
+                                        key={level}
+                                        type="button"
+                                        onClick={() =>
+                                          handleThinkingSelect(level)
+                                        }
+                                        className={cn(
+                                          'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer',
+                                          thinkingLevel === level
+                                            ? 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold border-l-2 border-[var(--theme-accent,#5e6ad2)]'
+                                            : 'text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] hover:text-[var(--theme-text,#f7f8f8)]',
+                                        )}
+                                      >
+                                        <span>{label}</span>
+                                        {thinkingLevel === level ? (
+                                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--theme-accent,#5e6ad2)]" />
                                         ) : null}
                                       </button>
-                                    )
-                                  },
-                                )}
-                                {profilesQuery.isError ? (
-                                  <div className="px-3 py-2 text-xs text-red-500">
-                                    Failed to load profiles
+                                    ))}
                                   </div>
-                                ) : null}
-                              </div>
-                            )}
-                          </div>
-
-                          <div
-                            className="relative flex min-w-0 items-center"
-                            ref={thinkingMenuRef}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsThinkingMenuOpen((open) => !open)
-                                setIsProfileMenuOpen(false)
-                                setIsModelMenuOpen(false)
-                              }}
-                              className={cn(
-                                'inline-flex h-8 items-center gap-1.5 rounded-full bg-primary-100/70 px-2.5 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-200/80 dark:hover:bg-primary-800/60',
-                                thinkingLevel === 'off' && 'opacity-70',
+                                </>
                               )}
-                              title={`Reasoning effort: ${thinkingLabel(thinkingLevel)}`}
-                            >
-                              <svg
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                              >
-                                <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
-                                <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
-                              </svg>
-                              <span>{thinkingLabel(thinkingLevel)}</span>
-                              <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
-                            </button>
-                            {isThinkingMenuOpen && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-[9999]"
-                                  onClick={() => setIsThinkingMenuOpen(false)}
-                                />
-                                <div className="absolute bottom-full left-0 z-[10000] mb-2 min-w-[10rem] overflow-hidden rounded-xl border border-neutral-200 bg-white p-1 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150 dark:border-neutral-700 dark:bg-neutral-900">
-                                  {(
-                                    [
-                                      ['off', 'None'],
-                                      ['low', 'Low'],
-                                      ['medium', 'Medium'],
-                                      ['high', 'High'],
-                                    ] as Array<[ThinkingLevel, string]>
-                                  ).map(([level, label]) => (
-                                    <button
-                                      key={level}
-                                      type="button"
-                                      onClick={() =>
-                                        handleThinkingSelect(level)
-                                      }
-                                      className={cn(
-                                        'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors',
-                                        thinkingLevel === level
-                                          ? 'bg-neutral-100 text-neutral-950 dark:bg-neutral-800 dark:text-neutral-50'
-                                          : 'text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800/60',
-                                      )}
-                                    >
-                                      <span>{label}</span>
-                                      {thinkingLevel === level ? (
-                                        <span className="h-1.5 w-1.5 rounded-full bg-accent-500" />
-                                      ) : null}
-                                    </button>
-                                  ))}
-                                </div>
-                              </>
-                            )}
-                          </div>
+                              </div>
 
-                          <div
-                            className="relative flex min-w-0 items-center"
-                            ref={modelSelectorRef}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIsModelMenuOpen((prev) => !prev)
-                                setIsProfileMenuOpen(false)
-                                setIsThinkingMenuOpen(false)
-                              }}
-                              disabled={isModelSwitcherDisabled}
-                              className="inline-flex h-8 max-w-[9rem] items-center rounded-full bg-primary-100/70 px-2 md:max-w-none md:px-3 text-xs font-medium text-primary-600 hover:bg-primary-200/80 dark:hover:bg-primary-800/60 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                              title={modelButtonLabel}
-                            >
-                              <span className="max-w-[4rem] truncate sm:max-w-[6rem] md:max-w-[5rem] lg:max-w-[10rem]">
-                                {modelButtonLabel}
-                              </span>
-                            </button>
-                            {isModelMenuOpen && (
-                              <>
-                                <div
-                                  className="fixed inset-0 z-[9999]"
-                                  onClick={() => setIsModelMenuOpen(false)}
-                                />
-                                <div className="absolute bottom-full left-0 sm:-left-4 md:-left-12 mb-2 z-[10000] w-72 sm:w-80 origin-bottom-left overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-900 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                                  <div className="max-h-[22rem] overflow-y-auto overflow-x-hidden p-1">
+                              <div
+                              className="relative flex min-w-0 items-center"
+                              ref={modelSelectorRef}
+                              >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsModelMenuOpen((prev) => !prev)
+                                  setIsProfileMenuOpen(false)
+                                  setIsThinkingMenuOpen(false)
+                                }}
+                                disabled={isModelSwitcherDisabled}
+                                className="inline-flex h-8 max-w-[9rem] items-center rounded-full border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.05))] px-2 md:max-w-none md:px-3 text-xs font-medium text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card,rgba(255,255,255,0.1))] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                title={modelButtonLabel}
+                              >
+                                <span className="max-w-[4rem] truncate sm:max-w-[6rem] md:max-w-[5rem] lg:max-w-[10rem]">
+                                  {modelButtonLabel}
+                                </span>
+                              </button>
+                              {isModelMenuOpen && (
+                                <>
+                                  <div
+                                    className="fixed inset-0 z-[9999]"
+                                    onClick={() => setIsModelMenuOpen(false)}
+                                  />
+                                  <div className="absolute bottom-full left-0 sm:-left-4 md:-left-12 mb-2 z-[10000] w-72 sm:w-80 origin-bottom-left overflow-hidden rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+                                    <div className="max-h-[22rem] overflow-y-auto overflow-x-hidden p-1">
                                     {(() => {
                                       const allModels =
                                         modelsQuery.data?.models ?? []

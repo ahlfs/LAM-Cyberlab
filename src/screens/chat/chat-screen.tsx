@@ -2036,34 +2036,29 @@ export function ChatScreen({
         id: attachment.id ?? crypto.randomUUID(),
       }))
 
-      // Inject text/file attachment content directly into the message body.
-      // Servers reliably forward text in the message body; file attachments
-      // may be silently dropped for non-image types.
-      const textBlocks = normalizedAttachments
+      // ── File & Address Attachment Handling ─────────────────────────
+      // For file references (attached via right click or file tree), append
+      // the file address path so the agent knows the target path and can
+      // inspect it via read_file without flooding the context window.
+      const fileAddressBlocks = normalizedAttachments
         .filter((a) => {
           const mime =
             normalizeMimeType(a.contentType ?? '') ||
             readDataUrlMimeType(a.dataUrl ?? '')
-          return !isImageMimeType(mime) && (a.dataUrl ?? '').length > 0
+          return !isImageMimeType(mime)
         })
         .map((a) => {
-          const raw = a.dataUrl ?? ''
-          const content = raw.startsWith('data:')
-            ? atob(raw.split(',')[1] ?? '')
-            : raw
-          return `\n\n<attachment name="${a.name ?? 'file'}">\n${content}\n</attachment>`
+          if ((a as any).isWorkspace || (a as any).workspacePath) {
+            const wsPath = (a as any).workspacePath || a.name || 'Workspace'
+            return `[Attached Workspace: ${wsPath}]`
+          }
+          const filePath = (a as any).filePath || a.name || 'file'
+          return `[Attached File: ${filePath}]`
         })
-      const enrichedBody = body + textBlocks.join('')
 
-      // ── Editor breadcrumb injection ─────────────────────────────────
-      // When the user is chatting from the embedded editor panel, prepend
-      // a lightweight context hint so the agent knows which file is open.
-      // This costs only ~15 tokens per message (vs sending the full file).
-      const editorFile = useWorkspaceStore.getState().activeEditorFile
-      let finalBody = enrichedBody
-      if (embedded && editorFile) {
-        finalBody = `[Editor Context: User is currently editing file "${editorFile}"]\n\n${enrichedBody}`
-      }
+      const fileAddressSuffix =
+        fileAddressBlocks.length > 0 ? `\n\n${fileAddressBlocks.join('\n')}` : ''
+      const finalBody = body + fileAddressSuffix
 
       let optimisticClientId = existingClientId
       setResearchResetKey((current) => current + 1)

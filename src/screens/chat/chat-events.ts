@@ -19,3 +19,10 @@ export const CHAT_OPEN_SETTINGS_EVENT = 'claude:chat-open-settings'
 export type ChatOpenSettingsDetail = {
   section: 'claude' | 'appearance'
 }
+
+export const CHAT_ATTACH_FILE_EVENT = 'claude:chat-attach-file'
+
+export type ChatAttachFileDetail = {
+  path: string
+  name?: string
+}
