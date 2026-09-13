@@ -20,8 +20,9 @@ import {
   MinusSignIcon,
   ViewIcon,
   ViewOffIcon,
+  SidebarLeftIcon,
 } from '@hugeicons/core-free-icons'
-import { HamburgerTrigger } from '@/components/mobile-hamburger-menu'
+import { useWorkspaceStore } from '@/stores/workspace-store'
 import { useCurrentTheme } from '@/lib/theme'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -329,8 +330,11 @@ function CanvasRenderer({
         ctx.stroke()
       }
 
-      // 3. Smart Obsidian LOD: Show label ONLY when hovered/clicked/active or highlighted in search
-      const shouldRenderLabel = showLabels && !isFaded && isHighlighted
+      // 3. Smart Obsidian LOD: Show label when hovered/clicked/active OR when "Always Show Labels" (icon mata) is turned ON
+      const shouldRenderLabel =
+        (showLabels && !isFaded) ||
+        isHighlighted ||
+        (hasSearch && searchHighlightIds.has(node.id))
 
       if (shouldRenderLabel) {
         const fontSize = Math.max(9, Math.min(12, 11 / Math.sqrt(zoom)))
@@ -868,8 +872,10 @@ function CanvasRenderer({
 
 export function GraphScreen() {
   const navigate = useNavigate()
+  const toggleSidebar = useWorkspaceStore((s) => s.toggleSidebar)
+  const sidebarCollapsed = useWorkspaceStore((s) => s.sidebarCollapsed)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showLabels, setShowLabels] = useState(true)
+  const [showAlwaysLabels, setShowAlwaysLabels] = useState(false)
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
 
@@ -1025,8 +1031,20 @@ export function GraphScreen() {
           backdropFilter: 'blur(12px)',
         }}
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <HamburgerTrigger />
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            onClick={() => toggleSidebar()}
+            className="flex items-center justify-center p-2 rounded-xl border transition-colors hover:bg-[var(--theme-card2)]"
+            style={{
+              borderColor: 'var(--theme-border)',
+              backgroundColor: sidebarCollapsed ? 'transparent' : 'var(--theme-card2)',
+              color: 'var(--theme-text)',
+            }}
+            title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          >
+            <HugeiconsIcon icon={SidebarLeftIcon} size={16} />
+          </button>
           <div className="relative w-48 sm:w-64">
             <HugeiconsIcon
               icon={Search01Icon}
@@ -1070,16 +1088,16 @@ export function GraphScreen() {
         <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
-            onClick={() => setShowLabels((prev) => !prev)}
+            onClick={() => setShowAlwaysLabels((prev) => !prev)}
             className="p-2 rounded-xl border transition-colors"
             style={{
               borderColor: 'var(--theme-border)',
-              backgroundColor: showLabels ? 'var(--theme-card2)' : 'transparent',
-              color: showLabels ? 'var(--theme-accent)' : 'var(--theme-muted)',
+              backgroundColor: showAlwaysLabels ? 'var(--theme-card2)' : 'transparent',
+              color: showAlwaysLabels ? 'var(--theme-accent)' : 'var(--theme-muted)',
             }}
-            title={showLabels ? 'Hide Labels' : 'Show Labels'}
+            title={showAlwaysLabels ? 'Show Labels On-Demand Only' : 'Always Show All Labels'}
           >
-            <HugeiconsIcon icon={showLabels ? ViewIcon : ViewOffIcon} size={15} />
+            <HugeiconsIcon icon={showAlwaysLabels ? ViewIcon : ViewOffIcon} size={15} />
           </button>
           <button
             type="button"
@@ -1123,7 +1141,7 @@ export function GraphScreen() {
             hoveredNodeId={hoveredNodeId}
             selectedNodeId={selectedNodeId}
             searchHighlightIds={searchHighlightIds}
-            showLabels={showLabels}
+            showLabels={showAlwaysLabels}
             onHover={setHoveredNodeId}
             onClick={setSelectedNodeId}
             onResetRef={onResetRef}
