@@ -38,6 +38,9 @@ const ChatPanel = lazy(() =>
 )
 import { ChatPanelToggle } from '@/components/chat-panel-toggle'
 import { LoginScreen } from '@/components/auth/login-screen'
+
+export const DESKTOP_SIDEBAR_BACKDROP_CLASS =
+  'fixed inset-y-0 left-0 z-20 w-[300px] pointer-events-none'
 import { MobileHamburgerMenu } from '@/components/mobile-hamburger-menu'
 import { MobilePageHeader } from '@/components/mobile-page-header'
 
