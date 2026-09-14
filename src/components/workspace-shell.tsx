@@ -193,6 +193,8 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
     if (pathname.startsWith('/remote-access')) return 'Remote Access'
     if (pathname.startsWith('/echo-studio')) return 'Echo Studio'
     if (pathname.startsWith('/memory')) return 'Memory'
+    if (pathname.startsWith('/study')) return 'Study Studio'
+    if (pathname.startsWith('/graph')) return 'Concept Graph'
     if (pathname.startsWith('/links')) return 'Links'
     if (pathname.startsWith('/skills')) return 'Skills'
     if (pathname.startsWith('/mcp')) return 'MCP'
