@@ -12,10 +12,13 @@ export const Route = createFileRoute('/api/study/analyze')({
     handlers: {
       POST: async ({ request }) => {
         if (!isAuthenticated(request)) {
-          return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
-            status: 401,
-            headers: { 'Content-Type': 'application/json' },
-          })
+          return new Response(
+            JSON.stringify({ ok: false, error: 'Unauthorized' }),
+            {
+              status: 401,
+              headers: { 'Content-Type': 'application/json' },
+            },
+          )
         }
 
         const ip = getClientIp(request)
@@ -32,7 +35,10 @@ export const Route = createFileRoute('/api/study/analyze')({
 
           if (!body.content || typeof body.content !== 'string') {
             return new Response(
-              JSON.stringify({ ok: false, error: 'Document content is required.' }),
+              JSON.stringify({
+                ok: false,
+                error: 'Document content is required.',
+              }),
               { status: 400, headers: { 'Content-Type': 'application/json' } },
             )
           }
@@ -80,7 +86,9 @@ ${body.content.slice(0, 30000)}`
                   encoder.encode(
                     `data: ${JSON.stringify({
                       event: 'error',
-                      data: { message: streamError?.message || 'Streaming failed' },
+                      data: {
+                        message: streamError?.message || 'Streaming failed',
+                      },
                     })}\n\n`,
                   ),
                 )
@@ -98,7 +106,10 @@ ${body.content.slice(0, 30000)}`
           })
         } catch (error: any) {
           return new Response(
-            JSON.stringify({ ok: false, error: error?.message || 'Server error' }),
+            JSON.stringify({
+              ok: false,
+              error: error?.message || 'Server error',
+            }),
             { status: 500, headers: { 'Content-Type': 'application/json' } },
           )
         }

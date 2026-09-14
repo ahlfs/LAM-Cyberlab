@@ -192,7 +192,9 @@ export function EditorScreen() {
     const current: typeof sessions = []
     const other: typeof sessions = []
 
-    const folderName = selectedFolder ? selectedFolder.split('/').filter(Boolean).pop() : ''
+    const folderName = selectedFolder
+      ? selectedFolder.split('/').filter(Boolean).pop()
+      : ''
 
     for (const s of sessions) {
       if (s.key === 'main') continue
@@ -223,16 +225,18 @@ export function EditorScreen() {
 
   const [folderModalOpen, setFolderModalOpen] = useState(false)
   const [folderSearchQuery, setFolderSearchQuery] = useState('')
-  const favoriteProjectPaths = useWorkspaceStore(
-    (s) => s.favoriteProjectPaths,
-  )
+  const favoriteProjectPaths = useWorkspaceStore((s) => s.favoriteProjectPaths)
   const toggleFavoriteProject = useWorkspaceStore(
     (s) => s.toggleFavoriteProject,
   )
   const [fileTreeVersion, setFileTreeVersion] = useState(0)
   const [editorVersion, setEditorVersion] = useState(0)
-  const [changedFiles, setChangedFiles] = useState<Array<{ path: string; status: string; staged: boolean }>>([])
-  const [gitStatusFiles, setGitStatusFiles] = useState<Array<{ path: string; status: string; staged: boolean }>>([])
+  const [changedFiles, setChangedFiles] = useState<
+    Array<{ path: string; status: string; staged: boolean }>
+  >([])
+  const [gitStatusFiles, setGitStatusFiles] = useState<
+    Array<{ path: string; status: string; staged: boolean }>
+  >([])
   const [isGitRepo, setIsGitRepo] = useState(false)
   const [loadingChanges, setLoadingChanges] = useState(false)
 
@@ -274,10 +278,16 @@ export function EditorScreen() {
   const fetchChangedFiles = useCallback(async () => {
     setLoadingChanges(true)
     try {
-      const folderParam = selectedFolder ? `&path=${encodeURIComponent(selectedFolder)}` : ''
-      const res = await fetch(`/api/file-diff?action=changed-files${folderParam}`)
-      let allFiles: Array<{ path: string; status: string; staged: boolean }> = []
-      let gitFiles: Array<{ path: string; status: string; staged: boolean }> = []
+      const folderParam = selectedFolder
+        ? `&path=${encodeURIComponent(selectedFolder)}`
+        : ''
+      const res = await fetch(
+        `/api/file-diff?action=changed-files${folderParam}`,
+      )
+      let allFiles: Array<{ path: string; status: string; staged: boolean }> =
+        []
+      let gitFiles: Array<{ path: string; status: string; staged: boolean }> =
+        []
       if (res.ok) {
         const data = await res.json()
         if (data.ok) {
@@ -323,11 +333,17 @@ export function EditorScreen() {
             const data = await res.json()
             if (data.ok) {
               const diskContent = data.currentContent ?? ''
-              const original = data.originalContent !== null && data.originalContent !== undefined
-                ? data.originalContent
-                : activeFile.originalContent
+              const original =
+                data.originalContent !== null &&
+                data.originalContent !== undefined
+                  ? data.originalContent
+                  : activeFile.originalContent
 
-              if (diskContent !== activeFile.content || Boolean(data.isGit) !== activeFile.isGit || original !== activeFile.gitOriginalContent) {
+              if (
+                diskContent !== activeFile.content ||
+                Boolean(data.isGit) !== activeFile.isGit ||
+                original !== activeFile.gitOriginalContent
+              ) {
                 setTabs((prev) =>
                   prev.map((t) =>
                     t.path === activeFile.path
@@ -367,10 +383,14 @@ export function EditorScreen() {
         if (!res.ok) return
         const data = await res.json()
         if (data.ok && active) {
-          const original = data.originalContent !== null && data.originalContent !== undefined
-            ? data.originalContent
-            : activeFile.originalContent
-          const hasDiffChanges = original !== null && original !== undefined && original !== activeFile.content
+          const original =
+            data.originalContent !== null && data.originalContent !== undefined
+              ? data.originalContent
+              : activeFile.originalContent
+          const hasDiffChanges =
+            original !== null &&
+            original !== undefined &&
+            original !== activeFile.content
 
           setTabs((prev) =>
             prev.map((t) =>
@@ -403,7 +423,11 @@ export function EditorScreen() {
   useEffect(() => {
     if (!activeFile) return
     const original = activeFile.gitOriginalContent ?? activeFile.originalContent
-    if (original !== null && original !== undefined && original !== activeFile.content) {
+    if (
+      original !== null &&
+      original !== undefined &&
+      original !== activeFile.content
+    ) {
       setDiffMode(true)
     }
   }, [activeFile?.content, activeFile?.dirty])
@@ -424,18 +448,25 @@ export function EditorScreen() {
 
     if (!diffMode || !activeFile) {
       if (decorationsRef.current.length > 0) {
-        decorationsRef.current = editor.deltaDecorations(decorationsRef.current, [])
+        decorationsRef.current = editor.deltaDecorations(
+          decorationsRef.current,
+          [],
+        )
       }
       return
     }
 
-    const original = activeFile.gitOriginalContent ?? activeFile.originalContent ?? ''
+    const original =
+      activeFile.gitOriginalContent ?? activeFile.originalContent ?? ''
     const current = activeFile.content ?? ''
 
     // Safety guard: skip heavy diff calculation if file is extremely large (> 500KB or > 10,000 lines)
     if (original.length > 500_000 || current.length > 500_000) {
       if (decorationsRef.current.length > 0) {
-        decorationsRef.current = editor.deltaDecorations(decorationsRef.current, [])
+        decorationsRef.current = editor.deltaDecorations(
+          decorationsRef.current,
+          [],
+        )
       }
       return
     }
@@ -443,7 +474,11 @@ export function EditorScreen() {
     // Compute line diff
     const diffs = Diff.diffLines(original, current)
     const newDecorations: any[] = []
-    const pendingZones: Array<{ afterLineNumber: number; heightInLines: number; domNode: HTMLElement }> = []
+    const pendingZones: Array<{
+      afterLineNumber: number
+      heightInLines: number
+      domNode: HTMLElement
+    }> = []
 
     let currentLine = 1
     for (const part of diffs) {
@@ -470,7 +505,9 @@ export function EditorScreen() {
         currentLine += lineCount
       } else if (part.removed) {
         // Render Phantom Deleted Code Block (Antigravity / Cursor ViewZone)
-        const deletedLines = part.value.split('\n').filter((_, idx, arr) => idx < arr.length - 1 || _ !== '')
+        const deletedLines = part.value
+          .split('\n')
+          .filter((_, idx, arr) => idx < arr.length - 1 || _ !== '')
         const zoneHeight = Math.max(1, deletedLines.length)
         const targetLine = Math.max(0, currentLine - 1)
 
@@ -501,7 +538,10 @@ export function EditorScreen() {
 
     // Apply decorations directly to editor
     try {
-      decorationsRef.current = editor.deltaDecorations(decorationsRef.current, newDecorations)
+      decorationsRef.current = editor.deltaDecorations(
+        decorationsRef.current,
+        newDecorations,
+      )
     } catch {
       // ignore
     }
@@ -520,7 +560,14 @@ export function EditorScreen() {
         }
       })
     }
-  }, [diffMode, editorVersion, activeFile?.path, activeFile?.content, activeFile?.gitOriginalContent, activeFile?.originalContent])
+  }, [
+    diffMode,
+    editorVersion,
+    activeFile?.path,
+    activeFile?.content,
+    activeFile?.gitOriginalContent,
+    activeFile?.originalContent,
+  ])
   const setActiveEditorFile = useWorkspaceStore((s) => s.setActiveEditorFile)
 
   useEffect(() => {
@@ -568,7 +615,13 @@ export function EditorScreen() {
           )
           if (!fallbackRes.ok) throw new Error(`HTTP ${res.status}`)
         }
-        const data = (await (res.ok ? res : await fetch(`/api/files?action=read&path=${encodeURIComponent(entry.path)}`)).json()) as {
+        const data = (await (
+          res.ok
+            ? res
+            : await fetch(
+                `/api/files?action=read&path=${encodeURIComponent(entry.path)}`,
+              )
+        ).json()) as {
           type?: string
           content?: string
         }
@@ -599,9 +652,10 @@ export function EditorScreen() {
           // silently fallback
         }
 
-        const baseline = gitOriginalContent !== null && gitOriginalContent !== undefined
-          ? gitOriginalContent
-          : content
+        const baseline =
+          gitOriginalContent !== null && gitOriginalContent !== undefined
+            ? gitOriginalContent
+            : content
 
         const hasDiff = baseline !== content
 
@@ -634,16 +688,19 @@ export function EditorScreen() {
 
   /* ── Context Menu Actions ─────────────────────────────────────────── */
 
-  const handleAttachFile = useCallback((entry: FileEntry) => {
-    window.dispatchEvent(
-      new CustomEvent(CHAT_ATTACH_FILE_EVENT, {
-        detail: { path: entry.path, name: entry.name },
-      }),
-    )
-    if (!chatOpen) {
-      setChatOpen(true)
-    }
-  }, [chatOpen])
+  const handleAttachFile = useCallback(
+    (entry: FileEntry) => {
+      window.dispatchEvent(
+        new CustomEvent(CHAT_ATTACH_FILE_EVENT, {
+          detail: { path: entry.path, name: entry.name },
+        }),
+      )
+      if (!chatOpen) {
+        setChatOpen(true)
+      }
+    },
+    [chatOpen],
+  )
 
   const handleCopyPath = useCallback((entry: FileEntry) => {
     navigator.clipboard.writeText(entry.path)
@@ -947,7 +1004,12 @@ export function EditorScreen() {
       setTabs((prev) =>
         prev.map((t) =>
           t.path === activeFile.path
-            ? { ...t, dirty: false, originalContent: t.content, gitOriginalContent: t.content }
+            ? {
+                ...t,
+                dirty: false,
+                originalContent: t.content,
+                gitOriginalContent: t.content,
+              }
             : t,
         ),
       )
@@ -1330,25 +1392,22 @@ export function EditorScreen() {
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] cursor-pointer"
                   aria-label="Clear search"
                 >
-                  <HugeiconsIcon
-                    icon={Cancel01Icon}
-                    size={12}
-                  />
+                  <HugeiconsIcon icon={Cancel01Icon} size={12} />
                 </button>
               )}
             </div>
 
-            <div
-              className="flex-1 overflow-y-auto rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.02))] p-1 divide-y divide-[var(--theme-border,rgba(255,255,255,0.06))]"
-            >
+            <div className="flex-1 overflow-y-auto rounded-lg border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.02))] p-1 divide-y divide-[var(--theme-border,rgba(255,255,255,0.06))]">
               {/* Root workspace option (only if matching search) */}
-              {(!folderSearchQuery || 'root workspace'.includes(folderSearchQuery.toLowerCase())) && (
+              {(!folderSearchQuery ||
+                'root workspace'.includes(folderSearchQuery.toLowerCase())) && (
                 <button
                   type="button"
                   onClick={() => handleSelectFolder('')}
                   className={cn(
                     'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] cursor-pointer',
-                    selectedFolder === '' && 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] font-medium',
+                    selectedFolder === '' &&
+                      'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] font-medium',
                   )}
                   style={{
                     color:
@@ -1363,7 +1422,9 @@ export function EditorScreen() {
                     style={{ color: 'var(--theme-warning, #f59e0b)' }}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-xs text-[var(--theme-text,#f7f8f8)]">Root Workspace</div>
+                    <div className="font-semibold text-xs text-[var(--theme-text,#f7f8f8)]">
+                      Root Workspace
+                    </div>
                     <div className="font-mono text-[10px] text-[var(--theme-muted,#8a8f98)]">
                       /home/ahlfs/workspace
                     </div>
@@ -1379,7 +1440,8 @@ export function EditorScreen() {
                   return (
                     project.name.toLowerCase().includes(q) ||
                     project.path.toLowerCase().includes(q) ||
-                    (project.branch && project.branch.toLowerCase().includes(q)) ||
+                    (project.branch &&
+                      project.branch.toLowerCase().includes(q)) ||
                     project.frameworkLabel.toLowerCase().includes(q)
                   )
                 })
@@ -1399,7 +1461,8 @@ export function EditorScreen() {
                       key={project.path}
                       className={cn(
                         'flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] group',
-                        isSelected && 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] font-medium',
+                        isSelected &&
+                          'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] font-medium',
                       )}
                     >
                       <button
@@ -1409,12 +1472,18 @@ export function EditorScreen() {
                           toggleFavoriteProject(project.path)
                         }}
                         className="p-1 rounded text-[var(--theme-muted,#8a8f98)] hover:text-amber-400 transition-colors cursor-pointer"
-                        title={isFav ? 'Remove from favorites' : 'Mark as favorite'}
+                        title={
+                          isFav ? 'Remove from favorites' : 'Mark as favorite'
+                        }
                       >
                         <HugeiconsIcon
                           icon={StarIcon}
                           size={14}
-                          className={cn(isFav ? 'text-amber-400 fill-amber-400' : 'text-[var(--theme-muted,#8a8f98)] opacity-50 group-hover:opacity-100')}
+                          className={cn(
+                            isFav
+                              ? 'text-amber-400 fill-amber-400'
+                              : 'text-[var(--theme-muted,#8a8f98)] opacity-50 group-hover:opacity-100',
+                          )}
                         />
                       </button>
 
@@ -1481,7 +1550,10 @@ export function EditorScreen() {
       {changedFiles.length > 0 && (
         <div
           className="border-b px-2 py-2 flex flex-col gap-1.5 shrink-0 max-h-56 overflow-y-auto"
-          style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card2)' }}
+          style={{
+            borderColor: 'var(--theme-border)',
+            background: 'var(--theme-card2)',
+          }}
         >
           <div className="flex items-center justify-between px-1.5 py-0.5">
             <div className="flex items-center gap-1.5">
@@ -1524,7 +1596,10 @@ export function EditorScreen() {
               const fileName = file.path.split('/').pop() || file.path
               const isActive = activeTab === file.path
               const isModified = file.status.includes('M')
-              const isUntracked = file.status.includes('A') || file.status.includes('?') || file.status === 'U'
+              const isUntracked =
+                file.status.includes('A') ||
+                file.status.includes('?') ||
+                file.status === 'U'
               const isDeleted = file.status.includes('D')
 
               return (
@@ -1559,10 +1634,16 @@ export function EditorScreen() {
                   <span
                     className={cn(
                       'ml-1 shrink-0 rounded px-1.5 py-0.2 text-[10px] font-bold font-mono border shadow-2xs',
-                      isModified && 'bg-[#fbbf24]/15 text-[#fbbf24] border-[#fbbf24]/30',
-                      isUntracked && 'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/30',
-                      isDeleted && 'bg-[#f87171]/15 text-[#f87171] border-[#f87171]/30',
-                      !isModified && !isUntracked && !isDeleted && 'bg-[var(--theme-card)] text-[var(--theme-muted)] border-[var(--theme-border)]',
+                      isModified &&
+                        'bg-[#fbbf24]/15 text-[#fbbf24] border-[#fbbf24]/30',
+                      isUntracked &&
+                        'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/30',
+                      isDeleted &&
+                        'bg-[#f87171]/15 text-[#f87171] border-[#f87171]/30',
+                      !isModified &&
+                        !isUntracked &&
+                        !isDeleted &&
+                        'bg-[var(--theme-card)] text-[var(--theme-muted)] border-[var(--theme-border)]',
                     )}
                   >
                     {file.status}
@@ -1645,7 +1726,9 @@ export function EditorScreen() {
                   size={13}
                   className={cn(
                     'shrink-0 transition-opacity',
-                    tab.path === activeTab ? 'opacity-100 text-[var(--theme-accent-secondary,#7170ff)]' : 'opacity-60'
+                    tab.path === activeTab
+                      ? 'opacity-100 text-[var(--theme-accent-secondary,#7170ff)]'
+                      : 'opacity-60',
                   )}
                 />
                 <span className="max-w-[130px] truncate">{tab.name}</span>
@@ -1704,7 +1787,10 @@ export function EditorScreen() {
               title={showMinimap ? 'Hide Minimap' : 'Show Minimap'}
               aria-label={showMinimap ? 'Hide Minimap' : 'Show Minimap'}
             >
-              <HugeiconsIcon icon={showMinimap ? ViewIcon : ViewOffIcon} size={13} />
+              <HugeiconsIcon
+                icon={showMinimap ? ViewIcon : ViewOffIcon}
+                size={13}
+              />
               <span className="hidden xl:inline">Map</span>
             </button>
 
@@ -1718,7 +1804,11 @@ export function EditorScreen() {
                   ? 'border-[var(--theme-accent,#5e6ad2)]/40 bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold'
                   : 'border-[var(--theme-border,rgba(255,255,255,0.08))] text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))]',
               )}
-              title={terminalOpen ? 'Hide Terminal (` Ctrl+` )' : 'Open Terminal (` Ctrl+` )'}
+              title={
+                terminalOpen
+                  ? 'Hide Terminal (` Ctrl+` )'
+                  : 'Open Terminal (` Ctrl+` )'
+              }
             >
               <HugeiconsIcon icon={ComputerTerminal01Icon} size={13} />
               <span className="hidden sm:inline">Terminal</span>
@@ -1734,7 +1824,9 @@ export function EditorScreen() {
                   ? 'border-[var(--theme-accent,#5e6ad2)]/40 bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold'
                   : 'border-[var(--theme-border,rgba(255,255,255,0.08))] text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))]',
               )}
-              title={chatOpen ? 'Hide Code Agent Panel' : 'Show Code Agent Panel'}
+              title={
+                chatOpen ? 'Hide Code Agent Panel' : 'Show Code Agent Panel'
+              }
             >
               <HugeiconsIcon icon={Message02Icon} size={13} />
               <span className="hidden sm:inline">Code Agent</span>
@@ -1755,9 +1847,13 @@ export function EditorScreen() {
             >
               <div className="flex items-center gap-2">
                 <span className="flex size-2 rounded-full bg-amber-400 animate-pulse" />
-                <span className="font-semibold text-amber-400">Inline Diff View:</span>
+                <span className="font-semibold text-amber-400">
+                  Inline Diff View:
+                </span>
                 <span className="text-[var(--theme-muted)]">
-                  {activeFile.isGit ? 'Comparing with Git HEAD' : 'Comparing with initial baseline'}
+                  {activeFile.isGit
+                    ? 'Comparing with Git HEAD'
+                    : 'Comparing with initial baseline'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -1825,151 +1921,165 @@ export function EditorScreen() {
                   automaticLayout: true,
                 }}
               />
-            ) : (
-              /* Empty state (or Pending Changes Review Hero) */
-              changedFiles.length > 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-5 p-6 text-center">
-                  <div
-                    className="flex size-16 items-center justify-center rounded-2xl border"
-                    style={{
-                      borderColor: 'var(--theme-border)',
-                      background: 'var(--theme-card2)',
-                    }}
+            ) : /* Empty state (or Pending Changes Review Hero) */
+            changedFiles.length > 0 ? (
+              <div className="flex h-full flex-col items-center justify-center gap-5 p-6 text-center">
+                <div
+                  className="flex size-16 items-center justify-center rounded-2xl border"
+                  style={{
+                    borderColor: 'var(--theme-border)',
+                    background: 'var(--theme-card2)',
+                  }}
+                >
+                  <span className="flex size-4 rounded-full bg-amber-400 animate-ping" />
+                </div>
+                <div className="max-w-md">
+                  <h2
+                    className="text-base font-bold flex items-center justify-center gap-2"
+                    style={{ color: 'var(--theme-text)' }}
                   >
-                    <span className="flex size-4 rounded-full bg-amber-400 animate-ping" />
-                  </div>
-                  <div className="max-w-md">
-                    <h2
-                      className="text-base font-bold flex items-center justify-center gap-2"
-                      style={{ color: 'var(--theme-text)' }}
-                    >
-                      <span>Pending AI Review</span>
-                      <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs text-amber-400 font-mono">
-                        {changedFiles.length} {changedFiles.length === 1 ? 'file' : 'files'} modified
-                      </span>
-                    </h2>
-                    <p
-                      className="mt-1 text-xs"
-                      style={{ color: 'var(--theme-muted)' }}
-                    >
-                      AI Agent has generated or modified files in this workspace. You can review and accept them individually from the sidebar, or review all changes here.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => void handleDeclineAllChanges()}
-                      disabled={diffActionLoading}
-                      className="flex items-center gap-1.5 rounded-lg border border-red-500/40 bg-red-500/10 px-3.5 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} size={14} />
-                      <span>Decline All</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleAcceptAllChanges()}
-                      disabled={diffActionLoading}
-                      className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-4 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
-                    >
-                      <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} />
-                      <span>Accept All Changes</span>
-                    </button>
-                  </div>
-
-                  <div
-                    className="mt-2 w-full max-w-sm rounded-lg border p-2 text-left space-y-1 max-h-48 overflow-y-auto"
-                    style={{
-                      borderColor: 'var(--theme-border)',
-                      background: 'var(--theme-card)',
-                    }}
+                    <span>Pending AI Review</span>
+                    <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs text-amber-400 font-mono">
+                      {changedFiles.length}{' '}
+                      {changedFiles.length === 1 ? 'file' : 'files'} modified
+                    </span>
+                  </h2>
+                  <p
+                    className="mt-1 text-xs"
+                    style={{ color: 'var(--theme-muted)' }}
                   >
-                    {changedFiles.map((f) => {
-                      const fName = f.path.split('/').pop() || f.path
-                      const isModified = f.status.includes('M')
-                      const isUntracked = f.status.includes('A') || f.status.includes('?') || f.status === 'U'
-                      const isDeleted = f.status.includes('D')
+                    AI Agent has generated or modified files in this workspace.
+                    You can review and accept them individually from the
+                    sidebar, or review all changes here.
+                  </p>
+                </div>
 
-                      return (
-                        <button
-                          key={f.path}
-                          type="button"
-                          onClick={() =>
-                            openFile({
-                              name: fName,
-                              path: f.path,
-                              type: 'file',
-                            })
-                          }
-                          className="flex w-full items-center justify-between py-1.5 px-2.5 text-xs font-mono hover:bg-[var(--theme-card2)] rounded-md transition-colors border border-transparent hover:border-[var(--theme-border)]"
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => void handleDeclineAllChanges()}
+                    disabled={diffActionLoading}
+                    className="flex items-center gap-1.5 rounded-lg border border-red-500/40 bg-red-500/10 px-3.5 py-1.5 text-xs font-semibold text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                  >
+                    <HugeiconsIcon icon={Cancel01Icon} size={14} />
+                    <span>Decline All</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleAcceptAllChanges()}
+                    disabled={diffActionLoading}
+                    className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-4 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-50"
+                  >
+                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} />
+                    <span>Accept All Changes</span>
+                  </button>
+                </div>
+
+                <div
+                  className="mt-2 w-full max-w-sm rounded-lg border p-2 text-left space-y-1 max-h-48 overflow-y-auto"
+                  style={{
+                    borderColor: 'var(--theme-border)',
+                    background: 'var(--theme-card)',
+                  }}
+                >
+                  {changedFiles.map((f) => {
+                    const fName = f.path.split('/').pop() || f.path
+                    const isModified = f.status.includes('M')
+                    const isUntracked =
+                      f.status.includes('A') ||
+                      f.status.includes('?') ||
+                      f.status === 'U'
+                    const isDeleted = f.status.includes('D')
+
+                    return (
+                      <button
+                        key={f.path}
+                        type="button"
+                        onClick={() =>
+                          openFile({
+                            name: fName,
+                            path: f.path,
+                            type: 'file',
+                          })
+                        }
+                        className="flex w-full items-center justify-between py-1.5 px-2.5 text-xs font-mono hover:bg-[var(--theme-card2)] rounded-md transition-colors border border-transparent hover:border-[var(--theme-border)]"
+                      >
+                        <span
+                          className={cn(
+                            'truncate font-medium',
+                            isModified && 'text-[#fbbf24]',
+                            isUntracked && 'text-[#34d399]',
+                            isDeleted &&
+                              'text-[#f87171] line-through opacity-80',
+                            !isModified &&
+                              !isUntracked &&
+                              !isDeleted &&
+                              'text-[var(--theme-text)]',
+                          )}
                         >
-                          <span
-                            className={cn(
-                              'truncate font-medium',
-                              isModified && 'text-[#fbbf24]',
-                              isUntracked && 'text-[#34d399]',
-                              isDeleted && 'text-[#f87171] line-through opacity-80',
-                              !isModified && !isUntracked && !isDeleted && 'text-[var(--theme-text)]',
-                            )}
-                          >
-                            {fName}
-                          </span>
-                          <span
-                            className={cn(
-                              'ml-2 rounded px-1.5 py-0.2 text-[10px] font-bold font-mono shrink-0 border shadow-2xs',
-                              isModified && 'bg-[#fbbf24]/15 text-[#fbbf24] border-[#fbbf24]/30',
-                              isUntracked && 'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/30',
-                              isDeleted && 'bg-[#f87171]/15 text-[#f87171] border-[#f87171]/30',
-                              !isModified && !isUntracked && !isDeleted && 'bg-[var(--theme-card)] text-[var(--theme-muted)] border-[var(--theme-border)]',
-                            )}
-                          >
-                            {f.status}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
+                          {fName}
+                        </span>
+                        <span
+                          className={cn(
+                            'ml-2 rounded px-1.5 py-0.2 text-[10px] font-bold font-mono shrink-0 border shadow-2xs',
+                            isModified &&
+                              'bg-[#fbbf24]/15 text-[#fbbf24] border-[#fbbf24]/30',
+                            isUntracked &&
+                              'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/30',
+                            isDeleted &&
+                              'bg-[#f87171]/15 text-[#f87171] border-[#f87171]/30',
+                            !isModified &&
+                              !isUntracked &&
+                              !isDeleted &&
+                              'bg-[var(--theme-card)] text-[var(--theme-muted)] border-[var(--theme-border)]',
+                          )}
+                        >
+                          {f.status}
+                        </span>
+                      </button>
+                    )
+                  })}
                 </div>
-              ) : (
-                <div className="flex h-full flex-col items-center justify-center gap-4">
-                  <div
-                    className="flex size-20 items-center justify-center rounded-2xl border"
-                    style={{
-                      borderColor: 'var(--theme-border)',
-                      background: 'var(--theme-card)',
-                    }}
+              </div>
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-4">
+                <div
+                  className="flex size-20 items-center justify-center rounded-2xl border"
+                  style={{
+                    borderColor: 'var(--theme-border)',
+                    background: 'var(--theme-card)',
+                  }}
+                >
+                  <i className="devicon-vscode-plain colored text-4xl opacity-60" />
+                </div>
+                <div className="text-center">
+                  <h2
+                    className="text-lg font-bold"
+                    style={{ color: 'var(--theme-text)' }}
                   >
-                    <i className="devicon-vscode-plain colored text-4xl opacity-60" />
-                  </div>
-                  <div className="text-center">
-                    <h2
-                      className="text-lg font-bold"
-                      style={{ color: 'var(--theme-text)' }}
-                    >
-                      LAM Code Editor
-                    </h2>
-                    <p
-                      className="mt-1 max-w-xs text-sm"
-                      style={{ color: 'var(--theme-muted)' }}
-                    >
-                      Select a file from the Explorer to start editing.
-                      <br />
-                      <span className="text-xs opacity-70">
-                        Press{' '}
-                        <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">
-                          Ctrl+S
-                        </kbd>{' '}
-                        to save
-                        {' · '}
-                        <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">
-                          Ctrl+`
-                        </kbd>{' '}
-                        to toggle terminal
-                      </span>
-                    </p>
-                  </div>
+                    LAM Code Editor
+                  </h2>
+                  <p
+                    className="mt-1 max-w-xs text-sm"
+                    style={{ color: 'var(--theme-muted)' }}
+                  >
+                    Select a file from the Explorer to start editing.
+                    <br />
+                    <span className="text-xs opacity-70">
+                      Press{' '}
+                      <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">
+                        Ctrl+S
+                      </kbd>{' '}
+                      to save
+                      {' · '}
+                      <kbd className="rounded bg-[var(--theme-card2)] px-1.5 py-0.5 font-mono text-[10px]">
+                        Ctrl+`
+                      </kbd>{' '}
+                      to toggle terminal
+                    </span>
+                  </p>
                 </div>
-              )
+              </div>
             )}
           </div>
 
@@ -2184,8 +2294,14 @@ export function EditorScreen() {
             className="flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-medium transition-colors hover:bg-[var(--theme-card2)]"
             style={{
               borderColor: 'var(--theme-border)',
-              background: chatSessionId === 'new' ? 'var(--theme-accent)/20' : 'var(--theme-bg)',
-              color: chatSessionId === 'new' ? 'var(--theme-accent, #60a5fa)' : 'var(--theme-text)',
+              background:
+                chatSessionId === 'new'
+                  ? 'var(--theme-accent)/20'
+                  : 'var(--theme-bg)',
+              color:
+                chatSessionId === 'new'
+                  ? 'var(--theme-accent, #60a5fa)'
+                  : 'var(--theme-text)',
             }}
             title="Start fresh isolated coding session"
           >
@@ -2208,8 +2324,10 @@ export function EditorScreen() {
               color: 'var(--theme-text)',
             }}
           >
-            {chatSessionId === 'new' && <option value="new">New Task Session</option>}
-            
+            {chatSessionId === 'new' && (
+              <option value="new">New Task Session</option>
+            )}
+
             {/* Active Folder Tasks */}
             {currentFolderSessions.length > 0 && (
               <optgroup label="This Project">
@@ -2232,9 +2350,10 @@ export function EditorScreen() {
               </optgroup>
             )}
 
-            {currentFolderSessions.length === 0 && allOtherCodeSessions.length === 0 && (
-              <option disabled>No workspace tasks yet</option>
-            )}
+            {currentFolderSessions.length === 0 &&
+              allOtherCodeSessions.length === 0 && (
+                <option disabled>No workspace tasks yet</option>
+              )}
           </select>
         </div>
       </div>
@@ -2275,10 +2394,7 @@ export function EditorScreen() {
           {chatOpen && chatElement}
         </>
       ) : (
-        <PanelGroup
-          orientation="horizontal"
-          className="flex h-full w-full"
-        >
+        <PanelGroup orientation="horizontal" className="flex h-full w-full">
           {sidebarOpen && (
             <>
               <Panel id="sidebar" defaultSize="20%" minSize="12%" maxSize="40%">
@@ -2290,10 +2406,7 @@ export function EditorScreen() {
             </>
           )}
 
-          <Panel
-            id="editor"
-            minSize="25%"
-          >
+          <Panel id="editor" minSize="25%">
             {editorElement}
           </Panel>
 

@@ -10,7 +10,9 @@ import path from 'node:path'
 describe('study-service', () => {
   describe('extractContentFromFile', () => {
     it('extracts plain text and markdown content directly', async () => {
-      const buffer = Buffer.from('# Test Document\n\nThis is a sample markdown.')
+      const buffer = Buffer.from(
+        '# Test Document\n\nThis is a sample markdown.',
+      )
       const result = await extractContentFromFile({
         name: 'test.md',
         buffer,
@@ -58,7 +60,9 @@ describe('study-service', () => {
       const result = await extractContentFromUrl('https://example.com/article')
       expect(result.title).toBe('Test Article Page')
       expect(result.content).toContain('Test Article')
-      expect(result.content).toContain('This is extracted paragraph content for learning.')
+      expect(result.content).toContain(
+        'This is extracted paragraph content for learning.',
+      )
       expect(result.sourceUrl).toBe('https://example.com/article')
     })
   })
@@ -72,7 +76,9 @@ describe('study-service', () => {
         sourceUrl: 'https://example.com/re-guide',
       }
 
-      const result = await commitToSecondBrain(payload, { skipSyncExecution: true })
+      const result = await commitToSecondBrain(payload, {
+        skipSyncExecution: true,
+      })
       expect(result.success).toBe(true)
       expect(result.filePath).toContain('03-Notes/Extracted-Docs')
       expect(fs.existsSync(result.filePath)).toBe(true)

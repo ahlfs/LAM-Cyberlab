@@ -31,9 +31,14 @@ export const Route = createFileRoute('/api/study/extract')({
           const contentType = request.headers.get('content-type') || ''
 
           if (contentType.includes('application/json')) {
-            const body = (await request.json().catch(() => ({}))) as { url?: string }
+            const body = (await request.json().catch(() => ({}))) as {
+              url?: string
+            }
             if (!body.url || typeof body.url !== 'string') {
-              return json({ ok: false, error: 'Valid URL is required.' }, { status: 400 })
+              return json(
+                { ok: false, error: 'Valid URL is required.' },
+                { status: 400 },
+              )
             }
             const result = await extractContentFromUrl(body.url)
             return json({ ok: true, data: result })
@@ -43,10 +48,16 @@ export const Route = createFileRoute('/api/study/extract')({
             const form = await request.formData()
             const file = form.get('file')
             if (!(file instanceof File)) {
-              return json({ ok: false, error: 'Missing document file.' }, { status: 400 })
+              return json(
+                { ok: false, error: 'Missing document file.' },
+                { status: 400 },
+              )
             }
             if (file.size <= 0) {
-              return json({ ok: false, error: 'File is empty.' }, { status: 400 })
+              return json(
+                { ok: false, error: 'File is empty.' },
+                { status: 400 },
+              )
             }
             if (file.size > MAX_DOC_UPLOAD_BYTES) {
               return json(
@@ -66,7 +77,10 @@ export const Route = createFileRoute('/api/study/extract')({
           }
 
           return json(
-            { ok: false, error: 'Expected application/json or multipart/form-data.' },
+            {
+              ok: false,
+              error: 'Expected application/json or multipart/form-data.',
+            },
             { status: 400 },
           )
         } catch (error) {

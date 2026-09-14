@@ -383,31 +383,33 @@ function WorkspaceThemePicker() {
       {THEMES.map((t) => {
         const isActive = current === t.id
         return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={(e) => applyWorkspaceTheme(t.id, e)}
-              className={cn(
-                'flex min-h-[112px] flex-col gap-2.5 rounded-xl border p-3.5 text-left transition-all cursor-pointer',
-                isActive
-                  ? 'border-[var(--theme-accent,#5e6ad2)] bg-[var(--theme-accent-subtle,rgba(94,106,210,0.12))] text-[var(--theme-text,#f7f8f8)] shadow-2xs'
-                  : 'border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.025))] text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.045))] hover:text-[var(--theme-text,#f7f8f8)]',
+          <button
+            key={t.id}
+            type="button"
+            onClick={(e) => applyWorkspaceTheme(t.id, e)}
+            className={cn(
+              'flex min-h-[112px] flex-col gap-2.5 rounded-xl border p-3.5 text-left transition-all cursor-pointer',
+              isActive
+                ? 'border-[var(--theme-accent,#5e6ad2)] bg-[var(--theme-accent-subtle,rgba(94,106,210,0.12))] text-[var(--theme-text,#f7f8f8)] shadow-2xs'
+                : 'border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card,rgba(255,255,255,0.025))] text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.045))] hover:text-[var(--theme-text,#f7f8f8)]',
+            )}
+          >
+            <PageThemeSwatch colors={THEME_PREVIEWS[t.id]} />
+            <div className="flex items-center gap-1.5 w-full">
+              <span className="text-xs">{t.icon}</span>
+              <span className="text-xs font-semibold text-[var(--theme-text,#f7f8f8)] truncate">
+                {t.label}
+              </span>
+              {isActive && (
+                <span className="ml-auto text-[9px] font-bold uppercase tracking-wider text-[var(--theme-accent-secondary,#7170ff)] shrink-0">
+                  Active
+                </span>
               )}
-            >
-              <PageThemeSwatch colors={THEME_PREVIEWS[t.id]} />
-              <div className="flex items-center gap-1.5 w-full">
-                <span className="text-xs">{t.icon}</span>
-                <span className="text-xs font-semibold text-[var(--theme-text,#f7f8f8)] truncate">{t.label}</span>
-                {isActive && (
-                  <span className="ml-auto text-[9px] font-bold uppercase tracking-wider text-[var(--theme-accent-secondary,#7170ff)] shrink-0">
-                    Active
-                  </span>
-                )}
-              </div>
-              <p className="text-[10px] leading-tight text-[var(--theme-muted,#8a8f98)]">
-                {t.description}
-              </p>
-            </button>
+            </div>
+            <p className="text-[10px] leading-tight text-[var(--theme-muted,#8a8f98)]">
+              {t.description}
+            </p>
+          </button>
         )
       })}
     </div>

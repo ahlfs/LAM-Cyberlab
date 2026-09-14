@@ -174,15 +174,14 @@ function ContextBarComponent({
               Context Window
             </span>
             <span
-              className={cn(
-                'text-[11px] font-bold tabular-nums',
-                textColor,
-              )}
+              className={cn('text-[11px] font-bold tabular-nums', textColor)}
             >
               {Math.round(clampedPct)}%
             </span>
           </div>
-          <div className={cn('w-full h-1.5 rounded-full overflow-hidden', barBg)}>
+          <div
+            className={cn('w-full h-1.5 rounded-full overflow-hidden', barBg)}
+          >
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-500',
@@ -193,7 +192,8 @@ function ContextBarComponent({
           </div>
           <div className="flex items-center justify-between text-[10.5px]">
             <span className="text-[var(--theme-muted,#8a8f98)] tabular-nums font-mono">
-              {formatTokens(ctx.usedTokens)} / {formatTokens(ctx.maxTokens)} tokens
+              {formatTokens(ctx.usedTokens)} / {formatTokens(ctx.maxTokens)}{' '}
+              tokens
             </span>
             {ctx.model && (
               <span className="text-[var(--theme-muted,#8a8f98)]/80 truncate max-w-[100px] font-mono text-[10px]">

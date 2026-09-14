@@ -54,7 +54,8 @@ export function LoginScreen() {
       <motion.div
         className="w-[150vw] h-[150vh] absolute"
         style={{
-          background: 'radial-gradient(circle, var(--theme-accent-subtle, rgba(94,106,210,0.15)) 0%, transparent 60%)',
+          background:
+            'radial-gradient(circle, var(--theme-accent-subtle, rgba(94,106,210,0.15)) 0%, transparent 60%)',
         }}
         animate={{
           rotate: [0, 360],
@@ -92,7 +93,8 @@ export function LoginScreen() {
             <motion.div
               className="flex items-center justify-center mb-5 h-16 w-16 rounded-2xl overflow-hidden shadow-2xl border border-[var(--theme-border,rgba(255,255,255,0.1))]"
               style={{
-                boxShadow: '0 0 25px var(--theme-accent-subtle, rgba(94,106,210,0.25))',
+                boxShadow:
+                  '0 0 25px var(--theme-accent-subtle, rgba(94,106,210,0.25))',
               }}
               initial={{ scale: 0.8, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}

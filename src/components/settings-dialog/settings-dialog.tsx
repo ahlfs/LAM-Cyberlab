@@ -127,9 +127,7 @@ function SectionHeader({
       <h3 className="text-base font-semibold text-[var(--theme-text,#f7f8f8)]">
         {title}
       </h3>
-      <p className="text-xs text-[var(--theme-muted,#8a8f98)]">
-        {description}
-      </p>
+      <p className="text-xs text-[var(--theme-muted,#8a8f98)]">{description}</p>
     </div>
   )
 }
@@ -1575,7 +1573,9 @@ function AppearanceContent() {
             <button
               key={option.value}
               type="button"
-              onClick={() => handleThemeModeChange(option.value as 'custom' | 'system')}
+              onClick={() =>
+                handleThemeModeChange(option.value as 'custom' | 'system')
+              }
               className={cn(
                 'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
                 activeMode === option.value
@@ -1657,257 +1657,264 @@ const ENTERPRISE_THEMES = THEMES.map((theme) => ({
           }
         : theme.id === 'claude-nous'
           ? {
-          bg: '#041C1C',
-          panel: '#06282A',
-          border: 'rgba(255,230,203,0.2)',
-          accent: '#FFAC02',
-          text: '#FFE6CB',
-        }
-      : theme.id === 'claude-nous-light'
-        ? {
-            bg: '#F8FAF8',
-            panel: '#FBFDFB',
-            border: 'rgba(30,74,92,0.18)',
-            accent: '#2557B7',
-            text: '#16315F',
-          }
-        : theme.id === 'matrix'
-          ? {
-              bg: '#020804',
-              panel: '#07130A',
-              border: 'rgba(0,255,65,0.28)',
-              accent: '#00FF41',
-              text: '#D8FFE3',
+              bg: '#041C1C',
+              panel: '#06282A',
+              border: 'rgba(255,230,203,0.2)',
+              accent: '#FFAC02',
+              text: '#FFE6CB',
             }
-          : theme.id === 'matrix-light'
+          : theme.id === 'claude-nous-light'
             ? {
-                bg: '#F4FFF6',
-                panel: '#FFFFFF',
-                border: 'rgba(0,126,34,0.2)',
-                accent: '#008F2D',
-                text: '#062A12',
+                bg: '#F8FAF8',
+                panel: '#FBFDFB',
+                border: 'rgba(30,74,92,0.18)',
+                accent: '#2557B7',
+                text: '#16315F',
               }
-            : theme.id === 'claude-official'
+            : theme.id === 'matrix'
               ? {
-                  bg: '#0A0E1A',
-                  panel: '#11182A',
-                  border: '#24304A',
-                  accent: '#6366F1',
-                  text: '#E6EAF2',
+                  bg: '#020804',
+                  panel: '#07130A',
+                  border: 'rgba(0,255,65,0.28)',
+                  accent: '#00FF41',
+                  text: '#D8FFE3',
                 }
-              : theme.id === 'claude-official-light'
+              : theme.id === 'matrix-light'
                 ? {
-                    bg: '#F7F7F1',
-                    panel: '#FAFBF6',
-                    border: '#CDD5DA',
-                    accent: '#2557B7',
-                    text: '#16315F',
+                    bg: '#F4FFF6',
+                    panel: '#FFFFFF',
+                    border: 'rgba(0,126,34,0.2)',
+                    accent: '#008F2D',
+                    text: '#062A12',
                   }
-                : theme.id === 'claude-classic'
+                : theme.id === 'claude-official'
                   ? {
-                      bg: '#0d0f12',
-                      panel: '#1a1f26',
-                      border: '#2a313b',
-                      accent: '#b98a44',
-                      text: '#eceff4',
+                      bg: '#0A0E1A',
+                      panel: '#11182A',
+                      border: '#24304A',
+                      accent: '#6366F1',
+                      text: '#E6EAF2',
                     }
-                  : theme.id === 'claude-classic-light'
+                  : theme.id === 'claude-official-light'
                     ? {
-                        bg: '#F5F2ED',
-                        panel: '#FCFAF7',
-                        border: '#D8CCBC',
-                        accent: '#b98a44',
-                        text: '#1a1f26',
+                        bg: '#F7F7F1',
+                        panel: '#FAFBF6',
+                        border: '#CDD5DA',
+                        accent: '#2557B7',
+                        text: '#16315F',
                       }
-                    : theme.id === 'claude-slate'
+                    : theme.id === 'claude-classic'
                       ? {
-                          bg: '#0d1117',
-                          panel: '#1c2128',
-                          border: '#30363d',
-                          accent: '#7eb8f6',
-                          text: '#c9d1d9',
+                          bg: '#0d0f12',
+                          panel: '#1a1f26',
+                          border: '#2a313b',
+                          accent: '#b98a44',
+                          text: '#eceff4',
                         }
-                      : theme.id === 'dracula'
+                      : theme.id === 'claude-classic-light'
                         ? {
-                            bg: '#282A36',
-                            panel: '#343746',
-                            border: '#44475A',
-                            accent: '#BF9EEE',
-                            text: '#F6F6F4',
+                            bg: '#F5F2ED',
+                            panel: '#FCFAF7',
+                            border: '#D8CCBC',
+                            accent: '#b98a44',
+                            text: '#1a1f26',
                           }
-                        : theme.id === 'discord-nitro'
+                        : theme.id === 'claude-slate'
                           ? {
-                              bg: '#313338',
-                              panel: '#2b2d31',
-                              border: 'rgba(255, 255, 255, 0.06)',
-                              accent: '#5865f2',
-                              text: '#f2f3f5',
+                              bg: '#0d1117',
+                              panel: '#1c2128',
+                              border: '#30363d',
+                              accent: '#7eb8f6',
+                              text: '#c9d1d9',
                             }
-                          : theme.id === 'discord-nitro-light'
+                          : theme.id === 'dracula'
                             ? {
-                                bg: '#ffffff',
-                                panel: '#f2f3f5',
-                                border: 'rgba(0, 0, 0, 0.08)',
-                                accent: '#5865f2',
-                                text: '#060607',
+                                bg: '#282A36',
+                                panel: '#343746',
+                                border: '#44475A',
+                                accent: '#BF9EEE',
+                                text: '#F6F6F4',
                               }
-                            : theme.id === 'dracula-light'
+                            : theme.id === 'discord-nitro'
                               ? {
-                                  bg: '#FFFBEB',
-                                  panel: '#FFFDF5',
-                                  border: '#DDD6BD',
-                                  accent: '#644AC9',
-                                  text: '#1F1F1F',
+                                  bg: '#313338',
+                                  panel: '#2b2d31',
+                                  border: 'rgba(255, 255, 255, 0.06)',
+                                  accent: '#5865f2',
+                                  text: '#f2f3f5',
                                 }
-                              : theme.id === 'arctic'
+                              : theme.id === 'discord-nitro-light'
                                 ? {
-                                    bg: '#0B1120',
-                                    panel: '#111827',
-                                    border: 'rgba(56, 189, 248, 0.2)',
-                                    accent: '#38BDF8',
-                                    text: '#F3F4F6',
+                                    bg: '#ffffff',
+                                    panel: '#f2f3f5',
+                                    border: 'rgba(0, 0, 0, 0.08)',
+                                    accent: '#5865f2',
+                                    text: '#060607',
                                   }
-                                : theme.id === 'arctic-light'
+                                : theme.id === 'dracula-light'
                                   ? {
-                                      bg: '#F1F5F9',
-                                      panel: '#F8FAFC',
-                                      border: '#CBD5E1',
-                                      accent: '#0284C7',
-                                      text: '#0F172A',
+                                      bg: '#FFFBEB',
+                                      panel: '#FFFDF5',
+                                      border: '#DDD6BD',
+                                      accent: '#644AC9',
+                                      text: '#1F1F1F',
                                     }
-                                  : theme.id === 'synthwave'
+                                  : theme.id === 'arctic'
                                     ? {
-                                        bg: '#2b213a',
-                                        panel: '#241b2f',
-                                        border: '#ff71ce',
-                                        accent: '#01cdfe',
-                                        text: '#fdf6e3',
+                                        bg: '#0B1120',
+                                        panel: '#111827',
+                                        border: 'rgba(56, 189, 248, 0.2)',
+                                        accent: '#38BDF8',
+                                        text: '#F3F4F6',
                                       }
-                                    : theme.id === 'synthwave-light'
+                                    : theme.id === 'arctic-light'
                                       ? {
-                                          bg: '#FAFAFA',
-                                          panel: '#F4F4F5',
-                                          border: '#ff71ce',
-                                          accent: '#01cdfe',
-                                          text: '#18181b',
+                                          bg: '#F1F5F9',
+                                          panel: '#F8FAFC',
+                                          border: '#CBD5E1',
+                                          accent: '#0284C7',
+                                          text: '#0F172A',
                                         }
-                                      : theme.id === 'biolab'
+                                      : theme.id === 'synthwave'
                                         ? {
-                                            bg: '#121413',
-                                            panel: '#1a1d1b',
-                                            border: '#3f6212',
-                                            accent: '#84cc16',
-                                            text: '#e5e7eb',
+                                            bg: '#2b213a',
+                                            panel: '#241b2f',
+                                            border: '#ff71ce',
+                                            accent: '#01cdfe',
+                                            text: '#fdf6e3',
                                           }
-                                        : theme.id === 'biolab-light'
+                                        : theme.id === 'synthwave-light'
                                           ? {
-                                              bg: '#F3F4F6',
-                                              panel: '#FFFFFF',
-                                              border: '#b4ced6',
-                                              accent: '#65a30d',
-                                              text: '#111827',
+                                              bg: '#FAFAFA',
+                                              panel: '#F4F4F5',
+                                              border: '#ff71ce',
+                                              accent: '#01cdfe',
+                                              text: '#18181b',
                                             }
-                                          : theme.id === 'monokai'
+                                          : theme.id === 'biolab'
                                             ? {
-                                                bg: '#222222',
-                                                panel: '#2d2a2e',
-                                                border: '#5b595c',
-                                                accent: '#ffd866',
-                                                text: '#fcfcfa',
+                                                bg: '#121413',
+                                                panel: '#1a1d1b',
+                                                border: '#3f6212',
+                                                accent: '#84cc16',
+                                                text: '#e5e7eb',
                                               }
-                                            : theme.id === 'monokai-light'
+                                            : theme.id === 'biolab-light'
                                               ? {
-                                                  bg: '#FAFAFA',
+                                                  bg: '#F3F4F6',
                                                   panel: '#FFFFFF',
-                                                  border: '#e4e4e7',
-                                                  accent: '#d97706',
-                                                  text: '#27272a',
+                                                  border: '#b4ced6',
+                                                  accent: '#65a30d',
+                                                  text: '#111827',
                                                 }
-                                              : theme.id === 'tokyonight'
+                                              : theme.id === 'monokai'
                                                 ? {
-                                                    bg: '#1a1b26',
-                                                    panel: '#24283b',
-                                                    border: '#414868',
-                                                    accent: '#7aa2f7',
-                                                    text: '#c0caf5',
+                                                    bg: '#222222',
+                                                    panel: '#2d2a2e',
+                                                    border: '#5b595c',
+                                                    accent: '#ffd866',
+                                                    text: '#fcfcfa',
                                                   }
-                                                : theme.id ===
-                                                    'tokyonight-light'
+                                                : theme.id === 'monokai-light'
                                                   ? {
                                                       bg: '#FAFAFA',
                                                       panel: '#FFFFFF',
                                                       border: '#e4e4e7',
-                                                      accent: '#2563eb',
-                                                      text: '#1e293b',
+                                                      accent: '#d97706',
+                                                      text: '#27272a',
                                                     }
-                                                  : theme.id === 'crimson'
+                                                  : theme.id === 'tokyonight'
                                                     ? {
-                                                        bg: '#0a0a0a',
-                                                        panel: '#171717',
-                                                        border: '#dc2626',
-                                                        accent: '#ef4444',
-                                                        text: '#a3a3a3',
+                                                        bg: '#1a1b26',
+                                                        panel: '#24283b',
+                                                        border: '#414868',
+                                                        accent: '#7aa2f7',
+                                                        text: '#c0caf5',
                                                       }
                                                     : theme.id ===
-                                                        'crimson-light'
+                                                        'tokyonight-light'
                                                       ? {
                                                           bg: '#FAFAFA',
                                                           panel: '#FFFFFF',
-                                                          border: '#fca5a5',
-                                                          accent: '#dc2626',
-                                                          text: '#171717',
+                                                          border: '#e4e4e7',
+                                                          accent: '#2563eb',
+                                                          text: '#1e293b',
                                                         }
-                                                      : theme.id === 'deusex'
+                                                      : theme.id === 'crimson'
                                                         ? {
-                                                            bg: '#000000',
-                                                            panel: '#111100',
-                                                            border: '#664400',
-                                                            accent: '#ffb000',
-                                                            text: '#ffb000',
+                                                            bg: '#0a0a0a',
+                                                            panel: '#171717',
+                                                            border: '#dc2626',
+                                                            accent: '#ef4444',
+                                                            text: '#a3a3a3',
                                                           }
                                                         : theme.id ===
-                                                            'deusex-light'
+                                                            'crimson-light'
                                                           ? {
-                                                              bg: '#FFFBEB',
-                                                              panel: '#FEF3C7',
-                                                              border: '#FDE68A',
-                                                              accent: '#D97706',
-                                                              text: '#78350F',
+                                                              bg: '#FAFAFA',
+                                                              panel: '#FFFFFF',
+                                                              border: '#fca5a5',
+                                                              accent: '#dc2626',
+                                                              text: '#171717',
                                                             }
                                                           : theme.id ===
-                                                              'highcontrast'
+                                                              'deusex'
                                                             ? {
                                                                 bg: '#000000',
                                                                 panel:
-                                                                  '#111111',
+                                                                  '#111100',
                                                                 border:
-                                                                  '#666666',
+                                                                  '#664400',
                                                                 accent:
-                                                                  '#FFFFFF',
-                                                                text: '#FFFFFF',
+                                                                  '#ffb000',
+                                                                text: '#ffb000',
                                                               }
                                                             : theme.id ===
-                                                                'highcontrast-light'
+                                                                'deusex-light'
                                                               ? {
-                                                                  bg: '#FFFFFF',
+                                                                  bg: '#FFFBEB',
                                                                   panel:
-                                                                    '#F4F4F5',
+                                                                    '#FEF3C7',
                                                                   border:
-                                                                    '#A1A1AA',
+                                                                    '#FDE68A',
                                                                   accent:
-                                                                    '#000000',
-                                                                  text: '#000000',
+                                                                    '#D97706',
+                                                                  text: '#78350F',
                                                                 }
-                                                              : {
-                                                                  bg: '#F6F8FA',
-                                                                  panel:
-                                                                    '#FFFFFF',
-                                                                  border:
-                                                                    '#D0D7DE',
-                                                                  accent:
-                                                                    '#3b82f6',
-                                                                  text: '#24292f',
-                                                                },
+                                                              : theme.id ===
+                                                                  'highcontrast'
+                                                                ? {
+                                                                    bg: '#000000',
+                                                                    panel:
+                                                                      '#111111',
+                                                                    border:
+                                                                      '#666666',
+                                                                    accent:
+                                                                      '#FFFFFF',
+                                                                    text: '#FFFFFF',
+                                                                  }
+                                                                : theme.id ===
+                                                                    'highcontrast-light'
+                                                                  ? {
+                                                                      bg: '#FFFFFF',
+                                                                      panel:
+                                                                        '#F4F4F5',
+                                                                      border:
+                                                                        '#A1A1AA',
+                                                                      accent:
+                                                                        '#000000',
+                                                                      text: '#000000',
+                                                                    }
+                                                                  : {
+                                                                      bg: '#F6F8FA',
+                                                                      panel:
+                                                                        '#FFFFFF',
+                                                                      border:
+                                                                        '#D0D7DE',
+                                                                      accent:
+                                                                        '#3b82f6',
+                                                                      text: '#24292f',
+                                                                    },
 }))
 
 function ThemeSwatch({

@@ -398,10 +398,7 @@ function buildPageMeta(
   }
 }
 
-function inferWikiTypeFromPath(
-  relativePath: string,
-  rawType?: string,
-): string {
+function inferWikiTypeFromPath(relativePath: string, rawType?: string): string {
   if (rawType && rawType.trim().length > 0) return rawType.toLowerCase()
   const lower = relativePath.toLowerCase()
   if (lower.includes('04-wiki/concepts') || lower.startsWith('concepts/'))
@@ -609,7 +606,7 @@ function getHermesSkillsPages(): Array<ParsedKnowledgePage> {
   if (!fs.existsSync(skillsDir)) return []
 
   const results: Array<ParsedKnowledgePage> = []
-  
+
   function scanSkills(dir: string) {
     try {
       const entries = fs.readdirSync(dir)

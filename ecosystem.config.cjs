@@ -4,12 +4,12 @@
 // `pnpm dev` usage does not need this at all — see README.md
 // "Running as a Permanent Server" for when this is actually worth setting up.
 //
-// The gateway (9router) is also included here so you can run everything
-// (Workspace, Dashboard, and Gateway) with a single PM2 command.
+// The router (LAM-Router) is also included here so you can run everything
+// (Workspace, Dashboard, Gateway, and Router) with a single PM2 command.
 //
 // Usage:
 //   pnpm build                    # one-time production build
-//   pm2 start ecosystem.config.js
+//   pm2 start ecosystem.config.cjs
 //   pm2 save && pm2 startup       # survive reboots — pm2 startup prints a
 //                                  # one-time sudo command to run
 const os = require('os')
@@ -25,6 +25,20 @@ const hermesPath = path.join(
   'bin',
   'hermes',
 )
+
+// Helper to locate executable binary across common user/system paths
+function findBinary(name, candidates) {
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p
+  }
+  return name
+}
+
+const lamRouterPath = findBinary('lam-router', [
+  path.join(homeDir, '.local', 'bin', 'lam-router'),
+  '/usr/local/bin/lam-router',
+  '/usr/bin/lam-router',
+])
 
 // Read .env files for dynamic config
 function readEnvFile(filePath) {
@@ -50,10 +64,6 @@ function readEnvFile(filePath) {
   } catch (e) {}
   return vars
 }
-
-// Read workspace .env (for NINE_ROUTER_HOST toggle)
-const workspaceEnv = readEnvFile(path.join(__dirname, '.env'))
-const nineRouterHost = workspaceEnv.NINE_ROUTER_HOST || '127.0.0.1'
 
 // Read hermes .env (for API_SERVER_ENABLED, API_SERVER_KEY, provider keys, etc.)
 const hermesEnv = readEnvFile(path.join(homeDir, '.hermes', '.env'))
@@ -89,9 +99,8 @@ module.exports = {
       restart_delay: 3000,
     },
     {
-      name: '9router',
-      script: '/usr/local/bin/9router',
-      args: `--host ${nineRouterHost} --port 3035 --tray`,
+      name: 'lam-router',
+      script: lamRouterPath,
       interpreter: 'none',
       max_restarts: 10,
       restart_delay: 3000,

@@ -64,7 +64,9 @@ export const GraphFilterBar = memo(function GraphFilterBar({
         const config = CATEGORY_CONFIG[cat]
         const isActive = activeCategories.has(cat)
         const count = counts[cat] || 0
-        const activeColor = getNodeColorDynamic ? getNodeColorDynamic(cat) : config.color
+        const activeColor = getNodeColorDynamic
+          ? getNodeColorDynamic(cat)
+          : config.color
 
         return (
           <button
@@ -78,9 +80,7 @@ export const GraphFilterBar = memo(function GraphFilterBar({
                 : 'bg-transparent text-[var(--theme-muted)] opacity-50 hover:opacity-80',
             )}
             style={{
-              borderColor: isActive
-                ? 'var(--theme-border)'
-                : 'transparent',
+              borderColor: isActive ? 'var(--theme-border)' : 'transparent',
             }}
           >
             <span

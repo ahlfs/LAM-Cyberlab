@@ -2,11 +2,12 @@
 
 **Date:** 2026-09-11  
 **Target Repository:** `lam-cyberlab`  
-**Status:** Approved for Implementation Planning  
+**Status:** Approved for Implementation Planning
 
 ---
 
 ## 1. Overview & Objective
+
 Menyediakan halaman interaktif baru bernama **Study Studio** (`/study`) di bawah kategori **Knowledge & Brain** pada LAM-Cyberlab. Halaman ini memungkinkan pengguna memasukkan berbagai sumber daya pengetahuan (tautan web, berkas dokumen PDF/MD/TXT/DOCX, dan rekaman audio) agar Hermes Agent dapat mempelajarinya secara interaktif melalui streaming dialog, mengekstraksi intisari konsep, dan menyimpannya secara terstruktur ke dalam Obsidian Second Brain vault (`03-Notes/Extracted-Docs/` dan `04-Wiki/`).
 
 ---
@@ -14,6 +15,7 @@ Menyediakan halaman interaktif baru bernama **Study Studio** (`/study`) di bawah
 ## 2. Architecture & Routing
 
 ### 2.1 Navigation & Layout
+
 - **URL Route:** `/study`
 - **Route Definition:** `src/routes/study.tsx` via TanStack Router.
 - **Sidebar Integration (`src/screens/chat/components/chat-sidebar.tsx`):**
@@ -24,12 +26,14 @@ Menyediakan halaman interaktif baru bernama **Study Studio** (`/study`) di bawah
   - Mapping: `/study` -> `Study Studio`
 
 ### 2.2 Component Hierarchy (`src/screens/study/`)
+
 - `study-screen.tsx`: Dual-pane responsive workspace container.
 - `components/resource-stage.tsx`: Input formulir (URL parser, multi-format file dropzone, audio uploader) dan list status resource aktif.
 - `components/study-agent-panel.tsx`: Live stream terminal interaktif dengan Hermes Agent, intisari poin konsep, dan action button sync ke Second Brain.
 - `components/resource-preview-dialog.tsx`: Modal pratinjau teks/markdown bersih yang diekstraksi dari file/URL.
 
 ### 2.3 State Management (`src/stores/study-store.ts`)
+
 - Staged resources list (items: `id`, `name`, `type`, `size`, `rawContent`, `status: 'idle' | 'parsing' | 'ready' | 'analyzing' | 'ingested'`).
 - Active focused resource ID.
 - Live analysis messages & draft concept notes.
@@ -40,6 +44,7 @@ Menyediakan halaman interaktif baru bernama **Study Studio** (`/study`) di bawah
 ## 3. Backend & API Services (`src/routes/api/study/` & `src/server/`)
 
 ### 3.1 API Endpoints
+
 1. `POST /api/study/extract`:
    - Menerima payload URL (`{ url: string }`) atau file form data (`multipart/form-data`).
    - Melakukan parsing:
@@ -59,6 +64,7 @@ Menyediakan halaman interaktif baru bernama **Study Studio** (`/study`) di bawah
 ---
 
 ## 4. UI & Theme Compliance
+
 - Mengikuti palet warna **Aura / Dracula Modern Dark** native LAM-Cyberlab (`#282a36` background, `#343746` card/sidebar, aksen violet/pink/green).
 - Menggunakan komponen UI konsisten dari `@/components/ui/` (Button, Input, Tabs, Dialog, Tooltip, Progress).
 - Tampilan responsif: split pane berdampingan pada layar desktop dan tab toggle pada mobile.
@@ -66,6 +72,7 @@ Menyediakan halaman interaktif baru bernama **Study Studio** (`/study`) di bawah
 ---
 
 ## 5. Error Handling & Edge Cases
+
 - **URL Scraping Failure:** Fallback ke manual text paste input jika URL diblokir oleh anti-bot atau paywall.
 - **Vault Directory Fallback:** Defaulting ke `~/obsidian/memo` jika environment variable `OBSIDIAN_VAULT_DIR` tidak ditemukan.
 - **Port Safety:** Memastikan interaksi agent dan proxy internal tidak mengganggu reserved port (3000, 20128, 8900).

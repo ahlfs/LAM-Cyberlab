@@ -42,8 +42,9 @@ Start here: [docs/swarm/](./docs/swarm/)
 ## ✨ What's inside
 
 - 💬 **Chat** — Real-time SSE streaming, tool call rendering, multi-session, markdown + syntax highlighting
+- 📚 **Study Studio** — Interactive research studio (/study): multi-modal resource intake (URLs, files, PDF OCR), live AI synthesis, and dual-mode commit (Analysis or Raw) directly to the Second Brain pipeline
 - 🧠 **Memory** — Browse, search, and edit agent memory; markdown live editor
-- 🌐 **Graph** — Interactive 3D knowledge graph visualizer for your Second Brain
+- 🌐 **Concept Graph** — High-performance 2D concept graph visualizer for your Second Brain with active focus lock, smooth animated cluster zoom, spring physics, and theme-reactive node styling
 - 🔗 **Links** — Personal link manager: colored folders, favorites/archive/trash, search, visit/open stats
 - 🖥️ **System** — Live host monitor: CPU (per-core), memory, disk, network, uptime
 - 🧩 **Skills** — Browse 2,000+ skills with origin badges, filters, source paths, marketplace
@@ -513,7 +514,7 @@ installer.
 
 ### ☁️ Option B: Cloud VPS Deployment (Always-On)
 
-If you are deploying this on a cloud VPS (e.g., Azure, DigitalOcean) and accessing it via an IP address over HTTP, follow this step-by-step guide to avoid common pitfalls like Gateway connection failures, 9router crash loops, and login loops.
+If you are deploying this on a cloud VPS (e.g., Azure, DigitalOcean) and accessing it via an IP address over HTTP, follow this step-by-step guide to avoid common pitfalls like Gateway connection failures, router crash loops, and login loops.
 
 #### 📋 VPS Prerequisites
 
@@ -614,7 +615,7 @@ Because this feature requires background processing and direct model access, **t
 ### How it works
 
 - **Ingestion & Consolidation:** Handled autonomously by the [modified `hermes-agent`](https://github.com/ahlfs/hermes-agent). It transcribes audio, extracts text from PDFs, and synthesizes them into durable facts and interlinked `[[wikilink]]` entity/concept pages.
-- **Visualization:** Lam-Cyberlab provides the **Graph** page (`/graph`). It fetches the knowledge graph data from the backend and renders it as a lightweight, interactive 3D-projected force layout so you can visually explore how concepts connect.
+- **Visualization:** Lam-Cyberlab provides the **Graph** page (`/graph`). It fetches knowledge graph data from the backend and renders it as an interactive 2D Concept Graph canvas with active focus locking, animated cluster zoom, spring physics, and dynamic theme reactivity.
 - **Integration:** The agent reads these distilled facts on every session, making the AI "smarter" and more context-aware over time.
 
 For setup instructions, vault structure, and configuration of the Second Brain engine, please refer directly to the backend repository: [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent).

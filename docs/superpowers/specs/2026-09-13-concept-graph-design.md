@@ -2,14 +2,16 @@
 
 **Date:** 2026-09-13  
 **Status:** Approved for Implementation  
-**Target:** LAM-Cyberlab Knowledge Ecosystem  
+**Target:** LAM-Cyberlab Knowledge Ecosystem
 
 ---
 
 ## 1. Executive Summary & Goals
+
 The objective of this design is to elevate the **Concept Graph** (`/graph`) into an aesthetic, lightweight, and unified **Living Brain Map**. It unifies knowledge from Second Brain Wiki (`04-Wiki/`), Active Projects (`05-Projects/`), Daily Notes (`07-Daily/`), and Agent Skills (`~/.hermes/skills/`) while omitting raw staging noise (`03-Notes/Extracted-Docs/`).
 
 Key Pillars:
+
 1. **Unified Graph Ingestion:** Cross-domain nodes connecting Wiki concepts, entities, projects, daily journals, and Hermes procedural skills.
 2. **Obsidian / Linear Dark Aesthetics:** Glow halos, harmonic category color palettes, clean anti-aliased links, and smooth interactive highlighting.
 3. **Smart LOD (Level of Detail) Typography:** Dynamic label visibility based on node degree and zoom thresholds with dark readability halos to prevent visual clutter.
@@ -21,15 +23,15 @@ Key Pillars:
 
 ## 2. Node Schema & Color Hierarchy
 
-| Category | Source Directory | Color Hex | Visual Purpose |
-|---|---|---|---|
-| **Concept** | `$OBSIDIAN_VAULT_DIR/04-Wiki/Concepts/` | `#f8fafc` | Core theories, paradigms, mental models |
-| **Entity** | `$OBSIDIAN_VAULT_DIR/04-Wiki/Entities/` | `#2dd4bf` | Libraries, frameworks, languages, tools |
-| **Project** | `$OBSIDIAN_VAULT_DIR/05-Projects/` | `#10b981` | Active repositories and production systems |
-| **Skill** | `~/.hermes/skills/` | `#f43f5e` | Hermes agent procedural capabilities & workflows |
-| **Daily** | `$OBSIDIAN_VAULT_DIR/07-Daily/` | `#38bdf8` | Daily journals, chat extracts, learning logs |
+| Category    | Source Directory                        | Color Hex | Visual Purpose                                   |
+| ----------- | --------------------------------------- | --------- | ------------------------------------------------ |
+| **Concept** | `$OBSIDIAN_VAULT_DIR/04-Wiki/Concepts/` | `#f8fafc` | Core theories, paradigms, mental models          |
+| **Entity**  | `$OBSIDIAN_VAULT_DIR/04-Wiki/Entities/` | `#2dd4bf` | Libraries, frameworks, languages, tools          |
+| **Project** | `$OBSIDIAN_VAULT_DIR/05-Projects/`      | `#10b981` | Active repositories and production systems       |
+| **Skill**   | `~/.hermes/skills/`                     | `#f43f5e` | Hermes agent procedural capabilities & workflows |
+| **Daily**   | `$OBSIDIAN_VAULT_DIR/07-Daily/`         | `#38bdf8` | Daily journals, chat extracts, learning logs     |
 
-*Note: `Extracted-Docs/` (`03-Notes/Extracted-Docs/`) is intentionally excluded from the graph to prevent raw staging noise.*
+_Note: `Extracted-Docs/` (`03-Notes/Extracted-Docs/`) is intentionally excluded from the graph to prevent raw staging noise._
 
 ---
 
@@ -71,17 +73,19 @@ Key Pillars:
 ## 4. Canvas Physics & Smart LOD Specs
 
 ### A. Physics Parameters & Obsidian Drag Mechanics
+
 - **True Obsidian Interactive Drag & Elastic Physics:**
-  - **Spring Tension on Drag:** Saat sebuah node digeret (*dragged*), gaya pegas d3-force direheat secara lokal (`alphaTarget(0.3)`) sehingga node-node yang terhubung ikut tertarik dan bergoyang lentur (*elastic ripple effect*) secara organik mengikuti gerakan kursor.
-  - **Inertia & Momentum Release:** Saat drag dilepas, node mempertahankan sedikit momentum sebelum pegas menariknya kembali ke posisi ekuilibrium stabil (*smooth decay*).
+  - **Spring Tension on Drag:** Saat sebuah node digeret (_dragged_), gaya pegas d3-force direheat secara lokal (`alphaTarget(0.3)`) sehingga node-node yang terhubung ikut tertarik dan bergoyang lentur (_elastic ripple effect_) secara organik mengikuti gerakan kursor.
+  - **Inertia & Momentum Release:** Saat drag dilepas, node mempertahankan sedikit momentum sebelum pegas menariknya kembali ke posisi ekuilibrium stabil (_smooth decay_).
   - **Physics Tuning:**
     - **Charge (Repulsion):** `-140` (gaya tolak antar node agar tidak menumpuk).
     - **Link Distance:** `45` s.d. `65` px dengan elastisitas pegas `strength(0.7)`.
     - **Centering Gravity:** `0.04` untuk menjaga klaster tetap proporsional di tengah layar.
-    - **Alpha Decay:** `0.02` (memberikan transisi gerak yang luwes ~1.5-2.5s lalu *sleep* 0% CPU).
-  - **Canvas Pan & Zoom:** Dragging pada background kosong menggeser kanvas (*infinite canvas pan*), wheel/pinch mengontrol *smooth zoom* (0.1x hingga 5.0x) tanpa pernah reset/snap back secara mendadak.
+    - **Alpha Decay:** `0.02` (memberikan transisi gerak yang luwes ~1.5-2.5s lalu _sleep_ 0% CPU).
+  - **Canvas Pan & Zoom:** Dragging pada background kosong menggeser kanvas (_infinite canvas pan_), wheel/pinch mengontrol _smooth zoom_ (0.1x hingga 5.0x) tanpa pernah reset/snap back secara mendadak.
 
 ### B. Smart LOD (Level of Detail) Formula
+
 - **Global Label Toggle:** When enabled:
   - If `zoom < 0.7`: Only render labels for nodes where `connections >= 3`.
   - If `0.7 <= zoom <= 1.4`: Render labels for nodes where `connections >= 1` or category is `Project`/`Skill`.
@@ -98,14 +102,15 @@ Key Pillars:
   1. **Header:** Node type pill badge, filename/title, and close button (`X`).
   2. **Content Preview:** Renders initial ~500 words of Markdown with syntax highlighting.
   3. **Relations:**
-     - *Connected to (Outbound):* Interactive badges that pan/zoom directly to target node.
-     - *Referenced by (Inbound/Backlinks):* Interactive badges for incoming links.
+     - _Connected to (Outbound):_ Interactive badges that pan/zoom directly to target node.
+     - _Referenced by (Inbound/Backlinks):_ Interactive badges for incoming links.
   4. **Actions:**
      - `Open Note`: Redirects to `/memory?tab=knowledge&path=...` or `/editor`.
 
 ---
 
 ## 6. Verification & Quality Gates
+
 1. **Performance Gate:** 60 FPS pan/zoom and 0% CPU consumption verified via Chrome DevTools / Browser evaluation once settled.
 2. **Visual Gate:** Verified with `browser_vision` — aesthetic neon-on-dark nodes, contrast halos on text, and responsive side inspector.
 3. **Data Gate:** Unified nodes from Wiki Concepts, Entities, Projects, Skills, and Daily notes correctly populated with zero console errors.

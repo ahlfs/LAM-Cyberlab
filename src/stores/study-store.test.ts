@@ -32,7 +32,9 @@ describe('useStudyStore', () => {
     const state = useStudyStore.getState()
     expect(state.resources.length).toBe(1)
     expect(state.activeResourceId).toBe('res-1')
-    expect(state.getActiveResource()?.title).toBe('Guide to Reverse Engineering')
+    expect(state.getActiveResource()?.title).toBe(
+      'Guide to Reverse Engineering',
+    )
   })
 
   it('removes a resource and updates active selection', () => {

@@ -15,7 +15,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useSettingsStore } from '@/hooks/use-settings'
-import { getThemeVariant, setTheme as applyThemeId, useCurrentTheme } from '@/lib/theme'
+import {
+  getThemeVariant,
+  setTheme as applyThemeId,
+  useCurrentTheme,
+} from '@/lib/theme'
 
 const ROUTE_NAME_MAP: Record<string, string> = {
   '/': 'Dashboard',
@@ -109,7 +113,9 @@ export function WorkspaceTopbar({
                 <Button
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+                  aria-label={
+                    sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'
+                  }
                   className="size-7 rounded-md shrink-0 opacity-70 hover:opacity-100 hover:bg-[var(--theme-card2,rgba(255,255,255,0.05))] cursor-pointer text-[var(--theme-muted,#8a8f98)] hover:text-[var(--theme-text,#f7f8f8)]"
                 >
                   <HugeiconsIcon
@@ -121,7 +127,9 @@ export function WorkspaceTopbar({
               }
             />
             <TooltipContent side="bottom">
-              {sidebarCollapsed ? 'Expand Sidebar (Ctrl+B)' : 'Collapse Sidebar (Ctrl+B)'}
+              {sidebarCollapsed
+                ? 'Expand Sidebar (Ctrl+B)'
+                : 'Collapse Sidebar (Ctrl+B)'}
             </TooltipContent>
           </TooltipRoot>
         </TooltipProvider>

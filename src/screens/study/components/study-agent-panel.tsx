@@ -46,7 +46,9 @@ export function StudyAgentPanel() {
         body: JSON.stringify({
           title: activeResource.title,
           content: activeResource.content,
-          instructions: instructions || 'Extract core concepts, definitions, and takeaways.',
+          instructions:
+            instructions ||
+            'Extract core concepts, definitions, and takeaways.',
         }),
       })
 
@@ -75,7 +77,10 @@ export function StudyAgentPanel() {
               const parsed = JSON.parse(rawData)
               if (parsed.event === 'text_delta' && parsed.data?.text) {
                 appendAnalysisOutput(parsed.data.text)
-              } else if (parsed.event === 'content_block_delta' && parsed.data?.delta?.text) {
+              } else if (
+                parsed.event === 'content_block_delta' &&
+                parsed.data?.delta?.text
+              ) {
                 appendAnalysisOutput(parsed.data.delta.text)
               } else if (parsed.data?.delta?.text) {
                 appendAnalysisOutput(parsed.data.delta.text)
@@ -93,11 +98,16 @@ export function StudyAgentPanel() {
     }
   }
 
-  const handleCommitToSecondBrain = async () => {
-    if (!activeResource || !analysisOutput) return
+  const handleCommitToSecondBrain = async (useRawContent = false) => {
+    if (!activeResource) return
+    if (!useRawContent && !analysisOutput) return
 
     setIsCommitting(true)
     setCommitStatus(null)
+
+    const contentToCommit = useRawContent
+      ? activeResource.content
+      : analysisOutput
 
     try {
       const response = await fetch('/api/study/commit', {
@@ -105,7 +115,7 @@ export function StudyAgentPanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: activeResource.title,
-          content: analysisOutput,
+          content: contentToCommit,
           tags: ['study', 'hermes-learning', activeResource.type],
           sourceUrl: activeResource.sourceUrl,
         }),
@@ -162,7 +172,10 @@ export function StudyAgentPanel() {
             <HugeiconsIcon icon={BookOpen01Icon} size={16} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-xs font-semibold uppercase tracking-wide flex items-center gap-2" style={{ color: 'var(--theme-text)' }}>
+            <h2
+              className="text-xs font-semibold uppercase tracking-wide flex items-center gap-2"
+              style={{ color: 'var(--theme-text)' }}
+            >
               Hermes Study Agent
               {isAnalyzing && (
                 <span
@@ -173,14 +186,24 @@ export function StudyAgentPanel() {
                     color: 'var(--theme-accent, #6366f1)',
                   }}
                 >
-                  <HugeiconsIcon icon={Loading03Icon} size={12} className="animate-spin" />
+                  <HugeiconsIcon
+                    icon={Loading03Icon}
+                    size={12}
+                    className="animate-spin"
+                  />
                   Analyzing
                 </span>
               )}
             </h2>
-            <p className="text-[11px] truncate mt-0.5" style={{ color: 'var(--theme-muted)' }}>
+            <p
+              className="text-[11px] truncate mt-0.5"
+              style={{ color: 'var(--theme-muted)' }}
+            >
               Target:{' '}
-              <span className="font-mono font-medium" style={{ color: 'var(--theme-text)' }}>
+              <span
+                className="font-mono font-medium"
+                style={{ color: 'var(--theme-text)' }}
+              >
                 {activeResource ? activeResource.title : 'No resource selected'}
               </span>
             </p>
@@ -201,7 +224,11 @@ export function StudyAgentPanel() {
           >
             {isAnalyzing ? (
               <>
-                <HugeiconsIcon icon={Loading03Icon} size={13} className="animate-spin" />
+                <HugeiconsIcon
+                  icon={Loading03Icon}
+                  size={13}
+                  className="animate-spin"
+                />
                 Studying...
               </>
             ) : (
@@ -215,7 +242,7 @@ export function StudyAgentPanel() {
           {analysisOutput && (
             <button
               type="button"
-              onClick={handleCommitToSecondBrain}
+              onClick={() => handleCommitToSecondBrain(false)}
               disabled={isCommitting || isAnalyzing}
               className="text-xs px-3 py-1.5 font-medium rounded-lg border flex items-center gap-1.5 transition-colors shadow-sm"
               style={{
@@ -226,15 +253,37 @@ export function StudyAgentPanel() {
             >
               {isCommitting ? (
                 <>
-                  <HugeiconsIcon icon={Loading03Icon} size={13} className="animate-spin" />
+                  <HugeiconsIcon
+                    icon={Loading03Icon}
+                    size={13}
+                    className="animate-spin"
+                  />
                   Saving...
                 </>
               ) : (
                 <>
                   <HugeiconsIcon icon={Bookmark02Icon} size={13} />
-                  Commit to Wiki
+                  Commit Analysis
                 </>
               )}
+            </button>
+          )}
+
+          {activeResource && activeResource.content && (
+            <button
+              type="button"
+              onClick={() => handleCommitToSecondBrain(true)}
+              disabled={isCommitting || isAnalyzing}
+              className="text-xs px-3 py-1.5 font-medium rounded-lg border flex items-center gap-1.5 transition-colors shadow-sm"
+              style={{
+                borderColor: 'var(--theme-border)',
+                backgroundColor: 'var(--theme-bg)',
+                color: 'var(--theme-muted)',
+              }}
+              title="Commit raw source content directly to Second Brain (skips LLM analysis, better for wiki ingest quality)"
+            >
+              <HugeiconsIcon icon={Bookmark02Icon} size={13} />
+              Commit Raw
             </button>
           )}
         </div>
@@ -265,7 +314,9 @@ export function StudyAgentPanel() {
             <div className="flex-1">
               <p className="font-semibold">{commitStatus.msg}</p>
               {commitStatus.path && (
-                <p className="font-mono text-[11px] opacity-80 mt-0.5">{commitStatus.path}</p>
+                <p className="font-mono text-[11px] opacity-80 mt-0.5">
+                  {commitStatus.path}
+                </p>
               )}
             </div>
           </div>
@@ -287,12 +338,23 @@ export function StudyAgentPanel() {
             >
               <HugeiconsIcon icon={SparklesIcon} size={28} />
             </div>
-            <h3 className="text-base font-bold" style={{ color: 'var(--theme-text)' }}>
+            <h3
+              className="text-base font-bold"
+              style={{ color: 'var(--theme-text)' }}
+            >
               Ready to Extract Knowledge
             </h3>
-            <p className="text-xs mt-1 max-w-xs leading-relaxed" style={{ color: 'var(--theme-muted)' }}>
-              Select or stage a resource on the left, add optional focus instructions below, and click
-              <strong style={{ color: 'var(--theme-text)' }}> Analyze Resource</strong> to start interactive learning.
+            <p
+              className="text-xs mt-1 max-w-xs leading-relaxed"
+              style={{ color: 'var(--theme-muted)' }}
+            >
+              Select or stage a resource on the left, add optional focus
+              instructions below, and click
+              <strong style={{ color: 'var(--theme-text)' }}>
+                {' '}
+                Analyze Resource
+              </strong>{' '}
+              to start interactive learning.
             </p>
           </div>
         )}

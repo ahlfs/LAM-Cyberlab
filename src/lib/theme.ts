@@ -427,7 +427,10 @@ export function setTheme(
   lastThemeSwitchTime = now
 
   // Fallback for browsers without View Transitions API
-  if (typeof document === 'undefined' || !(document as any).startViewTransition) {
+  if (
+    typeof document === 'undefined' ||
+    !(document as any).startViewTransition
+  ) {
     applyChanges()
     return
   }

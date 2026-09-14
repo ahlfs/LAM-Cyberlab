@@ -35,7 +35,8 @@ export const GraphSideInspector = memo(function GraphSideInspector({
 }: GraphSideInspectorProps) {
   if (!selectedNode) return null
 
-  const category = (selectedNode.type?.toLowerCase() || 'concept') as GraphCategory
+  const category = (selectedNode.type?.toLowerCase() ||
+    'concept') as GraphCategory
   const config = CATEGORY_CONFIG[category] || CATEGORY_CONFIG.concept
 
   return (
@@ -90,10 +91,16 @@ export const GraphSideInspector = memo(function GraphSideInspector({
       {/* Body: Scrollable */}
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 font-sans select-text">
         <div>
-          <h2 className="text-base font-bold tracking-tight leading-snug" style={{ color: 'var(--theme-text)' }}>
+          <h2
+            className="text-base font-bold tracking-tight leading-snug"
+            style={{ color: 'var(--theme-text)' }}
+          >
             {selectedNode.title}
           </h2>
-          <p className="text-[11px] font-mono mt-1 opacity-60 truncate" title={selectedNode.id}>
+          <p
+            className="text-[11px] font-mono mt-1 opacity-60 truncate"
+            title={selectedNode.id}
+          >
             {selectedNode.id}
           </p>
         </div>
@@ -120,15 +127,20 @@ export const GraphSideInspector = memo(function GraphSideInspector({
         <div className="space-y-3 pt-2">
           {/* Outbound */}
           <div>
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--theme-muted)' }}>
+            <div
+              className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider mb-2"
+              style={{ color: 'var(--theme-muted)' }}
+            >
               <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
               <span>References ({outboundLinks.length})</span>
             </div>
             {outboundLinks.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {outboundLinks.map((target) => {
-                  const targetCat = (target.type?.toLowerCase() || 'concept') as GraphCategory
-                  const targetConfig = CATEGORY_CONFIG[targetCat] || CATEGORY_CONFIG.concept
+                  const targetCat = (target.type?.toLowerCase() ||
+                    'concept') as GraphCategory
+                  const targetConfig =
+                    CATEGORY_CONFIG[targetCat] || CATEGORY_CONFIG.concept
                   return (
                     <button
                       key={target.id}
@@ -136,33 +148,46 @@ export const GraphSideInspector = memo(function GraphSideInspector({
                       onClick={() => onSelectNode(target.id)}
                       className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-all hover:scale-[1.02] active:scale-[0.98]"
                       style={{
-                        backgroundColor: 'var(--theme-card2, rgba(255,255,255,0.03))',
+                        backgroundColor:
+                          'var(--theme-card2, rgba(255,255,255,0.03))',
                         borderColor: 'var(--theme-border)',
                         color: 'var(--theme-text)',
                       }}
                     >
-                      <span className="size-1.5 rounded-full" style={{ backgroundColor: targetConfig.color }} />
-                      <span className="truncate max-w-[180px]">{target.title}</span>
+                      <span
+                        className="size-1.5 rounded-full"
+                        style={{ backgroundColor: targetConfig.color }}
+                      />
+                      <span className="truncate max-w-[180px]">
+                        {target.title}
+                      </span>
                     </button>
                   )
                 })}
               </div>
             ) : (
-              <p className="text-[11px] italic opacity-50">No outbound connections</p>
+              <p className="text-[11px] italic opacity-50">
+                No outbound connections
+              </p>
             )}
           </div>
 
           {/* Inbound */}
           <div>
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--theme-muted)' }}>
+            <div
+              className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider mb-2"
+              style={{ color: 'var(--theme-muted)' }}
+            >
               <HugeiconsIcon icon={Link01Icon} size={13} />
               <span>Referenced By ({inboundLinks.length})</span>
             </div>
             {inboundLinks.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {inboundLinks.map((source) => {
-                  const sourceCat = (source.type?.toLowerCase() || 'concept') as GraphCategory
-                  const sourceConfig = CATEGORY_CONFIG[sourceCat] || CATEGORY_CONFIG.concept
+                  const sourceCat = (source.type?.toLowerCase() ||
+                    'concept') as GraphCategory
+                  const sourceConfig =
+                    CATEGORY_CONFIG[sourceCat] || CATEGORY_CONFIG.concept
                   return (
                     <button
                       key={source.id}
@@ -170,19 +195,27 @@ export const GraphSideInspector = memo(function GraphSideInspector({
                       onClick={() => onSelectNode(source.id)}
                       className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-all hover:scale-[1.02] active:scale-[0.98]"
                       style={{
-                        backgroundColor: 'var(--theme-card2, rgba(255,255,255,0.03))',
+                        backgroundColor:
+                          'var(--theme-card2, rgba(255,255,255,0.03))',
                         borderColor: 'var(--theme-border)',
                         color: 'var(--theme-text)',
                       }}
                     >
-                      <span className="size-1.5 rounded-full" style={{ backgroundColor: sourceConfig.color }} />
-                      <span className="truncate max-w-[180px]">{source.title}</span>
+                      <span
+                        className="size-1.5 rounded-full"
+                        style={{ backgroundColor: sourceConfig.color }}
+                      />
+                      <span className="truncate max-w-[180px]">
+                        {source.title}
+                      </span>
                     </button>
                   )
                 })}
               </div>
             ) : (
-              <p className="text-[11px] italic opacity-50">No incoming backlinks</p>
+              <p className="text-[11px] italic opacity-50">
+                No incoming backlinks
+              </p>
             )}
           </div>
         </div>

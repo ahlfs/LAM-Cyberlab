@@ -4,7 +4,8 @@
 
 **Goal:** Transform the Concept Graph into an aesthetic, lightweight, and unified Living Brain Map connecting Wiki, Projects, Skills, and Daily notes with Obsidian-style elastic physics and an interactive side inspector drawer.
 
-**Architecture:** 
+**Architecture:**
+
 - Backend parses Wiki (`04-Wiki`), Projects (`05-Projects`), Daily notes (`07-Daily`), and Hermes agent skills (`~/.hermes/skills`), filtering out raw `Extracted-Docs/` staging noise, and extracts wikilinks and bidirectional relations.
 - Frontend utilizes an optimized HTML5 2D Canvas physics engine with d3-force, decay-to-sleep (0% idle CPU), smart LOD typography with dark contrast halos, and interactive spring-tension dragging.
 - A slide-over Side Inspector Drawer provides live Markdown preview, inbound/outbound connection badges with camera jump navigation, and quick links to the Knowledge Browser.
@@ -14,6 +15,7 @@
 **Spec:** `docs/superpowers/specs/2026-09-13-concept-graph-design.md`
 
 ## Global Constraints
+
 - Impeccable and Anti-slop engineering standards: modular components, zero placeholders, strict type safety, zero generic filler comments.
 - Dynamic theme variable support: strictly use `var(--theme-bg)`, `var(--theme-card)`, `var(--theme-border)`, `var(--theme-text)`, `var(--theme-muted)`, `var(--theme-accent)`.
 - 0% idle CPU when canvas simulation settles.
@@ -24,10 +26,12 @@
 ### Task 1: Unified Graph Ingestion Backend Service
 
 **Files:**
+
 - Modify: `src/server/knowledge-browser.ts`
 - Test: `src/server/knowledge-graph-unified.test.ts`
 
 **Interfaces:**
+
 - Consumes: `getKnowledgeRoot()`, `readParsedKnowledgeFile()`, `~/.hermes/skills`
 - Produces: `buildKnowledgeGraph(): KnowledgeGraph` containing nodes tagged with types (`concept`, `entity`, `project`, `skill`, `daily`) and cross-domain edges.
 
@@ -43,9 +47,11 @@ describe('buildKnowledgeGraph (Unified Ecosystem)', () => {
     expect(graph).toBeDefined()
     expect(Array.isArray(graph.nodes)).toBe(true)
     expect(Array.isArray(graph.edges)).toBe(true)
-    
+
     // Extracted-Docs must be excluded
-    const hasExtractedDocs = graph.nodes.some(n => n.id.includes('Extracted-Docs'))
+    const hasExtractedDocs = graph.nodes.some((n) =>
+      n.id.includes('Extracted-Docs'),
+    )
     expect(hasExtractedDocs).toBe(false)
   })
 })
@@ -58,6 +64,7 @@ Run: `pnpm test src/server/knowledge-graph-unified.test.ts`
 - [ ] **Step 3: Implement unified graph builder in `src/server/knowledge-browser.ts`**
 
 Update `walkKnowledgeDir` and `buildKnowledgeGraph` to:
+
 1. Parse `04-Wiki/Concepts`, `04-Wiki/Entities`, `05-Projects`, `07-Daily`.
 2. Skip `03-Notes/Extracted-Docs`.
 3. Read `~/.hermes/skills/*/SKILL.md` to index agent skills as nodes of type `skill`.
@@ -79,10 +86,12 @@ git commit -m "feat(graph): add unified graph ingestion for wiki, projects, skil
 ### Task 2: Category Filter Bar Component
 
 **Files:**
+
 - Create: `src/screens/graph/components/graph-filter-bar.tsx`
 - Test: `src/screens/graph/components/graph-filter-bar.test.tsx`
 
 **Interfaces:**
+
 - Consumes: Category counts and toggle callback.
 - Produces: `GraphFilterBar` component for toggling active node categories.
 
@@ -105,7 +114,7 @@ describe('GraphFilterBar', () => {
     )
     expect(screen.getByText(/Concepts/i)).toBeDefined()
     expect(screen.getByText(/Skills/i)).toBeDefined()
-    
+
     fireEvent.click(screen.getByText(/Skills/i))
     expect(onToggle).toHaveBeenCalledWith('skill')
   })
@@ -136,10 +145,12 @@ git commit -m "feat(graph): add category filter bar component"
 ### Task 3: Slide-Over Side Inspector Drawer Component
 
 **Files:**
+
 - Create: `src/screens/graph/components/graph-side-inspector.tsx`
 - Test: `src/screens/graph/components/graph-side-inspector.test.tsx`
 
 **Interfaces:**
+
 - Consumes: `selectedNodeId`, `nodes`, `edges`, `onClose`, `onSelectNode`, `onOpenFull`
 - Produces: `GraphSideInspector` slide-over drawer with Markdown preview and bidirectional link navigation.
 
@@ -166,7 +177,7 @@ describe('GraphSideInspector', () => {
     )
     expect(screen.getByText('Docker')).toBeDefined()
     expect(screen.getByText('LAM-Router')).toBeDefined()
-    
+
     fireEvent.click(screen.getByText('LAM-Router'))
     expect(onSelectNode).toHaveBeenCalledWith('05-Projects/LAM-Router.md')
   })
@@ -197,10 +208,12 @@ git commit -m "feat(graph): add slide-over side inspector drawer"
 ### Task 4: Obsidian 2D Canvas Engine & Smart LOD Physics Overhaul
 
 **Files:**
+
 - Modify: `src/screens/graph/graph-screen.tsx`
 - Test: `src/screens/graph/graph-screen.test.tsx`
 
 **Interfaces:**
+
 - Consumes: Graph API data, `GraphFilterBar`, `GraphSideInspector`
 - Produces: True Obsidian 2D live interactive canvas with elastic spring dragging, local reheat, decay-to-sleep (0% idle CPU), and smart LOD typography with contrast halos.
 
@@ -258,6 +271,7 @@ git commit -m "feat(graph): overhaul 2D canvas with Obsidian spring physics, sma
 ### Task 5: Production Build, Hot Reload & End-to-End Visual Verification
 
 **Files:**
+
 - Test: Full build and browser visual QA
 
 - [ ] **Step 1: Build the production bundle**

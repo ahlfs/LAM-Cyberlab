@@ -1,4 +1,9 @@
-import { DialogContent, DialogDescription, DialogRoot, DialogTitle } from '@/components/ui/dialog'
+import {
+  DialogContent,
+  DialogDescription,
+  DialogRoot,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Markdown } from '@/components/prompt-kit/markdown'
 import type { StudyResource } from '@/stores/study-store'
 
@@ -30,11 +35,18 @@ export function ResourcePreviewDialog({
           style={{ borderColor: 'var(--theme-border)' }}
         >
           <div>
-            <DialogTitle className="text-base font-semibold" style={{ color: 'var(--theme-text)' }}>
+            <DialogTitle
+              className="text-base font-semibold"
+              style={{ color: 'var(--theme-text)' }}
+            >
               {resource.title}
             </DialogTitle>
-            <DialogDescription className="text-xs mt-0.5" style={{ color: 'var(--theme-muted)' }}>
-              Type: {resource.type.toUpperCase()} • Size: {(resource.size / 1024).toFixed(1)} KB
+            <DialogDescription
+              className="text-xs mt-0.5"
+              style={{ color: 'var(--theme-muted)' }}
+            >
+              Type: {resource.type.toUpperCase()} • Size:{' '}
+              {(resource.size / 1024).toFixed(1)} KB
               {resource.sourceUrl ? ` • Source: ${resource.sourceUrl}` : ''}
             </DialogDescription>
           </div>

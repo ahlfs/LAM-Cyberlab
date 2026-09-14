@@ -159,7 +159,11 @@ function CanvasRenderer({
   const isInitializedRef = useRef(false)
   const hoveredNodeIdRef = useRef<string | null>(null)
   hoveredNodeIdRef.current = hoveredNodeId
-  const lastPointerPosRef = useRef<{ screenX: number; screenY: number } | null>(null)
+  const selectedNodeIdRef = useRef<string | null>(null)
+  selectedNodeIdRef.current = selectedNodeId
+  const lastPointerPosRef = useRef<{ screenX: number; screenY: number } | null>(
+    null,
+  )
 
   // 2D Viewport Transform
   const transformRef = useRef({
@@ -189,8 +193,9 @@ function CanvasRenderer({
   }, [nodesData, edgesData])
 
   // Active focus IDs (selected or hovered node + its immediate neighbors)
+  // When a node is selected/opened, focus is locked to it and cannot be overridden by hover
   const activeFocus = useMemo(() => {
-    const focusNodeId = hoveredNodeId || selectedNodeId
+    const focusNodeId = selectedNodeId || hoveredNodeId
     if (!focusNodeId) return null
 
     const set = new Set<string>()
@@ -247,7 +252,8 @@ function CanvasRenderer({
 
       if (hasFocus) {
         const isConnectedToCenter =
-          (s.id === activeFocus.centerId && activeFocus.connectedIds.has(t.id)) ||
+          (s.id === activeFocus.centerId &&
+            activeFocus.connectedIds.has(t.id)) ||
           (t.id === activeFocus.centerId && activeFocus.connectedIds.has(s.id))
 
         if (isConnectedToCenter) {
@@ -287,7 +293,12 @@ function CanvasRenderer({
     }
 
     // 2. Draw Nodes
-    const drawnLabelBoxes: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
+    const drawnLabelBoxes: Array<{
+      x1: number
+      y1: number
+      x2: number
+      y2: number
+    }> = []
 
     for (let i = 0; i < nodes.length; i++) {
       const node = nodes[i]
@@ -391,23 +402,15 @@ function CanvasRenderer({
           ? 'rgba(11, 13, 19, 0.95)'
           : 'rgba(255, 255, 255, 0.95)'
         ctx.globalAlpha = 0.98
-        ctx.fillRect(
-          box.x1,
-          box.y1,
-          box.x2 - box.x1,
-          box.y2 - box.y1,
-        )
+        ctx.fillRect(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1)
 
         ctx.strokeStyle = isCenter
           ? nodeColor
-          : (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)')
+          : isDark
+            ? 'rgba(255, 255, 255, 0.15)'
+            : 'rgba(0, 0, 0, 0.15)'
         ctx.lineWidth = isCenter ? 1.5 : 1
-        ctx.strokeRect(
-          box.x1,
-          box.y1,
-          box.x2 - box.x1,
-          box.y2 - box.y1,
-        )
+        ctx.strokeRect(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1)
 
         // Text
         ctx.globalAlpha = 1
@@ -462,10 +465,18 @@ function CanvasRenderer({
     [screenToWorld],
   )
 
+  const zoomAnimIdRef = useRef<number | null>(null)
+
   // React to selectedNodeId: smooth animated zoom to fit node + all its connected neighbors (or zoom back out when null)
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+
+    // Immediately cancel any previous in-flight camera zoom animation
+    if (zoomAnimIdRef.current !== null) {
+      cancelAnimationFrame(zoomAnimIdRef.current)
+      zoomAnimIdRef.current = null
+    }
 
     let desiredPanX = 0
     let desiredPanY = 0
@@ -474,7 +485,12 @@ function CanvasRenderer({
     if (selectedNodeId) {
       const nodes = simNodesRef.current
       const targetNode = nodes.find((n) => n.id === selectedNodeId)
-      if (!targetNode || targetNode.x === undefined || targetNode.y === undefined) return
+      if (
+        !targetNode ||
+        targetNode.x === undefined ||
+        targetNode.y === undefined
+      )
+        return
 
       const neighbors = neighborMap.get(selectedNodeId) || new Set<string>()
       const clusterNodes: SimNode[] = [targetNode]
@@ -529,7 +545,7 @@ function CanvasRenderer({
     const startPanY = transformRef.current.panY
     const startZoom = transformRef.current.zoom
     const startTime = performance.now()
-    const duration = 380
+    const duration = 260
 
     const animateZoom = (now: number) => {
       const elapsed = now - startTime
@@ -544,11 +560,20 @@ function CanvasRenderer({
       renderFrame()
 
       if (progress < 1) {
-        requestAnimationFrame(animateZoom)
+        zoomAnimIdRef.current = requestAnimationFrame(animateZoom)
+      } else {
+        zoomAnimIdRef.current = null
       }
     }
 
-    requestAnimationFrame(animateZoom)
+    zoomAnimIdRef.current = requestAnimationFrame(animateZoom)
+
+    return () => {
+      if (zoomAnimIdRef.current !== null) {
+        cancelAnimationFrame(zoomAnimIdRef.current)
+        zoomAnimIdRef.current = null
+      }
+    }
   }, [selectedNodeId, neighborMap, renderFrame])
 
   // Redraw when visual state changes (theme, isDark, search, selection, labels)
@@ -558,14 +583,24 @@ function CanvasRenderer({
       renderFrame()
     })
     return () => cancelAnimationFrame(raf)
-  }, [renderFrame, theme, isDark, showLabels, searchHighlightIds, selectedNodeId])
+  }, [
+    renderFrame,
+    theme,
+    isDark,
+    showLabels,
+    searchHighlightIds,
+    selectedNodeId,
+  ])
 
   // Initialize and Update Force Simulation (ONLY on dataset identity change)
   useEffect(() => {
     if (!nodesData || nodesData.length === 0) return
 
     // If simulation is already initialized and running/sleeping on the same nodes length, do not re-run
-    if (simulationRef.current && simNodesRef.current.length === nodesData.length) {
+    if (
+      simulationRef.current &&
+      simNodesRef.current.length === nodesData.length
+    ) {
       return
     }
 
@@ -649,29 +684,42 @@ function CanvasRenderer({
         d3
           .forceLink(simLinks)
           .id((d: any) => d.id)
-          .distance((d: any) => 65 + Math.sqrt((d.source.connections || 0) + (d.target.connections || 0)) * 8)
+          .distance(
+            (d: any) =>
+              65 +
+              Math.sqrt(
+                (d.source.connections || 0) + (d.target.connections || 0),
+              ) *
+                8,
+          )
           .strength(0.4),
       )
       .force(
         'charge',
         d3
           .forceManyBody()
-          .strength((d: any) => (d.connections > 0 ? -220 - (d.connections || 0) * 12 : -70))
+          .strength((d: any) =>
+            d.connections > 0 ? -220 - (d.connections || 0) * 12 : -70,
+          )
           .distanceMax(650),
       )
       .force(
         'clusterX',
-        d3.forceX((d: any) => {
-          const cat = (d.type?.toLowerCase() || 'concept') as string
-          return CLUSTER_CENTERS[cat]?.x || 0
-        }).strength((d: any) => (d.connections > 0 ? 0.05 : 0.2))
+        d3
+          .forceX((d: any) => {
+            const cat = (d.type?.toLowerCase() || 'concept') as string
+            return CLUSTER_CENTERS[cat]?.x || 0
+          })
+          .strength((d: any) => (d.connections > 0 ? 0.05 : 0.2)),
       )
       .force(
         'clusterY',
-        d3.forceY((d: any) => {
-          const cat = (d.type?.toLowerCase() || 'concept') as string
-          return CLUSTER_CENTERS[cat]?.y || 0
-        }).strength((d: any) => (d.connections > 0 ? 0.05 : 0.2))
+        d3
+          .forceY((d: any) => {
+            const cat = (d.type?.toLowerCase() || 'concept') as string
+            return CLUSTER_CENTERS[cat]?.y || 0
+          })
+          .strength((d: any) => (d.connections > 0 ? 0.05 : 0.2)),
       )
       .force('center', d3.forceCenter(0, 0).strength(0.02))
       .force(
@@ -709,7 +757,8 @@ function CanvasRenderer({
 
     let clickStartX = 0
     let clickStartY = 0
-    let clickedNodeCandidate: SimNode | null = null
+    let potentialDragNode: SimNode | null = null
+    let hasMovedSignificantly = false
 
     const isEventOverModalOrOverlay = (e: MouseEvent): boolean => {
       const target = e.target as HTMLElement | null
@@ -729,24 +778,13 @@ function CanvasRenderer({
 
       clickStartX = e.clientX
       clickStartY = e.clientY
+      hasMovedSignificantly = false
 
       const hitNode = getNodeAtScreenPos(screenX, screenY)
-      clickedNodeCandidate = hitNode
+      potentialDragNode = hitNode
 
-      if (hitNode) {
-        // Dragging a node (Reheats physics organically)
-        transformRef.current.isDraggingNode = true
-        transformRef.current.draggedNode = hitNode
-        hitNode.fx = hitNode.x
-        hitNode.fy = hitNode.y
-
-        if (simulationRef.current) {
-          simulationRef.current.on('tick', renderFrame)
-          simulationRef.current.alphaTarget(0.3).restart()
-        }
-      } else {
-        // Panning the canvas
-        transformRef.current.isDragging = true
+      if (!hitNode) {
+        // Prepare for canvas panning (activated only if mouse actually moves)
         transformRef.current.dragStartX = e.clientX
         transformRef.current.dragStartY = e.clientY
         transformRef.current.lastPanX = transformRef.current.panX
@@ -769,18 +807,61 @@ function CanvasRenderer({
       const screenY = e.clientY - rect.top
       lastPointerPosRef.current = { screenX, screenY }
 
-      if (transformRef.current.isDraggingNode && transformRef.current.draggedNode) {
+      const distMoved = Math.hypot(
+        e.clientX - clickStartX,
+        e.clientY - clickStartY,
+      )
+      if (distMoved > 4) {
+        hasMovedSignificantly = true
+      }
+
+      // 1. If user pressed on a node and moved > 4px, activate node dragging with live physics
+      if (potentialDragNode && hasMovedSignificantly) {
+        if (!transformRef.current.isDraggingNode) {
+          transformRef.current.isDraggingNode = true
+          transformRef.current.draggedNode = potentialDragNode
+          potentialDragNode.fx = potentialDragNode.x
+          potentialDragNode.fy = potentialDragNode.y
+          if (simulationRef.current) {
+            simulationRef.current.on('tick', renderFrame)
+            simulationRef.current.alphaTarget(0.3).restart()
+          }
+        }
         const { x, y } = screenToWorld(screenX, screenY)
-        transformRef.current.draggedNode.fx = x
-        transformRef.current.draggedNode.fy = y
+        transformRef.current.draggedNode!.fx = x
+        transformRef.current.draggedNode!.fy = y
         renderFrame()
-      } else if (transformRef.current.isDragging) {
+        return
+      }
+
+      // 2. If user pressed on empty space and moved > 4px, pan the canvas
+      if (!potentialDragNode && hasMovedSignificantly && e.buttons & 1) {
+        transformRef.current.isDragging = true
         const dx = e.clientX - transformRef.current.dragStartX
         const dy = e.clientY - transformRef.current.dragStartY
         transformRef.current.panX = transformRef.current.lastPanX + dx
         transformRef.current.panY = transformRef.current.lastPanY + dy
         renderFrame()
-      } else {
+        return
+      }
+
+      // 3. Hover detection when not dragging
+      if (
+        !transformRef.current.isDragging &&
+        !transformRef.current.isDraggingNode
+      ) {
+        // If a node is selected / drawer is open, disable hovering other nodes
+        if (selectedNodeIdRef.current !== null) {
+          if (hoveredNodeIdRef.current !== null) {
+            hoveredNodeIdRef.current = null
+            onHover(null)
+          }
+          const hitNode = getNodeAtScreenPos(screenX, screenY)
+          canvas.style.cursor = hitNode ? 'pointer' : 'grab'
+          renderFrame()
+          return
+        }
+
         const hitNode = getNodeAtScreenPos(screenX, screenY)
         canvas.style.cursor = hitNode ? 'pointer' : 'grab'
         if (hoveredNodeIdRef.current !== (hitNode ? hitNode.id : null)) {
@@ -792,14 +873,18 @@ function CanvasRenderer({
     }
 
     const handleMouseUp = (e: MouseEvent) => {
-      if (isEventOverModalOrOverlay(e)) return
+      if (isEventOverModalOrOverlay(e)) {
+        potentialDragNode = null
+        transformRef.current.isDragging = false
+        transformRef.current.isDraggingNode = false
+        return
+      }
+
       const rect = canvas.getBoundingClientRect()
       const screenX = e.clientX - rect.left
       const screenY = e.clientY - rect.top
 
-      const dx = Math.abs(e.clientX - clickStartX)
-      const dy = Math.abs(e.clientY - clickStartY)
-      const isPureClick = dx < 6 && dy < 6
+      const isPureClick = !hasMovedSignificantly
 
       if (transformRef.current.isDraggingNode) {
         if (transformRef.current.draggedNode) {
@@ -820,10 +905,15 @@ function CanvasRenderer({
         transformRef.current.isDragging = false
       }
 
+      // If it was a clean click (not a drag gesture), directly select the node
       if (isPureClick) {
-        const hitNode = getNodeAtScreenPos(screenX, screenY) || clickedNodeCandidate
+        const hitNode =
+          potentialDragNode || getNodeAtScreenPos(screenX, screenY)
         onClick(hitNode ? hitNode.id : null)
       }
+
+      potentialDragNode = null
+      hasMovedSignificantly = false
     }
 
     const handleWheel = (e: WheelEvent) => {
@@ -894,7 +984,10 @@ function CanvasRenderer({
       renderFrame()
     }
     onZoomOutRef.current = () => {
-      transformRef.current.zoom = Math.max(0.15, transformRef.current.zoom * 0.77)
+      transformRef.current.zoom = Math.max(
+        0.15,
+        transformRef.current.zoom * 0.77,
+      )
       renderFrame()
     }
   }, [onResetRef, onZoomInRef, onZoomOutRef, renderFrame])
@@ -965,7 +1058,7 @@ export function GraphScreen() {
     const edges = rawGraph?.edges || []
 
     const validNodes = nodes.filter((n) => {
-      const cat = (n.type?.toLowerCase() || 'concept')
+      const cat = n.type?.toLowerCase() || 'concept'
       return activeCategories.has(cat)
     })
 
@@ -1121,18 +1214,32 @@ export function GraphScreen() {
             className="p-2 rounded-xl border transition-colors"
             style={{
               borderColor: 'var(--theme-border)',
-              backgroundColor: showAlwaysLabels ? 'var(--theme-card2)' : 'transparent',
-              color: showAlwaysLabels ? 'var(--theme-accent)' : 'var(--theme-muted)',
+              backgroundColor: showAlwaysLabels
+                ? 'var(--theme-card2)'
+                : 'transparent',
+              color: showAlwaysLabels
+                ? 'var(--theme-accent)'
+                : 'var(--theme-muted)',
             }}
-            title={showAlwaysLabels ? 'Show Labels On-Demand Only' : 'Always Show All Labels'}
+            title={
+              showAlwaysLabels
+                ? 'Show Labels On-Demand Only'
+                : 'Always Show All Labels'
+            }
           >
-            <HugeiconsIcon icon={showAlwaysLabels ? ViewIcon : ViewOffIcon} size={15} />
+            <HugeiconsIcon
+              icon={showAlwaysLabels ? ViewIcon : ViewOffIcon}
+              size={15}
+            />
           </button>
           <button
             type="button"
             onClick={() => onZoomInRef.current?.()}
             className="p-2 rounded-xl border transition-colors hover:bg-[var(--theme-card2)]"
-            style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+            style={{
+              borderColor: 'var(--theme-border)',
+              color: 'var(--theme-muted)',
+            }}
             title="Zoom In"
           >
             <HugeiconsIcon icon={Add01Icon} size={15} />
@@ -1141,7 +1248,10 @@ export function GraphScreen() {
             type="button"
             onClick={() => onZoomOutRef.current?.()}
             className="p-2 rounded-xl border transition-colors hover:bg-[var(--theme-card2)]"
-            style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+            style={{
+              borderColor: 'var(--theme-border)',
+              color: 'var(--theme-muted)',
+            }}
             title="Zoom Out"
           >
             <HugeiconsIcon icon={MinusSignIcon} size={15} />
@@ -1150,7 +1260,10 @@ export function GraphScreen() {
             type="button"
             onClick={() => onResetRef.current?.()}
             className="text-xs px-2.5 py-1.5 rounded-xl border font-medium transition-colors hover:bg-[var(--theme-card2)]"
-            style={{ borderColor: 'var(--theme-border)', color: 'var(--theme-text)' }}
+            style={{
+              borderColor: 'var(--theme-border)',
+              color: 'var(--theme-text)',
+            }}
           >
             Reset
           </button>

@@ -31,11 +31,17 @@ export const Route = createFileRoute('/api/study/commit')({
           }
 
           if (!body.title || typeof body.title !== 'string') {
-            return json({ ok: false, error: 'Title is required.' }, { status: 400 })
+            return json(
+              { ok: false, error: 'Title is required.' },
+              { status: 400 },
+            )
           }
 
           if (!body.content || typeof body.content !== 'string') {
-            return json({ ok: false, error: 'Content is required.' }, { status: 400 })
+            return json(
+              { ok: false, error: 'Content is required.' },
+              { status: 400 },
+            )
           }
 
           const result = await commitToSecondBrain({

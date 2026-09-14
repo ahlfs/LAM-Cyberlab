@@ -49,7 +49,11 @@ import type { DashboardOverview } from '@/server/dashboard-aggregator'
 import { getUnavailableReason } from '@/lib/feature-gates'
 import { cn } from '@/lib/utils'
 import { applyTheme, useSettingsStore } from '@/hooks/use-settings'
-import { getThemeVariant, setTheme as applyThemeWithTransition, useCurrentTheme } from '@/lib/theme'
+import {
+  getThemeVariant,
+  setTheme as applyThemeWithTransition,
+  useCurrentTheme,
+} from '@/lib/theme'
 import { openHamburgerMenu } from '@/components/mobile-hamburger-menu'
 import { useFeatureAvailable } from '@/hooks/use-feature-available'
 
@@ -886,7 +890,10 @@ export function DashboardScreen() {
           type="button"
           aria-label="Toggle theme"
           onClick={(e) => {
-            const nextVariant = getThemeVariant(currentTheme, isDark ? 'light' : 'dark')
+            const nextVariant = getThemeVariant(
+              currentTheme,
+              isDark ? 'light' : 'dark',
+            )
             const nextMode = isDark ? 'light' : 'dark'
             applyThemeWithTransition(nextVariant, e, () => {
               updateSettings({ theme: nextMode })

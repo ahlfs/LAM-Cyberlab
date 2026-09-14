@@ -302,15 +302,13 @@ describe('fetchGenericJson', () => {
       })
       vi.stubGlobal(
         'fetch',
-        vi
-          .fn()
-          .mockResolvedValue({
-            status: 304,
-            ok: false,
-            headers: { get: () => null },
-            body: null,
-            json: () => Promise.resolve(null),
-          }),
+        vi.fn().mockResolvedValue({
+          status: 304,
+          ok: false,
+          headers: { get: () => null },
+          body: null,
+          json: () => Promise.resolve(null),
+        }),
       )
 
       const result = await fetchGenericJson(

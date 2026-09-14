@@ -51,7 +51,9 @@ self.onmessage = (event) => {
     .force('center', d3.forceCenter(0, 0))
     .force(
       'collide',
-      d3.forceCollide().radius((d: any) => Math.max(8, 6 + (d.connections ?? 0) * 2) + 8),
+      d3
+        .forceCollide()
+        .radius((d: any) => Math.max(8, 6 + (d.connections ?? 0) * 2) + 8),
     )
     .stop()
 

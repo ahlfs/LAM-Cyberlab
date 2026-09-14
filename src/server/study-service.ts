@@ -6,6 +6,18 @@ import { promisify } from 'node:util'
 
 const execAsync = promisify(exec)
 
+// Lazy-load pdf-parse to avoid startup cost when not used
+let pdfParse:
+  | ((buffer: Buffer) => Promise<{ text: string; numpages: number }>)
+  | null = null
+async function getPdfParser() {
+  if (!pdfParse) {
+    const mod = await import('pdf-parse')
+    pdfParse = mod.default || mod
+  }
+  return pdfParse
+}
+
 export type ExtractedDocResult = {
   title: string
   content: string
@@ -21,12 +33,14 @@ export function getObsidianVaultDir(): string {
 }
 
 export function sanitizeFileName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .slice(0, 80) || 'untitled-note'
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .slice(0, 80) || 'untitled-note'
+  )
 }
 
 function cleanHtmlToMarkdown(html: string): { title: string; content: string } {
@@ -53,7 +67,10 @@ function cleanHtmlToMarkdown(html: string): { title: string; content: string } {
     .replace(/<h[4-6][^>]*>(.*?)<\/h[4-6]>/gi, '\n#### $1\n')
     .replace(/<p[^>]*>(.*?)<\/p>/gi, '\n$1\n')
     .replace(/<li[^>]*>(.*?)<\/li>/gi, '\n- $1')
-    .replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, '\n```\n$1\n```\n')
+    .replace(
+      /<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi,
+      '\n```\n$1\n```\n',
+    )
     .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
     .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
     .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
@@ -73,7 +90,9 @@ function cleanHtmlToMarkdown(html: string): { title: string; content: string } {
   return { title, content: cleaned }
 }
 
-export async function extractContentFromUrl(url: string): Promise<ExtractedDocResult> {
+export async function extractContentFromUrl(
+  url: string,
+): Promise<ExtractedDocResult> {
   const parsedUrl = new URL(url)
   const response = await fetch(parsedUrl.toString(), {
     headers: {
@@ -83,7 +102,9 @@ export async function extractContentFromUrl(url: string): Promise<ExtractedDocRe
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch URL (${response.status} ${response.statusText})`)
+    throw new Error(
+      `Failed to fetch URL (${response.status} ${response.statusText})`,
+    )
   }
 
   const rawHtml = await response.text()
@@ -110,10 +131,25 @@ export async function extractContentFromFile(file: {
     content = file.buffer.toString('utf-8')
   } else if (ext === '.json') {
     content = '```json\n' + file.buffer.toString('utf-8') + '\n```'
+  } else if (ext === '.pdf' || file.mimeType === 'application/pdf') {
+    try {
+      const parse = await getPdfParser()
+      const result = await parse!(file.buffer)
+      content = result.text.replace(/\n{3,}/g, '\n\n').trim()
+      if (!content) {
+        content =
+          '(PDF contained no extractable text — possibly scanned/image-based)'
+      }
+    } catch {
+      content = '(Failed to parse PDF — file may be encrypted or corrupted)'
+    }
   } else {
-    // For binary docs (like PDF/DOCX or others), extract readable text strings cleanly
+    // For other binary docs (DOCX, etc.), extract readable text strings
     const rawString = file.buffer.toString('utf-8')
-    content = rawString.replace(/[^\x20-\x7E\t\r\n]/g, ' ').replace(/\s+/g, ' ').trim()
+    content = rawString
+      .replace(/[^\x20-\x7E\t\r\n]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
   }
 
   return {

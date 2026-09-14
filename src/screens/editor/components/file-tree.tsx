@@ -221,10 +221,14 @@ function TreeNode({
           <span
             className={cn(
               'ml-auto text-[10px] font-bold font-mono px-1.5 py-0.2 rounded shrink-0 shadow-xs border',
-              entry.gitStatus === 'M' && 'text-[#fbbf24] bg-[#fbbf24]/15 border-[#fbbf24]/30',
-              entry.gitStatus === 'U' && 'text-[#34d399] bg-[#34d399]/15 border-[#34d399]/30',
-              entry.gitStatus === 'D' && 'text-[#f87171] bg-[#f87171]/15 border-[#f87171]/30',
-              entry.gitStatus === 'R' && 'text-[#60a5fa] bg-[#60a5fa]/15 border-[#60a5fa]/30',
+              entry.gitStatus === 'M' &&
+                'text-[#fbbf24] bg-[#fbbf24]/15 border-[#fbbf24]/30',
+              entry.gitStatus === 'U' &&
+                'text-[#34d399] bg-[#34d399]/15 border-[#34d399]/30',
+              entry.gitStatus === 'D' &&
+                'text-[#f87171] bg-[#f87171]/15 border-[#f87171]/30',
+              entry.gitStatus === 'R' &&
+                'text-[#60a5fa] bg-[#60a5fa]/15 border-[#60a5fa]/30',
             )}
             title={`Git Status: ${entry.gitStatus}`}
           >
@@ -344,28 +348,31 @@ export function FileTree({
     handleContextMenu(e, null),
   )
 
-  const fetchTree = useCallback(async (isBackground = false) => {
-    if (!isBackground) {
-      setLoading(true)
-    }
-    setError(null)
-    try {
-      const params = new URLSearchParams({ action: 'list', maxDepth: '3' })
-      if (rootPath) params.set('path', rootPath)
-      const res = await fetch(`/api/files?${params.toString()}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = (await res.json()) as { entries?: FileEntry[] }
-      setEntries(data.entries ?? [])
-    } catch (err: any) {
+  const fetchTree = useCallback(
+    async (isBackground = false) => {
       if (!isBackground) {
-        setError(err?.message ?? 'Failed to load files')
+        setLoading(true)
       }
-    } finally {
-      if (!isBackground) {
-        setLoading(false)
+      setError(null)
+      try {
+        const params = new URLSearchParams({ action: 'list', maxDepth: '3' })
+        if (rootPath) params.set('path', rootPath)
+        const res = await fetch(`/api/files?${params.toString()}`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = (await res.json()) as { entries?: FileEntry[] }
+        setEntries(data.entries ?? [])
+      } catch (err: any) {
+        if (!isBackground) {
+          setError(err?.message ?? 'Failed to load files')
+        }
+      } finally {
+        if (!isBackground) {
+          setLoading(false)
+        }
       }
-    }
-  }, [rootPath])
+    },
+    [rootPath],
+  )
 
   useEffect(() => {
     void fetchTree(false)
@@ -376,7 +383,9 @@ export function FileTree({
     const decorateGitStatus = (list: FileEntry[]): FileEntry[] => {
       return list.map((item) => {
         const match = changedFiles.find((cf) => cf.path === item.path)
-        const children = item.children ? decorateGitStatus(item.children) : undefined
+        const children = item.children
+          ? decorateGitStatus(item.children)
+          : undefined
         return {
           ...item,
           gitStatus: match ? match.status : undefined,

@@ -67,7 +67,10 @@ import { setLocalModelOverride } from '@/screens/chat/local-model-override'
 import { formatModelName } from '@/lib/format-model-name'
 import { HierarchicalModelPicker } from './hierarchical-model-picker'
 import type { HierarchicalModelItem } from './model-hierarchy'
-import { CHAT_ATTACH_FILE_EVENT, type ChatAttachFileDetail } from '../chat-events'
+import {
+  CHAT_ATTACH_FILE_EVENT,
+  type ChatAttachFileDetail,
+} from '../chat-events'
 
 type ChatComposerAttachment = {
   id: string
@@ -1865,7 +1868,9 @@ function ChatComposerComponent({
       ;(newAttachment as any).isWorkspace = true
 
       setAttachments((prev) => {
-        if (prev.some((a) => (a as any).workspacePath === activeWorkspacePath)) {
+        if (
+          prev.some((a) => (a as any).workspacePath === activeWorkspacePath)
+        ) {
           return prev
         }
         return [...prev, newAttachment]
@@ -2509,13 +2514,20 @@ function ChatComposerComponent({
                           )}
                         >
                           <HugeiconsIcon
-                            icon={(attachment as any).isWorkspace ? Folder01Icon : File01Icon}
+                            icon={
+                              (attachment as any).isWorkspace
+                                ? Folder01Icon
+                                : File01Icon
+                            }
                             size={14}
                           />
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="truncate font-semibold text-xs text-[var(--theme-text,#f7f8f8)]" title={attachment.name}>
+                            <span
+                              className="truncate font-semibold text-xs text-[var(--theme-text,#f7f8f8)]"
+                              title={attachment.name}
+                            >
                               {attachment.name}
                             </span>
                             {(attachment as any).isWorkspace && (
@@ -2525,7 +2537,9 @@ function ChatComposerComponent({
                             )}
                           </div>
                           <div className="truncate text-[10px] font-mono text-[var(--theme-muted,#8a8f98)]">
-                            {(attachment as any).workspacePath || (attachment as any).filePath || formatFileSize(attachment.size)}
+                            {(attachment as any).workspacePath ||
+                              (attachment as any).filePath ||
+                              formatFileSize(attachment.size)}
                           </div>
                         </div>
                         <button
@@ -3142,182 +3156,182 @@ function ChatComposerComponent({
                               className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.05))] px-2.5 text-xs font-medium text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card,rgba(255,255,255,0.1))] transition-colors cursor-pointer"
                               title={`Agent profile: ${activeProfileName}`}
                             >
-                                <svg
-                                  width="13"
-                                  height="13"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                  <circle cx="12" cy="7" r="4" />
-                                </svg>
-                                <span className="truncate">
-                                  {activeProfileName}
-                                </span>
-                                <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
-                              </button>
-                              {isProfileMenuOpen && (
-                                <div className="absolute bottom-full left-0 z-[200] mb-2 min-w-[14rem] overflow-hidden rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] p-1 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 text-[var(--theme-text,#f7f8f8)]">
-                                  <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)]">
-                                    Agent profile
-                                  </div>
-                                  {(profilesQuery.data?.profiles ?? []).map(
-                                    (profile) => {
-                                      const selected =
-                                        profile.name === activeProfileName
-                                      return (
-                                        <button
-                                          key={profile.name}
-                                          type="button"
-                                          onClick={() => {
-                                            if (selected) {
-                                              setIsProfileMenuOpen(false)
-                                              return
-                                            }
-                                            profileActivateMutation.mutate(
-                                              profile.name,
-                                            )
-                                          }}
-                                          className={cn(
-                                            'flex w-full flex-col rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer',
-                                            selected
-                                              ? 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold border-l-2 border-[var(--theme-accent,#5e6ad2)]'
-                                              : 'text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] hover:text-[var(--theme-text,#f7f8f8)]',
-                                          )}
-                                        >
-                                          <span className="flex items-center gap-2">
-                                            <span className="truncate font-medium">
-                                              {profile.name}
-                                            </span>
-                                            {selected ? (
-                                              <span className="text-[10px] text-[var(--theme-accent,#5e6ad2)]">
-                                                active
-                                              </span>
-                                            ) : null}
-                                          </span>
-                                          {profileMeta(profile) ? (
-                                            <span className="mt-0.5 max-w-[12rem] truncate text-[11px] text-[var(--theme-muted,#8a8f98)]">
-                                              {profileMeta(profile)}
-                                            </span>
-                                          ) : null}
-                                        </button>
-                                      )
-                                    },
-                                  )}
-                                  {profilesQuery.isError ? (
-                                    <div className="px-3 py-2 text-xs text-red-500">
-                                      Failed to load profiles
-                                    </div>
-                                  ) : null}
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                              >
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="4" />
+                              </svg>
+                              <span className="truncate">
+                                {activeProfileName}
+                              </span>
+                              <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
+                            </button>
+                            {isProfileMenuOpen && (
+                              <div className="absolute bottom-full left-0 z-[200] mb-2 min-w-[14rem] overflow-hidden rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] p-1 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 text-[var(--theme-text,#f7f8f8)]">
+                                <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--theme-muted,#8a8f98)]">
+                                  Agent profile
                                 </div>
-                              )}
-                              </div>
-
-                              <div
-                              className="relative flex min-w-0 items-center"
-                              ref={thinkingMenuRef}
-                              >
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setIsThinkingMenuOpen((open) => !open)
-                                  setIsProfileMenuOpen(false)
-                                  setIsModelMenuOpen(false)
-                                }}
-                                className={cn(
-                                  'inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.05))] px-2.5 text-xs font-medium text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card,rgba(255,255,255,0.1))] transition-colors cursor-pointer',
-                                  thinkingLevel === 'off' && 'opacity-70',
-                                )}
-                                title={`Reasoning effort: ${thinkingLabel(thinkingLevel)}`}
-                              >
-                                <svg
-                                  width="13"
-                                  height="13"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
-                                  <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
-                                </svg>
-                                <span>{thinkingLabel(thinkingLevel)}</span>
-                                <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
-                              </button>
-                              {isThinkingMenuOpen && (
-                                <>
-                                  <div
-                                    className="fixed inset-0 z-[9999]"
-                                    onClick={() => setIsThinkingMenuOpen(false)}
-                                  />
-                                  <div className="absolute bottom-full left-0 z-[10000] mb-2 min-w-[10rem] overflow-hidden rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] p-1 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 text-[var(--theme-text,#f7f8f8)]">
-                                    {(
-                                      [
-                                        ['off', 'None'],
-                                        ['low', 'Low'],
-                                        ['medium', 'Medium'],
-                                        ['high', 'High'],
-                                      ] as Array<[ThinkingLevel, string]>
-                                    ).map(([level, label]) => (
+                                {(profilesQuery.data?.profiles ?? []).map(
+                                  (profile) => {
+                                    const selected =
+                                      profile.name === activeProfileName
+                                    return (
                                       <button
-                                        key={level}
+                                        key={profile.name}
                                         type="button"
-                                        onClick={() =>
-                                          handleThinkingSelect(level)
-                                        }
+                                        onClick={() => {
+                                          if (selected) {
+                                            setIsProfileMenuOpen(false)
+                                            return
+                                          }
+                                          profileActivateMutation.mutate(
+                                            profile.name,
+                                          )
+                                        }}
                                         className={cn(
-                                          'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer',
-                                          thinkingLevel === level
+                                          'flex w-full flex-col rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer',
+                                          selected
                                             ? 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold border-l-2 border-[var(--theme-accent,#5e6ad2)]'
                                             : 'text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] hover:text-[var(--theme-text,#f7f8f8)]',
                                         )}
                                       >
-                                        <span>{label}</span>
-                                        {thinkingLevel === level ? (
-                                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--theme-accent,#5e6ad2)]" />
+                                        <span className="flex items-center gap-2">
+                                          <span className="truncate font-medium">
+                                            {profile.name}
+                                          </span>
+                                          {selected ? (
+                                            <span className="text-[10px] text-[var(--theme-accent,#5e6ad2)]">
+                                              active
+                                            </span>
+                                          ) : null}
+                                        </span>
+                                        {profileMeta(profile) ? (
+                                          <span className="mt-0.5 max-w-[12rem] truncate text-[11px] text-[var(--theme-muted,#8a8f98)]">
+                                            {profileMeta(profile)}
+                                          </span>
                                         ) : null}
                                       </button>
-                                    ))}
+                                    )
+                                  },
+                                )}
+                                {profilesQuery.isError ? (
+                                  <div className="px-3 py-2 text-xs text-red-500">
+                                    Failed to load profiles
                                   </div>
-                                </>
-                              )}
+                                ) : null}
                               </div>
+                            )}
+                          </div>
 
-                              <div
-                              className="relative flex min-w-0 items-center"
-                              ref={modelSelectorRef}
+                          <div
+                            className="relative flex min-w-0 items-center"
+                            ref={thinkingMenuRef}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsThinkingMenuOpen((open) => !open)
+                                setIsProfileMenuOpen(false)
+                                setIsModelMenuOpen(false)
+                              }}
+                              className={cn(
+                                'inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.05))] px-2.5 text-xs font-medium text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card,rgba(255,255,255,0.1))] transition-colors cursor-pointer',
+                                thinkingLevel === 'off' && 'opacity-70',
+                              )}
+                              title={`Reasoning effort: ${thinkingLabel(thinkingLevel)}`}
+                            >
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
                               >
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setIsModelMenuOpen((prev) => !prev)
-                                  setIsProfileMenuOpen(false)
-                                  setIsThinkingMenuOpen(false)
-                                }}
-                                disabled={isModelSwitcherDisabled}
-                                className="inline-flex h-8 max-w-[9rem] items-center rounded-full border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.05))] px-2 md:max-w-none md:px-3 text-xs font-medium text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card,rgba(255,255,255,0.1))] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                                title={modelButtonLabel}
-                              >
-                                <span className="max-w-[4rem] truncate sm:max-w-[6rem] md:max-w-[5rem] lg:max-w-[10rem]">
-                                  {modelButtonLabel}
-                                </span>
-                              </button>
-                              {isModelMenuOpen && (
-                                <>
-                                  <div
-                                    className="fixed inset-0 z-[9999]"
-                                    onClick={() => setIsModelMenuOpen(false)}
-                                  />
-                                  <div className="absolute bottom-full left-0 sm:-left-4 md:-left-12 mb-2 z-[10000] w-72 sm:w-80 origin-bottom-left overflow-hidden rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150">
-                                    <div className="max-h-[22rem] overflow-y-auto overflow-x-hidden p-1">
+                                <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
+                                <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
+                              </svg>
+                              <span>{thinkingLabel(thinkingLevel)}</span>
+                              <HugeiconsIcon icon={ArrowDown01Icon} size={11} />
+                            </button>
+                            {isThinkingMenuOpen && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-[9999]"
+                                  onClick={() => setIsThinkingMenuOpen(false)}
+                                />
+                                <div className="absolute bottom-full left-0 z-[10000] mb-2 min-w-[10rem] overflow-hidden rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] p-1 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150 text-[var(--theme-text,#f7f8f8)]">
+                                  {(
+                                    [
+                                      ['off', 'None'],
+                                      ['low', 'Low'],
+                                      ['medium', 'Medium'],
+                                      ['high', 'High'],
+                                    ] as Array<[ThinkingLevel, string]>
+                                  ).map(([level, label]) => (
+                                    <button
+                                      key={level}
+                                      type="button"
+                                      onClick={() =>
+                                        handleThinkingSelect(level)
+                                      }
+                                      className={cn(
+                                        'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer',
+                                        thinkingLevel === level
+                                          ? 'bg-[var(--theme-accent-subtle,rgba(94,106,210,0.15))] text-[var(--theme-accent-secondary,var(--theme-accent,#7170ff))] font-semibold border-l-2 border-[var(--theme-accent,#5e6ad2)]'
+                                          : 'text-[var(--theme-muted,#8a8f98)] hover:bg-[var(--theme-card2,rgba(255,255,255,0.06))] hover:text-[var(--theme-text,#f7f8f8)]',
+                                      )}
+                                    >
+                                      <span>{label}</span>
+                                      {thinkingLevel === level ? (
+                                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--theme-accent,#5e6ad2)]" />
+                                      ) : null}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          <div
+                            className="relative flex min-w-0 items-center"
+                            ref={modelSelectorRef}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsModelMenuOpen((prev) => !prev)
+                                setIsProfileMenuOpen(false)
+                                setIsThinkingMenuOpen(false)
+                              }}
+                              disabled={isModelSwitcherDisabled}
+                              className="inline-flex h-8 max-w-[9rem] items-center rounded-full border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-card2,rgba(255,255,255,0.05))] px-2 md:max-w-none md:px-3 text-xs font-medium text-[var(--theme-text,#f7f8f8)] hover:bg-[var(--theme-card,rgba(255,255,255,0.1))] transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                              title={modelButtonLabel}
+                            >
+                              <span className="max-w-[4rem] truncate sm:max-w-[6rem] md:max-w-[5rem] lg:max-w-[10rem]">
+                                {modelButtonLabel}
+                              </span>
+                            </button>
+                            {isModelMenuOpen && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-[9999]"
+                                  onClick={() => setIsModelMenuOpen(false)}
+                                />
+                                <div className="absolute bottom-full left-0 sm:-left-4 md:-left-12 mb-2 z-[10000] w-72 sm:w-80 origin-bottom-left overflow-hidden rounded-xl border border-[var(--theme-border,rgba(255,255,255,0.08))] bg-[var(--theme-panel,#0d0e11)] shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+                                  <div className="max-h-[22rem] overflow-y-auto overflow-x-hidden p-1">
                                     {(() => {
                                       const allModels =
                                         modelsQuery.data?.models ?? []

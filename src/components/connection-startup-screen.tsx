@@ -223,7 +223,8 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
           <div
             className="absolute -inset-1 rounded-[1.25rem] opacity-50 blur-md animate-pulse"
             style={{
-              background: 'radial-gradient(circle, var(--theme-accent,#5e6ad2) 0%, transparent 70%)',
+              background:
+                'radial-gradient(circle, var(--theme-accent,#5e6ad2) 0%, transparent 70%)',
             }}
           />
           <img
@@ -231,7 +232,8 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
             alt="LAM Cyberlab"
             className="relative h-24 w-24 rounded-2xl object-cover shadow-2xl border border-[var(--theme-border,rgba(255,255,255,0.1))]"
             style={{
-              boxShadow: '0 0 30px var(--theme-accent-subtle, rgba(94,106,210,0.25))',
+              boxShadow:
+                '0 0 30px var(--theme-accent-subtle, rgba(94,106,210,0.25))',
             }}
           />
         </div>
@@ -369,7 +371,9 @@ export function ConnectionStartupScreen({ onConnected }: Props) {
                       <code>{step.command}</code>
                     </pre>
                     {step.note ? (
-                      <p className="mt-1.5 text-[10.5px] text-[var(--theme-muted,#8a8f98)]">{step.note}</p>
+                      <p className="mt-1.5 text-[10.5px] text-[var(--theme-muted,#8a8f98)]">
+                        {step.note}
+                      </p>
                     ) : null}
                   </div>
                 ))}

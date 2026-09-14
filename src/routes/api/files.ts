@@ -890,7 +890,10 @@ export const Route = createFileRoute('/api/files')({
 
             // Cleanup deleted paths from Shadow Baseline Snapshots
             for (const snapKey of baselineSnapshots.keys()) {
-              if (snapKey === targetPath || snapKey.startsWith(targetPath + '/')) {
+              if (
+                snapKey === targetPath ||
+                snapKey.startsWith(targetPath + '/')
+              ) {
                 baselineSnapshots.delete(snapKey)
               }
             }

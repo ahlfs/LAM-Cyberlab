@@ -1,7 +1,12 @@
 import { create } from 'zustand'
 
 export type StudyResourceType = 'url' | 'doc' | 'audio' | 'text'
-export type StudyResourceStatus = 'idle' | 'parsing' | 'ready' | 'analyzing' | 'ingested'
+export type StudyResourceStatus =
+  | 'idle'
+  | 'parsing'
+  | 'ready'
+  | 'analyzing'
+  | 'ingested'
 
 export type StudyResource = {
   id: string

@@ -38,9 +38,7 @@ function formatMessageTime(ts: number | null | undefined): string {
   return `${shortDate} ${time}`
 }
 
-function parseTodoSummary(
-  content: string,
-): {
+function parseTodoSummary(content: string): {
   total: number
   pending: number
   inProgress: number

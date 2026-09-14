@@ -83,7 +83,11 @@ import {
   MenuTrigger,
 } from '@/components/ui/menu'
 import { applyTheme, useSettingsStore } from '@/hooks/use-settings'
-import { getThemeVariant, setTheme as applyThemeWithTransition, useCurrentTheme } from '@/lib/theme'
+import {
+  getThemeVariant,
+  setTheme as applyThemeWithTransition,
+  useCurrentTheme,
+} from '@/lib/theme'
 
 type WorkspaceStats = Record<string, unknown>
 
@@ -585,14 +589,36 @@ export function ChatSidebarComponent(
   const echoStudioEnabled = useSettingsStore(
     (state) => state.settings.experimentalEchoStudio,
   )
-  const workspaceRoutes = ['/dashboard', '/chat', '/new', '/editor', '/tasks', '/projects']
-  const agentSwarmRoutes = ['/conductor', '/swarm', '/swarm2', '/operations', '/jobs', '/profiles']
+  const workspaceRoutes = [
+    '/dashboard',
+    '/chat',
+    '/new',
+    '/editor',
+    '/tasks',
+    '/projects',
+  ]
+  const agentSwarmRoutes = [
+    '/conductor',
+    '/swarm',
+    '/swarm2',
+    '/operations',
+    '/jobs',
+    '/profiles',
+  ]
   const knowledgeRoutes = ['/memory', '/graph', '/links', '/skills', '/mcp']
-  const infraRoutes = ['/terminal', '/files', '/file-manager', '/system', '/remote-access', '/echo-studio']
+  const infraRoutes = [
+    '/terminal',
+    '/files',
+    '/file-manager',
+    '/system',
+    '/remote-access',
+    '/echo-studio',
+  ]
 
   useEffect(() => {
     if (workspaceRoutes.includes(pathname)) setLastRoute('workspace', pathname)
-    if (agentSwarmRoutes.includes(pathname)) setLastRoute('agent-swarm', pathname)
+    if (agentSwarmRoutes.includes(pathname))
+      setLastRoute('agent-swarm', pathname)
     if (knowledgeRoutes.includes(pathname)) setLastRoute('knowledge', pathname)
     if (infraRoutes.includes(pathname)) setLastRoute('infra', pathname)
   }, [pathname])
@@ -1212,12 +1238,17 @@ export function ChatSidebarComponent(
       {/* ── Footer: Active Agent Profile (LAM Router Standard) ── */}
       <div
         className="px-2.5 py-2.5 border-t shrink-0 flex items-center justify-between"
-        style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-sidebar)' }}
+        style={{
+          borderColor: 'var(--theme-border)',
+          background: 'var(--theme-sidebar)',
+        }}
       >
         <div
           className={cn(
             'flex items-center rounded-lg transition-colors w-full',
-            isVisuallyCollapsed ? 'flex-col gap-2 py-1' : 'justify-between gap-1.5',
+            isVisuallyCollapsed
+              ? 'flex-col gap-2 py-1'
+              : 'justify-between gap-1.5',
           )}
         >
           {/* Active Profile Switcher */}
@@ -1233,7 +1264,8 @@ export function ChatSidebarComponent(
               <div
                 className="size-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 border border-[var(--theme-border,rgba(255,255,255,0.1))] text-white shadow-2xs"
                 style={{
-                  background: 'linear-gradient(135deg, var(--theme-accent, #5e6ad2), var(--theme-accent-secondary, #7170ff))',
+                  background:
+                    'linear-gradient(135deg, var(--theme-accent, #5e6ad2), var(--theme-accent-secondary, #7170ff))',
                 }}
               >
                 {activePersonaName.charAt(0).toUpperCase()}

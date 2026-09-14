@@ -419,57 +419,59 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
               ].join(' ')}
               data-tour="chat-area"
             >
-            {/* Persistent terminal — stays mounted to preserve session across navigation */}
-            <div
-              className="flex flex-col"
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                // inset:0 would extend through main's padding.
-                bottom: 0,
-                visibility: isOnTerminalRoute ? 'visible' : 'hidden',
-                pointerEvents: isOnTerminalRoute ? 'auto' : 'none',
-                zIndex: isOnTerminalRoute ? 1 : -1,
-              }}
-            >
-              {isMobile && isOnTerminalRoute && (
-                <MobilePageHeader title="Terminal" />
-              )}
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <Suspense fallback={null}>
-                  <TerminalWorkspace
-                    mode="fullscreen"
-                    panelVisible={isOnTerminalRoute}
-                  />
-                </Suspense>
+              {/* Persistent terminal — stays mounted to preserve session across navigation */}
+              <div
+                className="flex flex-col"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  // inset:0 would extend through main's padding.
+                  bottom: 0,
+                  visibility: isOnTerminalRoute ? 'visible' : 'hidden',
+                  pointerEvents: isOnTerminalRoute ? 'auto' : 'none',
+                  zIndex: isOnTerminalRoute ? 1 : -1,
+                }}
+              >
+                {isMobile && isOnTerminalRoute && (
+                  <MobilePageHeader title="Terminal" />
+                )}
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <Suspense fallback={null}>
+                    <TerminalWorkspace
+                      mode="fullscreen"
+                      panelVisible={isOnTerminalRoute}
+                    />
+                  </Suspense>
+                </div>
+                {/* Mobile / Touch accessory bar — mounted on the terminal route for phones, iPads, and touch tablets. */}
+                {(isMobile || isTouch) && isOnTerminalRoute && (
+                  <MobileTerminalInput />
+                )}
               </div>
-              {/* Mobile / Touch accessory bar — mounted on the terminal route for phones, iPads, and touch tablets. */}
-              {(isMobile || isTouch) && isOnTerminalRoute && (
-                <MobileTerminalInput />
-              )}
-            </div>
 
-            <div
-              className={[
-                'page-transition flex flex-col flex-1 min-h-0',
-                isChromeFreeSurface ? 'min-h-full' : 'h-full',
-                slideClass,
-                isOnTerminalRoute ? 'hidden' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            >
-              {isMobile &&
-                !isChromeFreeSurface &&
-                !isOnChatRoute &&
-                !isOnTerminalRoute &&
-                mobilePageTitle && <MobilePageHeader title={mobilePageTitle} />}
-              {children}
-            </div>
-          </main>
-        </div>
+              <div
+                className={[
+                  'page-transition flex flex-col flex-1 min-h-0',
+                  isChromeFreeSurface ? 'min-h-full' : 'h-full',
+                  slideClass,
+                  isOnTerminalRoute ? 'hidden' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                {isMobile &&
+                  !isChromeFreeSurface &&
+                  !isOnChatRoute &&
+                  !isOnTerminalRoute &&
+                  mobilePageTitle && (
+                    <MobilePageHeader title={mobilePageTitle} />
+                  )}
+                {children}
+              </div>
+            </main>
+          </div>
 
           {/* Chat panel — visible on non-chat, non-editor, non-study, non-graph, and non-file-manager routes */}
           {!isOnChatRoute &&

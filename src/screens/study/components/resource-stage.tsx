@@ -17,7 +17,9 @@ import { ResourcePreviewDialog } from './resource-preview-dialog'
 export function ResourceStage() {
   const [tab, setTab] = useState<'link' | 'file' | 'audio'>('link')
   const [urlInput, setUrlInput] = useState('')
-  const [previewResource, setPreviewResource] = useState<StudyResource | null>(null)
+  const [previewResource, setPreviewResource] = useState<StudyResource | null>(
+    null,
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
   const audioInputRef = useRef<HTMLInputElement>(null)
 
@@ -193,7 +195,9 @@ export function ResourceStage() {
               color:
                 tab === 'link' ? 'var(--theme-text)' : 'var(--theme-muted)',
               border:
-                tab === 'link' ? '1px solid var(--theme-border)' : '1px solid transparent',
+                tab === 'link'
+                  ? '1px solid var(--theme-border)'
+                  : '1px solid transparent',
             }}
           >
             <HugeiconsIcon icon={Link01Icon} size={14} />
@@ -209,7 +213,9 @@ export function ResourceStage() {
               color:
                 tab === 'file' ? 'var(--theme-text)' : 'var(--theme-muted)',
               border:
-                tab === 'file' ? '1px solid var(--theme-border)' : '1px solid transparent',
+                tab === 'file'
+                  ? '1px solid var(--theme-border)'
+                  : '1px solid transparent',
             }}
           >
             <HugeiconsIcon icon={File01Icon} size={14} />
@@ -225,7 +231,9 @@ export function ResourceStage() {
               color:
                 tab === 'audio' ? 'var(--theme-text)' : 'var(--theme-muted)',
               border:
-                tab === 'audio' ? '1px solid var(--theme-border)' : '1px solid transparent',
+                tab === 'audio'
+                  ? '1px solid var(--theme-border)'
+                  : '1px solid transparent',
             }}
           >
             <HugeiconsIcon icon={Mic01Icon} size={14} />
@@ -262,7 +270,11 @@ export function ResourceStage() {
                 }}
               >
                 {isExtracting ? (
-                  <HugeiconsIcon icon={Loading03Icon} size={14} className="animate-spin" />
+                  <HugeiconsIcon
+                    icon={Loading03Icon}
+                    size={14}
+                    className="animate-spin"
+                  />
                 ) : (
                   'Fetch'
                 )}
@@ -290,10 +302,18 @@ export function ResourceStage() {
                   backgroundColor: 'var(--theme-bg)',
                 }}
               >
-                <p className="text-xs font-medium" style={{ color: 'var(--theme-text)' }}>
-                  {isExtracting ? 'Extracting document...' : 'Click to select Markdown, TXT, PDF, DOCX'}
+                <p
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--theme-text)' }}
+                >
+                  {isExtracting
+                    ? 'Extracting document...'
+                    : 'Click to select Markdown, TXT, PDF, DOCX'}
                 </p>
-                <p className="text-[10px] mt-0.5" style={{ color: 'var(--theme-muted)' }}>
+                <p
+                  className="text-[10px] mt-0.5"
+                  style={{ color: 'var(--theme-muted)' }}
+                >
                   Maximum size: 50 MB
                 </p>
               </div>
@@ -320,10 +340,18 @@ export function ResourceStage() {
                   backgroundColor: 'var(--theme-bg)',
                 }}
               >
-                <p className="text-xs font-medium" style={{ color: 'var(--theme-text)' }}>
-                  {isExtracting ? 'Transcribing audio...' : 'Click to select Audio / Voice Memo'}
+                <p
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--theme-text)' }}
+                >
+                  {isExtracting
+                    ? 'Transcribing audio...'
+                    : 'Click to select Audio / Voice Memo'}
                 </p>
-                <p className="text-[10px] mt-0.5" style={{ color: 'var(--theme-muted)' }}>
+                <p
+                  className="text-[10px] mt-0.5"
+                  style={{ color: 'var(--theme-muted)' }}
+                >
                   Supported: MP3, WAV, M4A, WebM (up to 25 MB)
                 </p>
               </div>
@@ -335,8 +363,15 @@ export function ResourceStage() {
       {/* Staged List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {resources.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-center px-4" style={{ color: 'var(--theme-muted)' }}>
-            <HugeiconsIcon icon={File01Icon} size={28} className="mb-2 opacity-50" />
+          <div
+            className="flex flex-col items-center justify-center h-48 text-center px-4"
+            style={{ color: 'var(--theme-muted)' }}
+          >
+            <HugeiconsIcon
+              icon={File01Icon}
+              size={28}
+              className="mb-2 opacity-50"
+            />
             <p className="text-xs font-medium">No resources staged yet.</p>
             <p className="text-[11px] mt-1 opacity-80">
               Add a URL, file, or audio above to begin studying.
@@ -351,8 +386,12 @@ export function ResourceStage() {
                 onClick={() => setActiveResourceId(res.id)}
                 className="p-3 rounded-xl border transition-all cursor-pointer flex flex-col gap-2"
                 style={{
-                  backgroundColor: isActive ? 'var(--theme-card)' : 'var(--theme-bg)',
-                  borderColor: isActive ? 'var(--theme-accent, #6366f1)' : 'var(--theme-border)',
+                  backgroundColor: isActive
+                    ? 'var(--theme-card)'
+                    : 'var(--theme-bg)',
+                  borderColor: isActive
+                    ? 'var(--theme-accent, #6366f1)'
+                    : 'var(--theme-border)',
                   boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
                 }}
               >
@@ -374,7 +413,10 @@ export function ResourceStage() {
                         <HugeiconsIcon icon={File01Icon} size={14} />
                       )}
                     </span>
-                    <span className="text-xs font-medium truncate" style={{ color: 'var(--theme-text)' }}>
+                    <span
+                      className="text-xs font-medium truncate"
+                      style={{ color: 'var(--theme-text)' }}
+                    >
                       {res.title}
                     </span>
                   </div>
@@ -391,7 +433,10 @@ export function ResourceStage() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px]" style={{ color: 'var(--theme-muted)' }}>
+                <div
+                  className="flex items-center justify-between text-[11px]"
+                  style={{ color: 'var(--theme-muted)' }}
+                >
                   <span>{(res.size / 1024).toFixed(1)} KB</span>
                   <div className="flex items-center gap-2">
                     <button

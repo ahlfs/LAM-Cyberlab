@@ -48,10 +48,11 @@
 
 /* Inline Diff Deleted ViewZone Widget (Subtle red phantom block for deleted code) */
 .diff-deleted-viewzone {
-  background-color: rgba(239, 68, 68, 0.10) !important;
+  background-color: rgba(239, 68, 68, 0.1) !important;
   border-left: 3px solid #ef4444 !important;
   color: #fca5a5 !important;
-  font-family: 'JetBrains Mono', 'Fira Code', Menlo, Monaco, monospace !important;
+  font-family:
+    'JetBrains Mono', 'Fira Code', Menlo, Monaco, monospace !important;
   font-size: 13px !important;
   line-height: 19px !important;
   overflow: hidden !important;

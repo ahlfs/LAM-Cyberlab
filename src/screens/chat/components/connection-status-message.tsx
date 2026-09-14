@@ -130,7 +130,9 @@ export function ConnectionStatusMessage({
           strokeWidth={1.75}
           className={cn(
             'mt-0.5 shrink-0',
-            isChecking ? 'text-[var(--theme-accent,#5e6ad2)]' : 'text-amber-400',
+            isChecking
+              ? 'text-[var(--theme-accent,#5e6ad2)]'
+              : 'text-amber-400',
           )}
         />
         <div className="flex-1 text-xs">
@@ -139,7 +141,9 @@ export function ConnectionStatusMessage({
           </p>
           {!isChecking ? (
             <>
-              <p className="mt-0.5 text-amber-300/80 leading-relaxed">{errorInfo.description}</p>
+              <p className="mt-0.5 text-amber-300/80 leading-relaxed">
+                {errorInfo.description}
+              </p>
               <p className="mt-1 font-medium text-amber-300">
                 {errorInfo.action}
               </p>

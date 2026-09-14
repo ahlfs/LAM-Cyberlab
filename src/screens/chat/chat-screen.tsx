@@ -430,7 +430,11 @@ function shouldCollapseTextDuplicate(
     // Collapse duplicate assistant responses if their content/tools match
     const existingText = stripQueuedWrapper(textFromMessage(existing)).trim()
     const candidateText = stripQueuedWrapper(textFromMessage(candidate)).trim()
-    if (existingText.length > 0 && candidateText.length > 0 && existingText === candidateText) {
+    if (
+      existingText.length > 0 &&
+      candidateText.length > 0 &&
+      existingText === candidateText
+    ) {
       return true
     }
     return false
@@ -623,7 +627,7 @@ export function ChatScreen({
   const storeWaiting = useChatStore((s) => s.waitingSessionKeys)
   const isCurrentlyWaitingOrActive = Boolean(
     sending ||
-    (effectiveActiveSessionKey && storeWaiting.has(effectiveActiveSessionKey))
+    (effectiveActiveSessionKey && storeWaiting.has(effectiveActiveSessionKey)),
   )
 
   const {
@@ -643,12 +647,11 @@ export function ChatScreen({
     activeExists,
     sessionsReady: sessionsQuery.isSuccess,
     queryClient,
-    historyRefetchInterval:
-      isCurrentlyWaitingOrActive
-        ? false
-        : sseConnectionState === 'connected'
-          ? 30_000
-          : 10_000,
+    historyRefetchInterval: isCurrentlyWaitingOrActive
+      ? false
+      : sseConnectionState === 'connected'
+        ? 30_000
+        : 10_000,
     portableMode: isPortableMode,
   })
 
@@ -2057,7 +2060,9 @@ export function ChatScreen({
         })
 
       const fileAddressSuffix =
-        fileAddressBlocks.length > 0 ? `\n\n${fileAddressBlocks.join('\n')}` : ''
+        fileAddressBlocks.length > 0
+          ? `\n\n${fileAddressBlocks.join('\n')}`
+          : ''
       const finalBody = body + fileAddressSuffix
 
       let optimisticClientId = existingClientId

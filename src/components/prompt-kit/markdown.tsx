@@ -62,17 +62,23 @@ export function normalizeLatexMathSymbols(content: string): string {
   if (!content || !content.includes('$')) return content
 
   // Replace inline LaTeX like $\command$ or $ \command $
-  return content.replace(/\$(?:\\([a-zA-Z]+)|\s*([^\$]+?)\s*)\$/g, (match, cmd, expr) => {
-    const symbolKey = (cmd || expr || '').trim().replace(/^\\/, '')
-    if (LATEX_SYMBOL_MAP[symbolKey]) {
-      return LATEX_SYMBOL_MAP[symbolKey]
-    }
-    // Handle arrow representations inside math blocks
-    if (match.includes('\\rightarrow') || match.includes('\\to')) {
-      return match.replace(/\$(.*?)\$/g, '$1').replace(/\\(?:rightarrow|to)/g, '→').replace(/\\/g, '')
-    }
-    return match
-  })
+  return content.replace(
+    /\$(?:\\([a-zA-Z]+)|\s*([^\$]+?)\s*)\$/g,
+    (match, cmd, expr) => {
+      const symbolKey = (cmd || expr || '').trim().replace(/^\\/, '')
+      if (LATEX_SYMBOL_MAP[symbolKey]) {
+        return LATEX_SYMBOL_MAP[symbolKey]
+      }
+      // Handle arrow representations inside math blocks
+      if (match.includes('\\rightarrow') || match.includes('\\to')) {
+        return match
+          .replace(/\$(.*?)\$/g, '$1')
+          .replace(/\\(?:rightarrow|to)/g, '→')
+          .replace(/\\/g, '')
+      }
+      return match
+    },
+  )
 }
 
 /**
@@ -542,7 +548,10 @@ function MarkdownComponent({
   const generatedId = useId()
   const blockId = id ?? 'md-static'
   const blocks = useMemo(
-    () => parseMarkdownIntoBlocks(rewriteLocalMediaSources(normalizeLatexMathSymbols(children))),
+    () =>
+      parseMarkdownIntoBlocks(
+        rewriteLocalMediaSources(normalizeLatexMathSymbols(children)),
+      ),
     [children],
   )
 

@@ -128,12 +128,15 @@ function parseAttachedReferences(text: string): {
     return ''
   })
 
-  cleaned = cleaned.replace(/\[Attached Workspace:\s*([^\]]+)\]/g, (_, path) => {
-    const trimmed = String(path).trim()
-    const name = trimmed.split('/').filter(Boolean).pop() || trimmed
-    attachedWorkspaces.push({ name, path: trimmed })
-    return ''
-  })
+  cleaned = cleaned.replace(
+    /\[Attached Workspace:\s*([^\]]+)\]/g,
+    (_, path) => {
+      const trimmed = String(path).trim()
+      const name = trimmed.split('/').filter(Boolean).pop() || trimmed
+      attachedWorkspaces.push({ name, path: trimmed })
+      return ''
+    },
+  )
 
   return {
     cleanedText: cleaned.trim(),
@@ -261,7 +264,9 @@ function InteractiveSelectionCard({
                 isSelected
                   ? 'border-[var(--theme-accent)] bg-[var(--theme-accent-soft)] text-[var(--theme-text)]'
                   : 'border-[var(--theme-border)] bg-[var(--theme-bg)] text-[var(--theme-text)] hover:bg-[var(--theme-card2)]',
-                isCardDisabled && !isSelected && 'opacity-60 cursor-default hover:bg-[var(--theme-bg)]',
+                isCardDisabled &&
+                  !isSelected &&
+                  'opacity-60 cursor-default hover:bg-[var(--theme-bg)]',
                 isCardDisabled && isSelected && 'cursor-default',
               )}
             >
@@ -1574,9 +1579,10 @@ function stripMarkdownInline(str: string): string {
     .trim()
 }
 
-export function extractDynamicSelectionCards(
-  text: string,
-): { cards: Array<SelectionCardContent>; cleanedText?: string } {
+export function extractDynamicSelectionCards(text: string): {
+  cards: Array<SelectionCardContent>
+  cleanedText?: string
+} {
   if (!text || text.length > 5000) return { cards: [] }
 
   // 1. Skip messages that are predominantly code blocks or if the choices are inside code blocks
@@ -1588,7 +1594,10 @@ export function extractDynamicSelectionCards(
     }
   }
 
-  const rawLines = text.trim().split('\n').map((l) => l.trim())
+  const rawLines = text
+    .trim()
+    .split('\n')
+    .map((l) => l.trim())
   if (rawLines.length < 2) return { cards: [] }
 
   // Exclude lines inside triple backtick blocks
@@ -1626,7 +1635,12 @@ export function extractDynamicSelectionCards(
 
   if (!hasPromptIntent) return { cards: [] }
 
-  const options: Array<{ label: string; value: string; description?: string; badge?: string }> = []
+  const options: Array<{
+    label: string
+    value: string
+    description?: string
+    badge?: string
+  }> = []
   let introLines: Array<string> = []
   let outroLines: Array<string> = []
   const choiceLineIndices = new Set<number>()
@@ -1661,7 +1675,9 @@ export function extractDynamicSelectionCards(
 
       const parts = fullLabel.split(/\s*[-–—:]\s*(.+)/)
       const label = stripMarkdownInline(parts[0]?.trim() || fullLabel)
-      let description = parts[1]?.trim() ? stripMarkdownInline(parts[1].trim()) : undefined
+      let description = parts[1]?.trim()
+        ? stripMarkdownInline(parts[1].trim())
+        : undefined
 
       choiceLineIndices.add(i)
 
@@ -1705,10 +1721,15 @@ export function extractDynamicSelectionCards(
     )
 
   if (options.length >= 2 && options.length <= 6 && questionLine) {
-    const question = stripMarkdownInline(questionLine.replace(/^[#\s*_-]+/, '').trim())
+    const question = stripMarkdownInline(
+      questionLine.replace(/^[#\s*_-]+/, '').trim(),
+    )
 
     // Retain intro text before options in cleanedText so it reads naturally
-    const cleaned = introLines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+    const cleaned = introLines
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
 
     return {
       cards: [
@@ -2443,9 +2464,10 @@ function MessageItemComponent({
   }, [role, effectiveIsStreaming, assistantDisplayText])
 
   const parsedInlineArtifacts = useMemo(() => {
-    const textToParse = dynamicSelectionResult.cleanedText !== undefined
-      ? dynamicSelectionResult.cleanedText
-      : assistantDisplayText
+    const textToParse =
+      dynamicSelectionResult.cleanedText !== undefined
+        ? dynamicSelectionResult.cleanedText
+        : assistantDisplayText
     return parseInlineArtifacts(textToParse)
   }, [assistantDisplayText, dynamicSelectionResult.cleanedText])
   const standaloneMarkdownDocument = useMemo(
@@ -2551,7 +2573,11 @@ function MessageItemComponent({
 
   const userAttachedRefs = useMemo(() => {
     if (!isUser || !displayText) {
-      return { cleanedText: displayText, attachedFiles: [], attachedWorkspaces: [] }
+      return {
+        cleanedText: displayText,
+        attachedFiles: [],
+        attachedWorkspaces: [],
+      }
     }
     return parseAttachedReferences(displayText)
   }, [isUser, displayText])
@@ -2578,7 +2604,9 @@ function MessageItemComponent({
   }, [message.content])
   const hasInlineImages = inlineImages.length > 0
   const selectionCards = useMemo(() => {
-    const explicit = (Array.isArray(message.content) ? message.content : []).filter(
+    const explicit = (
+      Array.isArray(message.content) ? message.content : []
+    ).filter(
       (part): part is SelectionCardContent => part.type === 'selectionCard',
     )
     if (explicit.length > 0) return explicit
@@ -2894,7 +2922,10 @@ function MessageItemComponent({
             ? { scrollMarginTop: `${wrapperScrollMarginTop}px` }
             : undefined
         }
-        className={cn('w-full flex flex-col items-center my-3 gap-2', wrapperClassName)}
+        className={cn(
+          'w-full flex flex-col items-center my-3 gap-2',
+          wrapperClassName,
+        )}
       >
         <details className="group max-w-xl w-full border border-dashed border-[var(--theme-border)] bg-[var(--theme-card)]/40 rounded-xl px-3 py-2 text-xs transition-all">
           <summary className="cursor-pointer font-mono font-medium text-[var(--theme-muted)] hover:text-[var(--theme-text)] flex items-center justify-between select-none">
@@ -3191,7 +3222,9 @@ function MessageItemComponent({
             {hasText &&
               (isUser ? (
                 userAttachedRefs.cleanedText.length > 0 ? (
-                  <span className="text-pretty">{userAttachedRefs.cleanedText}</span>
+                  <span className="text-pretty">
+                    {userAttachedRefs.cleanedText}
+                  </span>
                 ) : null
               ) : hasRevealedText ? (
                 <div className="relative">
