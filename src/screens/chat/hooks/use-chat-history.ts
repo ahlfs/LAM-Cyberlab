@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import { chatQueryKeys, fetchHistory } from '../chat-queries'
 import { getMessageTimestamp, textFromMessage } from '../utils'
@@ -392,13 +392,11 @@ export function useChatHistory({
       }
       return queryClient.getQueryData<HistoryResponse>(historyKey)
     },
-    placeholderData: function useCachedHistory(): HistoryResponse | undefined {
-      return queryClient.getQueryData(historyKey)
-    },
+    placeholderData: keepPreviousData,
     refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
     refetchInterval: historyRefetchInterval,
-    staleTime: 0, // Always refetch on mount — prevents stale data after tab navigation
+    staleTime: 5000,
     gcTime: 1000 * 60 * 10,
     structuralSharing: true,
     notifyOnChangeProps: ['data', 'error', 'isError'],

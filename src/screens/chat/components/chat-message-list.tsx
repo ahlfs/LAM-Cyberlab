@@ -824,19 +824,41 @@ function ChatMessageListComponent({
 
     const seenMessageIds = new Set<string>()
     const deduped = filteredMessages.filter((message) => {
-      const messageId =
-        (message as any).id ||
-        (message as any).messageId ||
-        (message as any).clientId ||
-        (message as any).client_id ||
-        (message as any).nonce ||
-        (message as any).__optimisticId
-      if (typeof messageId !== 'string' || messageId.trim().length === 0) {
+      const raw = message as Record<string, unknown>
+      const rawOpt =
+        typeof raw.__optimisticId === 'string'
+          ? raw.__optimisticId.trim()
+          : typeof raw.__optimisticId === 'number'
+            ? String(raw.__optimisticId)
+            : ''
+      const bareOpt = rawOpt.startsWith('opt-') ? rawOpt.slice(4) : ''
+      const candidateIds = [
+        typeof raw.id === 'string'
+          ? raw.id.trim()
+          : typeof raw.id === 'number'
+            ? String(raw.id)
+            : '',
+        typeof raw.messageId === 'string' ? raw.messageId.trim() : '',
+        typeof raw.clientId === 'string' ? raw.clientId.trim() : '',
+        typeof raw.client_id === 'string' ? raw.client_id.trim() : '',
+        typeof raw.nonce === 'string' ? raw.nonce.trim() : '',
+        typeof raw.idempotencyKey === 'string' ? raw.idempotencyKey.trim() : '',
+        bareOpt,
+        rawOpt,
+      ].filter(Boolean)
+
+      if (candidateIds.length === 0) {
         return true
       }
-      const scopedId = `${message.role}:${messageId.trim()}`
-      if (seenMessageIds.has(scopedId)) return false
-      seenMessageIds.add(scopedId)
+
+      const alreadySeen = candidateIds.some((id) =>
+        seenMessageIds.has(`${message.role}:${id}`),
+      )
+      if (alreadySeen) return false
+
+      for (const id of candidateIds) {
+        seenMessageIds.add(`${message.role}:${id}`)
+      }
       return true
     })
     return sortMessagesChronologically(deduped)

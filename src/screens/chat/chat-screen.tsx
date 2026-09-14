@@ -46,6 +46,7 @@ import {
   isRecentSession,
   resetPendingSend,
   setPendingGeneration,
+  setRecentSession,
 } from './pending-send'
 import { useChatMeasurements } from './hooks/use-chat-measurements'
 import { useChatHistory } from './hooks/use-chat-history'
@@ -413,10 +414,13 @@ function getMessageAttachmentSignature(message: ChatMessage): string {
 }
 
 function isOptimisticUserMessage(message: ChatMessage): boolean {
+  if (message.role !== 'user') return false
   const raw = message as Record<string, unknown>
+  const status = getMessageStatusValue(message)
+  if (status === 'sent' || status === 'done') return false
   return (
-    normalizeMessageValue(raw.__optimisticId).length > 0 ||
-    ['sending', 'sent', 'done'].includes(getMessageStatusValue(message))
+    status === 'sending' ||
+    normalizeMessageValue(raw.__optimisticId).length > 0
   )
 }
 
@@ -1488,12 +1492,11 @@ export function ChatScreen({
         rawOptimisticId,
       ].filter(Boolean)
 
-      const primaryKey =
-        idCandidates.length > 0
-          ? `${msg.role}:id:${idCandidates[0]}`
-          : `${msg.role}:fallback:${messageFallbackSignature(msg)}`
-
-      if (seen.has(primaryKey)) continue
+      // Deduplicate by any matching ID candidate across history, echoes, and optimistic buffers
+      const hasMatchingId = idCandidates.some((candidate) =>
+        seen.has(`${msg.role}:id:${candidate}`),
+      )
+      if (hasMatchingId) continue
 
       const text = stripQueuedWrapper(textFromMessage(msg)).trim()
       if (text.length > 0) {
@@ -1511,8 +1514,7 @@ export function ChatScreen({
         }
       }
 
-      seen.add(primaryKey)
-      for (const candidate of idCandidates.slice(1)) {
+      for (const candidate of idCandidates) {
         seen.add(`${msg.role}:id:${candidate}`)
       }
       dedupedSet.add(msg)
@@ -1859,12 +1861,15 @@ export function ChatScreen({
   const shouldRedirectToNew =
     !isNewChat &&
     !forcedSessionKey &&
+    !sending &&
+    !waitingForResponse &&
+    !hasPendingGeneration() &&
     !isRecentSession(activeFriendlyId) &&
     sessionsQuery.isSuccess &&
     sessions.length > 0 &&
     !sessions.some((session) => session.friendlyId === activeFriendlyId) &&
     !historyQuery.isFetching &&
-    !historyQuery.isSuccess
+    Boolean(historyQuery.isError)
 
   useEffect(() => {
     if (isRedirecting) {
@@ -2625,6 +2630,7 @@ export function ChatScreen({
 
         appendHistoryMessage(queryClient, threadId, threadId, optimisticMessage)
         upsertSessionInCache(threadId, optimisticMessage)
+        setRecentSession(threadId)
         setPendingGeneration(true)
         setSending(true)
         useChatStore.getState().setSessionWaiting(threadId)
