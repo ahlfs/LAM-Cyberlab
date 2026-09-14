@@ -464,10 +464,20 @@ export function toChatMessage(
       extractedAttachments && extractedAttachments.length > 0
         ? extractedAttachments
         : undefined,
-    timestamp: msg.timestamp ? msg.timestamp * 1000 : Date.now(),
-    createdAt: msg.timestamp
-      ? new Date(msg.timestamp * 1000).toISOString()
-      : undefined,
+    timestamp:
+      typeof msg.timestamp === 'number'
+        ? msg.timestamp < 1_000_000_000_000
+          ? msg.timestamp * 1000
+          : msg.timestamp
+        : Date.now(),
+    createdAt:
+      typeof msg.timestamp === 'number'
+        ? new Date(
+            msg.timestamp < 1_000_000_000_000
+              ? msg.timestamp * 1000
+              : msg.timestamp,
+          ).toISOString()
+        : undefined,
     sessionKey: msg.session_id,
     ...(typeof options?.historyIndex === 'number'
       ? { __historyIndex: options.historyIndex }

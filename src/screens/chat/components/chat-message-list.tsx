@@ -462,6 +462,26 @@ export function sortMessagesChronologically(
   return messages
     .map((message, index) => ({ message, index }))
     .sort((left, right) => {
+      const leftHistoryIndex =
+        typeof (left.message as any).__historyIndex === 'number'
+          ? (left.message as any).__historyIndex
+          : typeof (left.message as any).historyIndex === 'number'
+            ? (left.message as any).historyIndex
+            : undefined
+      const rightHistoryIndex =
+        typeof (right.message as any).__historyIndex === 'number'
+          ? (right.message as any).__historyIndex
+          : typeof (right.message as any).historyIndex === 'number'
+            ? (right.message as any).historyIndex
+            : undefined
+      if (
+        leftHistoryIndex !== undefined &&
+        rightHistoryIndex !== undefined &&
+        leftHistoryIndex !== rightHistoryIndex
+      ) {
+        return leftHistoryIndex - rightHistoryIndex
+      }
+
       const leftTimestamp = getMessageTimestamp(left.message)
       const rightTimestamp = getMessageTimestamp(right.message)
       if (leftTimestamp !== rightTimestamp)
@@ -470,22 +490,6 @@ export function sortMessagesChronologically(
       const leftRank = getChronologyRank(left.message)
       const rightRank = getChronologyRank(right.message)
       if (leftRank !== rightRank) return leftRank - rightRank
-
-      const leftHistoryIndex =
-        typeof (left.message as any).__historyIndex === 'number'
-          ? (left.message as any).__historyIndex
-          : undefined
-      const rightHistoryIndex =
-        typeof (right.message as any).__historyIndex === 'number'
-          ? (right.message as any).__historyIndex
-          : undefined
-      if (
-        leftHistoryIndex !== undefined &&
-        rightHistoryIndex !== undefined &&
-        leftHistoryIndex !== rightHistoryIndex
-      ) {
-        return leftHistoryIndex - rightHistoryIndex
-      }
 
       const leftRealtimeSequence =
         typeof (left.message as any).__realtimeSequence === 'number'

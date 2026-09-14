@@ -514,11 +514,6 @@ function getMessageChronologyRank(msg: ChatMessage): number {
 }
 
 function compareMessagesByTime(left: ChatMessage, right: ChatMessage): number {
-  const leftTime = getMessageEventTime(left) ?? getMessageReceiveTime(left) ?? 0
-  const rightTime =
-    getMessageEventTime(right) ?? getMessageReceiveTime(right) ?? 0
-  if (leftTime !== rightTime) return leftTime - rightTime
-
   const leftHistoryIndex = getMessageHistoryIndex(left)
   const rightHistoryIndex = getMessageHistoryIndex(right)
   if (
@@ -528,6 +523,11 @@ function compareMessagesByTime(left: ChatMessage, right: ChatMessage): number {
   ) {
     return leftHistoryIndex - rightHistoryIndex
   }
+
+  const leftTime = getMessageEventTime(left) ?? getMessageReceiveTime(left) ?? 0
+  const rightTime =
+    getMessageEventTime(right) ?? getMessageReceiveTime(right) ?? 0
+  if (leftTime !== rightTime) return leftTime - rightTime
 
   const leftRank = getMessageChronologyRank(left)
   const rightRank = getMessageChronologyRank(right)
