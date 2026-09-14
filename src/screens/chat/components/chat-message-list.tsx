@@ -456,7 +456,7 @@ function getChronologyRank(message: ChatMessage): number {
   return 4
 }
 
-function sortMessagesChronologically(
+export function sortMessagesChronologically(
   messages: Array<ChatMessage>,
 ): Array<ChatMessage> {
   return messages

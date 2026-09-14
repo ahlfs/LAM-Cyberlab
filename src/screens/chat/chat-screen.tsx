@@ -34,7 +34,10 @@ import {
   updateSessionLastMessage,
 } from './chat-queries'
 import { ChatHeader } from './components/chat-header'
-import { ChatMessageList } from './components/chat-message-list'
+import {
+  ChatMessageList,
+  sortMessagesChronologically,
+} from './components/chat-message-list'
 import { ChatEmptyState } from './components/chat-empty-state'
 import { ChatComposer } from './components/chat-composer'
 import { ConnectionStatusMessage } from './components/connection-status-message'
@@ -1524,11 +1527,13 @@ export function ChatScreen({
       .filter((msg) => dedupedSet.has(msg))
       .map((msg) => stripQueuedWrapperFromUserMessage(msg))
 
+    const chronoSorted = sortMessagesChronologically(deduped)
+
     if (!activeIsRealtimeStreaming) {
-      return deduped
+      return chronoSorted
     }
 
-    let nextMessages = [...deduped]
+    let nextMessages = [...chronoSorted]
     const streamToolCalls = activeToolCalls.map((toolCall) => ({
       ...toolCall,
       phase: toolCall.phase,
