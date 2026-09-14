@@ -655,14 +655,12 @@ function mergeOptimisticHistoryMessages(
       const serverText = textFromMessage(serverMessage).trim()
       const serverAttachments = getAttachmentSignature(serverMessage)
       const serverTime = getMessageTimestamp(serverMessage)
-      const withinWindow = Math.abs(optimisticTime - serverTime) <= TEN_SECONDS
+      const withinWindow =
+        !optimisticTime || !serverTime
+          ? true
+          : Math.abs(optimisticTime - serverTime) <= 60_000
 
-      if (
-        optimisticText &&
-        serverText &&
-        optimisticText === serverText &&
-        withinWindow
-      ) {
+      if (optimisticText && serverText && optimisticText === serverText) {
         return true
       }
 
@@ -670,8 +668,7 @@ function mergeOptimisticHistoryMessages(
         !optimisticText &&
         optimisticAttachments &&
         serverAttachments &&
-        optimisticAttachments === serverAttachments &&
-        withinWindow
+        optimisticAttachments === serverAttachments
       ) {
         return true
       }
