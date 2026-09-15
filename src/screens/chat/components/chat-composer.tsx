@@ -1631,6 +1631,10 @@ function ChatComposerComponent({
             const imageFile = isImageFile(file)
             const textFile = isTextFile(file)
             if (!imageFile && !textFile && file.type.trim().length > 0) {
+              toast(
+                `File “${file.name || 'attachment'}” has an unsupported format for direct chat context.`,
+                { type: 'warning' },
+              )
               return null
             }
 

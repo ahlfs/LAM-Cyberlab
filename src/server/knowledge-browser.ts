@@ -479,6 +479,11 @@ function walkKnowledgeDir(
 }
 
 function getParsedKnowledgePages(): Array<ParsedKnowledgePage> {
+  const now = Date.now()
+  if (_cachedWikiPages && now - _cachedWikiPagesMtime < GRAPH_CACHE_TTL_MS) {
+    return _cachedWikiPages
+  }
+
   const knowledgeRoot = path.resolve(getKnowledgeRoot())
   if (!fs.existsSync(knowledgeRoot)) return []
 
@@ -491,6 +496,9 @@ function getParsedKnowledgePages(): Array<ParsedKnowledgePage> {
     if (updatedDiff !== 0) return updatedDiff
     return a.meta.path.localeCompare(b.meta.path)
   })
+
+  _cachedWikiPages = results
+  _cachedWikiPagesMtime = now
   return results
 }
 
@@ -634,7 +642,25 @@ function getHermesSkillsPages(): Array<ParsedKnowledgePage> {
   return results
 }
 
+// In-memory cache for parsed knowledge pages & built graph to ensure instant sub-millisecond page loads
+let _cachedWikiPages: Array<ParsedKnowledgePage> | null = null
+let _cachedWikiPagesMtime = 0
+let _cachedKnowledgeGraph: KnowledgeGraph | null = null
+let _cachedKnowledgeGraphTimestamp = 0
+
+const GRAPH_CACHE_TTL_MS = 30_000 // 30s cache TTL for instant loads
+
+export function invalidateKnowledgeGraphCache() {
+  _cachedWikiPages = null
+  _cachedKnowledgeGraph = null
+}
+
 export function buildKnowledgeGraph(): KnowledgeGraph {
+  const now = Date.now()
+  if (_cachedKnowledgeGraph && now - _cachedKnowledgeGraphTimestamp < GRAPH_CACHE_TTL_MS) {
+    return _cachedKnowledgeGraph
+  }
+
   const wikiPages = getParsedKnowledgePages()
   const skillPages = getHermesSkillsPages()
   const allPages = [...wikiPages, ...skillPages]
@@ -652,7 +678,7 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
     }
   }
 
-  return {
+  const graph: KnowledgeGraph = {
     nodes: allPages.map((page) => ({
       id: page.meta.path,
       title: page.meta.title,
@@ -661,4 +687,8 @@ export function buildKnowledgeGraph(): KnowledgeGraph {
     })),
     edges: Array.from(edges.values()),
   }
+
+  _cachedKnowledgeGraph = graph
+  _cachedKnowledgeGraphTimestamp = now
+  return graph
 }

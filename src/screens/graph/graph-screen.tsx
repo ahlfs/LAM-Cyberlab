@@ -165,6 +165,29 @@ function CanvasRenderer({
     null,
   )
 
+  // Helper to compute default overview zoom based on viewport dimensions and nodes
+  const getDefaultOverviewZoom = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return 1
+    const width = canvas.clientWidth || window.innerWidth || 800
+    const height = canvas.clientHeight || window.innerHeight || 600
+    // Dynamic responsive scale:
+    // Large screens (>= 1200px): ~1.0x
+    // Tablets (768px - 1199px): ~0.75x - 0.85x
+    // Mobile phones (< 768px, e.g. 375px - 430px): ~0.45x - 0.55x
+    const minDim = Math.min(width, height)
+    if (minDim <= 480) {
+      return 0.48
+    }
+    if (minDim <= 768) {
+      return 0.68
+    }
+    if (minDim <= 1024) {
+      return 0.85
+    }
+    return 1.0
+  }, [])
+
   // 2D Viewport Transform
   const transformRef = useRef({
     panX: 0,
@@ -467,8 +490,21 @@ function CanvasRenderer({
 
   const zoomAnimIdRef = useRef<number | null>(null)
 
-  // React to selectedNodeId: smooth animated zoom to fit node + all its connected neighbors (or zoom back out when null)
+  // Track previous viewport state before selecting a node so we can zoom back smoothly to where user was
+  const lastOverviewTransformRef = useRef({
+    panX: 0,
+    panY: 0,
+    zoom: 1,
+    hasSaved: false,
+  })
+
+  // React to selectedNodeId: smooth animated zoom to fit node + cluster when selected, or zoom back out to previous view when closed
   useEffect(() => {
+    // Only run zoom transition if there was a real selection action or unselection action
+    if (!selectedNodeId && !lastOverviewTransformRef.current.hasSaved) {
+      return
+    }
+
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -483,6 +519,16 @@ function CanvasRenderer({
     let desiredZoom = 1
 
     if (selectedNodeId) {
+      // Only save the overview transform if we are transitioning from an unselected overview state
+      if (!lastOverviewTransformRef.current.hasSaved) {
+        lastOverviewTransformRef.current = {
+          panX: transformRef.current.panX,
+          panY: transformRef.current.panY,
+          zoom: transformRef.current.zoom,
+          hasSaved: true,
+        }
+      }
+
       const nodes = simNodesRef.current
       const targetNode = nodes.find((n) => n.id === selectedNodeId)
       if (
@@ -525,7 +571,7 @@ function CanvasRenderer({
       const width = canvas.clientWidth
       const height = canvas.clientHeight
 
-      // Account for right-side inspector drawer (~380px)
+      // Account for right-side inspector drawer (~380px on desktop)
       const availableWidth = width > 800 ? width - 380 : width
       const padding = 70
       const zoomX = (availableWidth - padding) / bboxWidth
@@ -535,17 +581,30 @@ function CanvasRenderer({
       desiredPanX = -clusterCenterX * desiredZoom - (width > 800 ? 120 : 0)
       desiredPanY = -clusterCenterY * desiredZoom
     } else {
-      // Zoom back out to natural full overview when unselected (close button clicked or background clicked)
-      desiredPanX = 0
-      desiredPanY = 0
-      desiredZoom = 1
+      // Zoom back out to the saved pre-selection overview position
+      if (lastOverviewTransformRef.current.hasSaved) {
+        desiredPanX = lastOverviewTransformRef.current.panX
+        desiredPanY = lastOverviewTransformRef.current.panY
+        desiredZoom = lastOverviewTransformRef.current.zoom
+        lastOverviewTransformRef.current.hasSaved = false
+      } else {
+        desiredPanX = 0
+        desiredPanY = 0
+        desiredZoom = getDefaultOverviewZoom()
+      }
+
+      // Guarantee genuine zoom out: if saved zoom is too zoomed-in, clamp to default overview
+      const defaultZoom = getDefaultOverviewZoom()
+      if (desiredZoom > defaultZoom * 1.1) {
+        desiredZoom = defaultZoom
+      }
     }
 
     const startPanX = transformRef.current.panX
     const startPanY = transformRef.current.panY
     const startZoom = transformRef.current.zoom
     const startTime = performance.now()
-    const duration = 260
+    const duration = 280
 
     const animateZoom = (now: number) => {
       const elapsed = now - startTime
@@ -574,7 +633,7 @@ function CanvasRenderer({
         zoomAnimIdRef.current = null
       }
     }
-  }, [selectedNodeId, neighborMap, renderFrame])
+  }, [selectedNodeId, neighborMap, getDefaultOverviewZoom, renderFrame])
 
   // Redraw when visual state changes (theme, isDark, search, selection, labels)
   useEffect(() => {
@@ -740,9 +799,11 @@ function CanvasRenderer({
 
     if (!isInitializedRef.current) {
       isInitializedRef.current = true
+      transformRef.current.zoom = getDefaultOverviewZoom()
       sim.alpha(0.7).restart()
     } else {
-      renderFrame()
+      // Gentle reheat when streaming in batches of new nodes
+      sim.alpha(0.3).restart()
     }
 
     return () => {
@@ -760,7 +821,13 @@ function CanvasRenderer({
     let potentialDragNode: SimNode | null = null
     let hasMovedSignificantly = false
 
-    const isEventOverModalOrOverlay = (e: MouseEvent): boolean => {
+    // Pinch-to-zoom & multi-touch tracking
+    let initialPinchDistance: number | null = null
+    let initialPinchZoom: number = 1
+    let initialPinchCenter = { x: 0, y: 0 }
+    let initialPan = { x: 0, y: 0 }
+
+    const isEventOverModalOrOverlay = (e: MouseEvent | TouchEvent): boolean => {
       const target = e.target as HTMLElement | null
       if (!target) return false
       // If event happened on something outside this canvas (e.g. settings modal dialog, drawer, overlay)
@@ -916,6 +983,185 @@ function CanvasRenderer({
       hasMovedSignificantly = false
     }
 
+    // ── Touch Event Handlers (Mobile & Tablet Support) ───────────────────
+    const handleTouchStart = (e: TouchEvent) => {
+      if (isEventOverModalOrOverlay(e)) return
+      if (e.touches.length === 1) {
+        const touch = e.touches[0]
+        const rect = canvas.getBoundingClientRect()
+        const screenX = touch.clientX - rect.left
+        const screenY = touch.clientY - rect.top
+
+        clickStartX = touch.clientX
+        clickStartY = touch.clientY
+        hasMovedSignificantly = false
+
+        const hitNode = getNodeAtScreenPos(screenX, screenY)
+        potentialDragNode = hitNode
+
+        transformRef.current.dragStartX = touch.clientX
+        transformRef.current.dragStartY = touch.clientY
+        transformRef.current.lastPanX = transformRef.current.panX
+        transformRef.current.lastPanY = transformRef.current.panY
+      } else if (e.touches.length === 2) {
+        // Pinch zoom start
+        potentialDragNode = null
+        transformRef.current.isDragging = false
+        transformRef.current.isDraggingNode = false
+        if (transformRef.current.draggedNode) {
+          transformRef.current.draggedNode.fx = null
+          transformRef.current.draggedNode.fy = null
+          transformRef.current.draggedNode = null
+        }
+
+        const touch1 = e.touches[0]
+        const touch2 = e.touches[1]
+        const dist = Math.hypot(
+          touch2.clientX - touch1.clientX,
+          touch2.clientY - touch1.clientY,
+        )
+        const rect = canvas.getBoundingClientRect()
+        const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left
+        const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top
+
+        initialPinchDistance = dist
+        initialPinchZoom = transformRef.current.zoom
+        initialPinchCenter = { x: centerX, y: centerY }
+        initialPan = { x: transformRef.current.panX, y: transformRef.current.panY }
+      }
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isEventOverModalOrOverlay(e)) return
+      if (e.cancelable) {
+        e.preventDefault()
+      }
+
+      if (e.touches.length === 1) {
+        const touch = e.touches[0]
+        const rect = canvas.getBoundingClientRect()
+        const screenX = touch.clientX - rect.left
+        const screenY = touch.clientY - rect.top
+        lastPointerPosRef.current = { screenX, screenY }
+
+        const distMoved = Math.hypot(
+          touch.clientX - clickStartX,
+          touch.clientY - clickStartY,
+        )
+        if (distMoved > 6) {
+          hasMovedSignificantly = true
+        }
+
+        // 1. Dragging Node on touch
+        if (potentialDragNode && hasMovedSignificantly) {
+          if (!transformRef.current.isDraggingNode) {
+            transformRef.current.isDraggingNode = true
+            transformRef.current.draggedNode = potentialDragNode
+            potentialDragNode.fx = potentialDragNode.x
+            potentialDragNode.fy = potentialDragNode.y
+            if (simulationRef.current) {
+              simulationRef.current.on('tick', renderFrame)
+              simulationRef.current.alphaTarget(0.3).restart()
+            }
+          }
+          const { x, y } = screenToWorld(screenX, screenY)
+          transformRef.current.draggedNode!.fx = x
+          transformRef.current.draggedNode!.fy = y
+          renderFrame()
+          return
+        }
+
+        // 2. Panning Canvas on touch
+        if (!potentialDragNode && hasMovedSignificantly) {
+          transformRef.current.isDragging = true
+          const dx = touch.clientX - transformRef.current.dragStartX
+          const dy = touch.clientY - transformRef.current.dragStartY
+          transformRef.current.panX = transformRef.current.lastPanX + dx
+          transformRef.current.panY = transformRef.current.lastPanY + dy
+          renderFrame()
+          return
+        }
+      } else if (e.touches.length === 2 && initialPinchDistance !== null) {
+        // Pinch-to-zoom calculation
+        const touch1 = e.touches[0]
+        const touch2 = e.touches[1]
+        const dist = Math.hypot(
+          touch2.clientX - touch1.clientX,
+          touch2.clientY - touch1.clientY,
+        )
+        const scale = dist / initialPinchDistance
+        const newZoom = Math.max(0.15, Math.min(5.0, initialPinchZoom * scale))
+
+        const width = canvas.clientWidth
+        const height = canvas.clientHeight
+        const { x: mouseX, y: mouseY } = initialPinchCenter
+
+        const cx = width / 2 + initialPan.x
+        const cy = height / 2 + initialPan.y
+
+        const newPanX =
+          mouseX - (mouseX - cx) * (newZoom / initialPinchZoom) - width / 2
+        const newPanY =
+          mouseY - (mouseY - cy) * (newZoom / initialPinchZoom) - height / 2
+
+        transformRef.current.zoom = newZoom
+        transformRef.current.panX = newPanX
+        transformRef.current.panY = newPanY
+
+        renderFrame()
+      }
+    }
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (isEventOverModalOrOverlay(e)) {
+        potentialDragNode = null
+        transformRef.current.isDragging = false
+        transformRef.current.isDraggingNode = false
+        initialPinchDistance = null
+        return
+      }
+
+      if (e.touches.length === 0) {
+        const isPureClick = !hasMovedSignificantly
+
+        if (transformRef.current.isDraggingNode) {
+          if (transformRef.current.draggedNode) {
+            transformRef.current.draggedNode.fx = null
+            transformRef.current.draggedNode.fy = null
+            transformRef.current.draggedNode = null
+          }
+          transformRef.current.isDraggingNode = false
+          if (simulationRef.current) {
+            simulationRef.current.alphaTarget(0)
+            simulationRef.current.on('end', () => {
+              simulationRef.current?.on('tick', null)
+            })
+          }
+        }
+
+        if (transformRef.current.isDragging) {
+          transformRef.current.isDragging = false
+        }
+
+        if (isPureClick && potentialDragNode) {
+          onClick(potentialDragNode.id)
+        } else if (isPureClick && !potentialDragNode) {
+          onClick(null)
+        }
+
+        potentialDragNode = null
+        hasMovedSignificantly = false
+        initialPinchDistance = null
+      } else if (e.touches.length === 1) {
+        initialPinchDistance = null
+        const touch = e.touches[0]
+        transformRef.current.dragStartX = touch.clientX
+        transformRef.current.dragStartY = touch.clientY
+        transformRef.current.lastPanX = transformRef.current.panX
+        transformRef.current.lastPanY = transformRef.current.panY
+      }
+    }
+
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault()
       const rect = canvas.getBoundingClientRect()
@@ -947,11 +1193,21 @@ function CanvasRenderer({
     window.addEventListener('mouseup', handleMouseUp)
     canvas.addEventListener('wheel', handleWheel, { passive: false })
 
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false })
+    window.addEventListener('touchmove', handleTouchMove, { passive: false })
+    window.addEventListener('touchend', handleTouchEnd, { passive: false })
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: false })
+
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown)
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
       canvas.removeEventListener('wheel', handleWheel)
+
+      canvas.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('touchmove', handleTouchMove)
+      window.removeEventListener('touchend', handleTouchEnd)
+      window.removeEventListener('touchcancel', handleTouchEnd)
     }
   }, [getNodeAtScreenPos, screenToWorld, onHover, onClick, renderFrame])
 
@@ -976,21 +1232,25 @@ function CanvasRenderer({
     onResetRef.current = () => {
       transformRef.current.panX = 0
       transformRef.current.panY = 0
-      transformRef.current.zoom = 1
+      transformRef.current.zoom = getDefaultOverviewZoom()
       renderFrame()
     }
     onZoomInRef.current = () => {
-      transformRef.current.zoom = Math.min(5.0, transformRef.current.zoom * 1.3)
+      const { panX, panY, zoom } = transformRef.current
+      const canvas = canvasRef.current
+      const width = canvas ? canvas.clientWidth : 800
+      const height = canvas ? canvas.clientHeight : 600
+      const newZoom = Math.min(5.0, zoom * 1.3)
+      transformRef.current.zoom = newZoom
       renderFrame()
     }
     onZoomOutRef.current = () => {
-      transformRef.current.zoom = Math.max(
-        0.15,
-        transformRef.current.zoom * 0.77,
-      )
+      const { panX, panY, zoom } = transformRef.current
+      const newZoom = Math.max(0.15, zoom * 0.77)
+      transformRef.current.zoom = newZoom
       renderFrame()
     }
-  }, [onResetRef, onZoomInRef, onZoomOutRef, renderFrame])
+  }, [onResetRef, onZoomInRef, onZoomOutRef, getDefaultOverviewZoom, renderFrame])
 
   return (
     <canvas
@@ -1022,7 +1282,9 @@ export function GraphScreen() {
   const onZoomInRef = useRef<(() => void) | null>(null)
   const onZoomOutRef = useRef<(() => void) | null>(null)
 
-  const { data: rawGraph, isLoading } = useQuery<GraphResponse>({
+  const [progressiveCount, setProgressiveCount] = useState<number>(100)
+
+  const { data: rawGraph } = useQuery<GraphResponse>({
     queryKey: ['knowledge-graph'],
     queryFn: async () => {
       const res = await fetch('/api/knowledge/graph')
@@ -1031,6 +1293,26 @@ export function GraphScreen() {
     },
     staleTime: 60_000,
   })
+
+  // Progressive batch loading effect: start with first 100 nodes, then stream in remaining nodes in chunks
+  useEffect(() => {
+    const totalNodes = rawGraph?.nodes?.length || 0
+    if (totalNodes === 0) return
+
+    if (progressiveCount < totalNodes) {
+      const timer = setTimeout(() => {
+        setProgressiveCount((prev) => Math.min(totalNodes, prev + 80))
+      }, 40)
+      return () => clearTimeout(timer)
+    }
+  }, [rawGraph?.nodes?.length, progressiveCount])
+
+  // Reset progressive count on fresh graph reload
+  useEffect(() => {
+    if (rawGraph?.nodes?.length) {
+      setProgressiveCount((prev) => (prev === 0 ? 100 : prev))
+    }
+  }, [rawGraph])
 
   // Category counts
   const categoryCounts = useMemo(() => {
@@ -1052,32 +1334,35 @@ export function GraphScreen() {
     return counts
   }, [rawGraph?.nodes])
 
-  // Filtered nodes & edges based on active categories
+  // Filtered nodes & edges based on active categories + progressive batch count
   const { filteredNodes, filteredEdges, nodeLookup } = useMemo(() => {
-    const nodes = rawGraph?.nodes || []
+    const allNodes = rawGraph?.nodes || []
     const edges = rawGraph?.edges || []
 
-    const validNodes = nodes.filter((n) => {
+    const validCategoryNodes = allNodes.filter((n) => {
       const cat = n.type?.toLowerCase() || 'concept'
       return activeCategories.has(cat)
     })
 
-    const validNodeIdSet = new Set(validNodes.map((n) => n.id))
+    // Take progressive batch slice
+    const slicedNodes = validCategoryNodes.slice(0, progressiveCount)
+
+    const validNodeIdSet = new Set(slicedNodes.map((n) => n.id))
     const validEdges = edges.filter(
       (e) => validNodeIdSet.has(e.source) && validNodeIdSet.has(e.target),
     )
 
     const map = new Map<string, GraphNode>()
-    for (const n of validNodes) {
+    for (const n of slicedNodes) {
       map.set(n.id, n)
     }
 
     return {
-      filteredNodes: validNodes,
+      filteredNodes: slicedNodes,
       filteredEdges: validEdges,
       nodeLookup: map,
     }
-  }, [rawGraph, activeCategories])
+  }, [rawGraph, activeCategories, progressiveCount])
 
   // Search Highlights
   const searchHighlightIds = useMemo(() => {
@@ -1158,15 +1443,15 @@ export function GraphScreen() {
     >
       {/* ── Top Bar with Filter Pills & Search ── */}
       <div
-        className="h-14 shrink-0 border-b px-4 flex items-center justify-between gap-3 z-30"
+        className="shrink-0 border-b px-3 sm:px-4 py-2 sm:py-0 sm:h-14 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 z-30"
         style={{
           borderColor: 'var(--theme-border)',
           backgroundColor: 'var(--theme-card, rgba(15, 17, 23, 0.8))',
           backdropFilter: 'blur(12px)',
         }}
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="relative w-56 sm:w-72">
+        <div className="flex items-center justify-between sm:justify-start gap-2 min-w-0 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-72 sm:flex-initial">
             <HugeiconsIcon
               icon={Search01Icon}
               size={14}
@@ -1194,10 +1479,49 @@ export function GraphScreen() {
               </button>
             )}
           </div>
+
+          {/* Canvas Quick Controls on Mobile */}
+          <div className="flex sm:hidden items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowAlwaysLabels((prev) => !prev)}
+              className="p-1.5 rounded-xl border transition-colors"
+              style={{
+                borderColor: 'var(--theme-border)',
+                backgroundColor: showAlwaysLabels
+                  ? 'var(--theme-card2)'
+                  : 'transparent',
+                color: showAlwaysLabels
+                  ? 'var(--theme-accent)'
+                  : 'var(--theme-muted)',
+              }}
+              title={
+                showAlwaysLabels
+                  ? 'Show Labels On-Demand Only'
+                  : 'Always Show All Labels'
+              }
+            >
+              <HugeiconsIcon
+                icon={showAlwaysLabels ? ViewIcon : ViewOffIcon}
+                size={14}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={() => onResetRef.current?.()}
+              className="text-[11px] px-2 py-1 rounded-xl border font-medium transition-colors hover:bg-[var(--theme-card2)]"
+              style={{
+                borderColor: 'var(--theme-border)',
+                color: 'var(--theme-text)',
+              }}
+            >
+              Reset
+            </button>
+          </div>
         </div>
 
-        {/* Category Pills Filter */}
-        <div className="hidden sm:flex items-center gap-2">
+        {/* Category Pills Filter (Horizontal Scroll on Mobile) */}
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-0.5 sm:pb-0">
           <GraphFilterBar
             activeCategories={activeCategories}
             counts={categoryCounts}
@@ -1206,8 +1530,8 @@ export function GraphScreen() {
           />
         </div>
 
-        {/* Canvas Quick Controls */}
-        <div className="flex items-center gap-1 shrink-0">
+        {/* Canvas Quick Controls on Desktop */}
+        <div className="hidden sm:flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={() => setShowAlwaysLabels((prev) => !prev)}
@@ -1272,25 +1596,19 @@ export function GraphScreen() {
 
       {/* ── Main Canvas Viewport ── */}
       <div className="flex-1 min-h-0 w-full relative overflow-hidden">
-        {isLoading ? (
-          <div className="flex h-full w-full items-center justify-center gap-2 text-xs opacity-60">
-            <span>Loading Living Brain Graph...</span>
-          </div>
-        ) : (
-          <CanvasRenderer
-            nodesData={filteredNodes}
-            edgesData={filteredEdges}
-            hoveredNodeId={hoveredNodeId}
-            selectedNodeId={selectedNodeId}
-            searchHighlightIds={searchHighlightIds}
-            showLabels={showAlwaysLabels}
-            onHover={setHoveredNodeId}
-            onClick={setSelectedNodeId}
-            onResetRef={onResetRef}
-            onZoomInRef={onZoomInRef}
-            onZoomOutRef={onZoomOutRef}
-          />
-        )}
+        <CanvasRenderer
+          nodesData={filteredNodes}
+          edgesData={filteredEdges}
+          hoveredNodeId={hoveredNodeId}
+          selectedNodeId={selectedNodeId}
+          searchHighlightIds={searchHighlightIds}
+          showLabels={showAlwaysLabels}
+          onHover={setHoveredNodeId}
+          onClick={setSelectedNodeId}
+          onResetRef={onResetRef}
+          onZoomInRef={onZoomInRef}
+          onZoomOutRef={onZoomOutRef}
+        />
 
         {/* ── Side Inspector Drawer ── */}
         <GraphSideInspector
