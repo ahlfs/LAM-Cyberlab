@@ -15,7 +15,7 @@ if [ "$(id -u)" -eq 0 ]; then
   echo ""
   read -r -p "Do you want to continue running as root anyway? (y/N): " confirm || confirm="N"
   if [[ ! "$confirm" =~ ^[yY]([eE][sS])?$ ]]; then
-    echo "Installation aborted. Please create a non-root user (e.g., 'adduser ahlfs && usermod -aG sudo ahlfs') and re-run as that user."
+    echo "Installation aborted. Please create a non-root user (e.g., 'adduser <your_username> && usermod -aG sudo <your_username>') and re-run as that user."
     exit 1
   fi
 fi

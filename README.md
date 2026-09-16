@@ -87,9 +87,9 @@ Everything below installs and runs **this repository** (the web UI) which pairs 
 > If your VPS (such as UpCloud, DigitalOcean, or Linode) defaults to logging in as `root`, **it is strongly recommended to create and switch to a non-root user with `sudo` privileges** before running the installation:
 > ```bash
 > # Run once as root:
-> adduser ahlfs
-> usermod -aG sudo ahlfs
-> su - ahlfs
+> adduser <your_username>
+> usermod -aG sudo <your_username>
+> su - <your_username>
 > ```
 > Running an autonomous agent and toolchain as `root` can cause permission issues with PM2/Node caches, browser sandboxes, and increases system security risk.
 
