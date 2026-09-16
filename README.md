@@ -82,6 +82,17 @@ Everything below installs and runs **this repository** (the web UI) which pairs 
 
 ### 📋 Requirements
 
+> [!WARNING]
+> **Cloud VPS Notice (Root vs Non-Root User):**
+> If your VPS (such as UpCloud, DigitalOcean, or Linode) defaults to logging in as `root`, **it is strongly recommended to create and switch to a non-root user with `sudo` and `docker` privileges** before running the installation:
+> ```bash
+> # Run once as root:
+> adduser ahlfs
+> usermod -aG sudo,docker ahlfs
+> su - ahlfs
+> ```
+> Running an autonomous agent and toolchain as `root` can cause permission issues with PM2/Node caches, browser sandboxes, and increases system security risk.
+
 Before starting, ensure you have the following installed on your system:
 
 | Prerequisite     | Version       | Description                                                                                                                                                               |
