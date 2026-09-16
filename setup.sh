@@ -8,6 +8,18 @@ echo "=========================================================="
 echo "      Lam-Cyberlab — 1-Click VPS Setup"
 echo "=========================================================="
 
+# 0. Root User Warning & Confirmation
+if [ "$(id -u)" -eq 0 ]; then
+  echo -e "\033[1;33m[WARNING]\033[0m You are running this setup script as ROOT."
+  echo "It is strongly recommended to run LAM-Cyberlab & Hermes Agent under a non-root user with sudo privileges for security, isolation, and browser sandbox compatibility."
+  echo ""
+  read -r -p "Do you want to continue running as root anyway? (y/N): " confirm || confirm="N"
+  if [[ ! "$confirm" =~ ^[yY]([eE][sS])?$ ]]; then
+    echo "Installation aborted. Please create a non-root user (e.g., 'adduser ahlfs && usermod -aG sudo,docker ahlfs') and re-run as that user."
+    exit 1
+  fi
+fi
+
 # 1. Cek Node.js
 if ! command -v node >/dev/null 2>&1; then
   echo "[!] Node.js tidak ditemukan. Silakan instal Node.js v22+ terlebih dahulu."
