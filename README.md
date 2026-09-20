@@ -100,6 +100,7 @@ Before starting, ensure you have the following installed on your system:
 | **Node.js**      | 22+           | Required to run the Lam-Cyberlab web server. [Download Node.js](https://nodejs.org/)                                                                                      |
 | **pnpm**         | 9+            | Package manager (`npm install -g pnpm`). [Installation guide](https://pnpm.io/installation)                                                                               |
 | **Git**          | latest        | Required to clone this repository. [Download Git](https://git-scm.com/downloads)                                                                                          |
+| **tmux**         | latest        | Required for Conductor & Agent Swarm background execution across Linux, macOS, & WSL. [Official tmux](https://github.com/tmux/tmux) · [Install Guide](https://github.com/tmux/tmux/wiki/Installing) |
 | **Hermes Agent** | modified fork | **CRITICAL:** You must use the modified fork of Hermes Agent for full compatibility. See instructions at [**ahlfs/hermes-agent**](https://github.com/ahlfs/hermes-agent). |
 
 ---
@@ -536,6 +537,7 @@ A fresh VPS usually doesn't have the required developer tools installed. Before 
 | **Node.js 22+**  | Required to run the Lam-Cyberlab web server.               | [NodeSource Distributions](https://github.com/nodesource/distributions) |
 | **PM2**          | Process manager to keep the app running in the background. | [PM2 Quick Start](https://pm2.keymetrics.io/docs/usage/quick-start/)    |
 | **pnpm**         | Fast, disk space efficient package manager.                | [pnpm Installation](https://pnpm.io/installation)                       |
+| **tmux**         | Terminal multiplexer for background Swarm & Conductor.     | [Official tmux](https://github.com/tmux/tmux) (`apt install tmux` / `brew install tmux`) |
 | **Hermes Agent** | The intelligence backend. **MUST** be installed first.     | [ahlfs/hermes-agent](https://github.com/ahlfs/hermes-agent)             |
 
 #### 🛠️ Automated Setup

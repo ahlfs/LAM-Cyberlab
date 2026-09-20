@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 
 import { chatQueryKeys, fetchHistory } from '../chat-queries'
 import { getMessageTimestamp, textFromMessage } from '../utils'
@@ -382,6 +382,12 @@ export function useChatHistory({
     },
     enabled: shouldFetchHistory,
     initialData: function useInitialHistory(): HistoryResponse | undefined {
+      if (isNewChat) {
+        return {
+          sessionKey: 'new',
+          messages: [],
+        }
+      }
       if (portableMode) {
         return (
           portableHistory ?? {
@@ -392,7 +398,6 @@ export function useChatHistory({
       }
       return queryClient.getQueryData<HistoryResponse>(historyKey)
     },
-    placeholderData: keepPreviousData,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     refetchInterval: historyRefetchInterval,
@@ -407,19 +412,24 @@ export function useChatHistory({
 
   useEffect(() => {
     cleanupExpiredPendingSends()
+    if (isNewChat) {
+      setPersistedPending(null)
+      return
+    }
     setPersistedPending(
       readPendingMessage(sessionKeyForHistory, activeFriendlyId),
     )
-  }, [activeFriendlyId, sessionKeyForHistory])
+  }, [activeFriendlyId, isNewChat, sessionKeyForHistory])
 
   const rawHistoryMessages = useMemo(() => {
+    if (isNewChat) return []
     return Array.isArray(historyQuery.data?.messages)
       ? historyQuery.data.messages
       : []
-  }, [historyQuery.data?.messages])
+  }, [historyQuery.data?.messages, isNewChat])
 
   useEffect(() => {
-    if (!sessionKeyForHistory || sessionKeyForHistory === 'new') return
+    if (isNewChat || !sessionKeyForHistory || sessionKeyForHistory === 'new') return
 
     const optimisticMessages = rawHistoryMessages.filter(
       isOptimisticUserMessage,
@@ -438,7 +448,7 @@ export function useChatHistory({
         : [],
       optimisticMessage: latestOptimisticMessage,
     })
-  }, [activeFriendlyId, rawHistoryMessages, sessionKeyForHistory])
+  }, [activeFriendlyId, isNewChat, rawHistoryMessages, sessionKeyForHistory])
 
   useEffect(() => {
     if (!persistedPending) return
@@ -456,6 +466,7 @@ export function useChatHistory({
   const stableHistorySignatureRef = useRef('')
   const stableHistoryMessagesRef = useRef<Array<ChatMessage>>([])
   const historyMessages = useMemo(() => {
+    if (isNewChat) return []
     const messages = persistedPending
       ? mergeOptimisticHistoryMessages(rawHistoryMessages, [
           persistedPending.optimisticMessage,

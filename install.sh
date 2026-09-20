@@ -117,6 +117,12 @@ green "  git $(git --version | awk '{print $3}') ✓"
 need curl "Install curl (usually: apt install curl / brew install curl)"
 green "  curl ✓"
 
+if command -v tmux &>/dev/null; then
+  green "  tmux $(tmux -V 2>/dev/null | awk '{print $2}') ✓"
+else
+  yellow "  tmux not found — required for Conductor & Swarm multi-agent orchestration (apt install tmux / brew install tmux)"
+fi
+
 if ! command -v pnpm &>/dev/null; then
   yellow "  pnpm not found — installing via corepack…"
   if command -v corepack &>/dev/null; then
