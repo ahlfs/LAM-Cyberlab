@@ -433,7 +433,12 @@ export function WorkspaceShell({ children }: WorkspaceShellProps) {
                   left: 0,
                   right: 0,
                   // inset:0 would extend through main's padding.
-                  bottom: 0,
+                  bottom:
+                    !isMobile &&
+                    !isChromeFreeSurface &&
+                    settings.showSystemMetricsFooter
+                      ? '1.75rem'
+                      : 0,
                   visibility: isOnTerminalRoute ? 'visible' : 'hidden',
                   pointerEvents: isOnTerminalRoute ? 'auto' : 'none',
                   zIndex: isOnTerminalRoute ? 1 : -1,

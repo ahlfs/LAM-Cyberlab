@@ -131,7 +131,6 @@ export function TerminalWorkspace({
   )
   const setTabStatus = useTerminalPanelStore((state) => state.setTabStatus)
 
-  const [termHeight, setTermHeight] = useState<number | null>(null)
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [debugAnalysis, setDebugAnalysis] = useState<DebugAnalysis | null>(null)
   const [debugLoading, setDebugLoading] = useState(false)
@@ -548,6 +547,9 @@ export function TerminalWorkspace({
           cursor: '#ea580c',
           selectionBackground: '#2b2b2b',
         },
+        convertEol: true,
+        scrollback: 10000,
+        scrollOnUserInput: true,
       })
       const fitAddon = new FitAddonCtor()
       const webLinks = new WebLinksAddonCtor()
@@ -668,11 +670,6 @@ export function TerminalWorkspace({
       }
 
       function handleResize() {
-        // Update height from visualViewport (keyboard-aware on mobile)
-        const vv = window.visualViewport
-        if (vv) {
-          setTermHeight(vv.height)
-        }
         refitAll()
       }
 
@@ -710,14 +707,7 @@ export function TerminalWorkspace({
   }, [])
 
   return (
-    <div
-      className="relative flex min-h-0 flex-col bg-primary-50"
-      style={
-        termHeight
-          ? { height: termHeight, maxHeight: termHeight }
-          : { height: '100%' }
-      }
-    >
+    <div className="relative flex h-full min-h-0 flex-1 flex-col bg-primary-50">
       {/* fullscreen header removed — tab bar handles everything */}
 
       <div className="flex h-8 items-center border-b border-primary-300 bg-primary-100 px-1">
@@ -866,7 +856,7 @@ export function TerminalWorkspace({
       </div>
 
       <div
-        className="relative flex-1 overflow-hidden bg-primary-50"
+        className="relative flex-1 min-h-0 overflow-hidden bg-primary-50"
         style={{ backgroundColor: TERMINAL_BG }}
       >
         {tabs.map(function renderTerminal(tab) {
