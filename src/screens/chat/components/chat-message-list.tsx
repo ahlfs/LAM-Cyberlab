@@ -530,6 +530,55 @@ function isAssistantToolCallOnlyMessage(message: ChatMessage): boolean {
   return hasToolCalls && text.trim().length === 0
 }
 
+export type TrailingToolOnlyTurnSummary = {
+  count: number
+  toolNames: Array<string>
+  hasFinalAssistantText: boolean
+}
+
+export function getTrailingToolOnlyTurnSummary(
+  messages: Array<ChatMessage>,
+): TrailingToolOnlyTurnSummary | null {
+  if (messages.length === 0) return null
+  const lastMsg = messages[messages.length - 1]
+  const lastText = textFromMessage(lastMsg)
+  if (lastMsg.role === 'assistant' && lastText.trim().length > 0) {
+    return null
+  }
+
+  const trailing: Array<ChatMessage> = []
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]
+    if (
+      m.role === 'user' ||
+      (m.role === 'assistant' && textFromMessage(m).trim().length > 0)
+    ) {
+      break
+    }
+    trailing.unshift(m)
+  }
+
+  if (trailing.length === 0) return null
+
+  const toolNames = new Set<string>()
+  for (const m of trailing) {
+    for (const tc of getToolCallsFromMessage(m)) {
+      if (tc.name) toolNames.add(tc.name)
+    }
+    if ((m as any).toolName) toolNames.add((m as any).toolName)
+  }
+
+  const hasFinalAssistantText = messages.some(
+    (m) => m.role === 'assistant' && textFromMessage(m).trim().length > 0,
+  )
+
+  return {
+    count: trailing.length,
+    toolNames: Array.from(toolNames),
+    hasFinalAssistantText,
+  }
+}
+
 export function buildDisplayEntries(
   displayMessages: Array<ChatMessage>,
 ): Array<DisplayEntry> {
@@ -568,13 +617,6 @@ export function buildDisplayEntries(
 
     entries.push(entry)
   })
-
-  if (pendingAssistantToolMessages.length > 0) {
-    const previousEntry = entries[entries.length - 1]
-    if (previousEntry?.message.role === 'assistant') {
-      previousEntry.attachedToolMessages.push(...pendingAssistantToolMessages)
-    }
-  }
 
   return entries
 }

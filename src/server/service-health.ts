@@ -29,18 +29,20 @@ async function check9RouterReachable(): Promise<ServiceStatus> {
     return checkHttpReachable('9router', explicitUrl)
   }
 
-  // Default behavior: check port 9898 (LAM-Router), fallback to 20128 and 3035
-  const status9898 = await checkHttpReachable(
-    'lam-router',
-    'http://127.0.0.1:9898/health',
-  )
-  if (status9898.status === 'up') return status9898
+  // Default behavior: check port 20128, fallback to 3035, then 9898 (LAM-Router)
   const status20128 = await checkHttpReachable(
     '9router',
     'http://127.0.0.1:20128',
   )
   if (status20128.status === 'up') return status20128
-  return checkHttpReachable('9router', 'http://127.0.0.1:3035')
+
+  const status3035 = await checkHttpReachable(
+    '9router',
+    'http://127.0.0.1:3035',
+  )
+  if (status3035.status === 'up') return status3035
+
+  return checkHttpReachable('9router', 'http://127.0.0.1:9898/health')
 }
 
 /** Any HTTP response — even an error status — means the process is alive and answering. Only a network-level failure (refused, timed out) counts as down. */

@@ -3,6 +3,10 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { GraphFilterBar } from './graph-filter-bar'
 
+vi.mock('@/lib/theme', () => ({
+  useCurrentTheme: () => ({ theme: 'dark', isDark: true }),
+}))
+
 describe('GraphFilterBar', () => {
   it('renders category toggle pills with counts and fires onToggleCategory', () => {
     const onToggle = vi.fn()

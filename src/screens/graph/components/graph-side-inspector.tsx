@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import * as React from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Cancel01Icon,
@@ -26,7 +26,7 @@ type GraphSideInspectorProps = {
   onOpenFull?: (id: string) => void
 }
 
-export const GraphSideInspector = memo(function GraphSideInspector({
+export const GraphSideInspector = React.memo(function GraphSideInspector({
   selectedNode,
   inboundLinks,
   outboundLinks,
@@ -34,7 +34,7 @@ export const GraphSideInspector = memo(function GraphSideInspector({
   onSelectNode,
   onOpenFull,
 }: GraphSideInspectorProps) {
-  const [isMobileExpanded, setIsMobileExpanded] = useState(false)
+  const [isMobileExpanded, setIsMobileExpanded] = React.useState(false)
 
   if (!selectedNode) return null
 

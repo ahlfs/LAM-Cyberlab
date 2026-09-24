@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url'
 import { randomBytes } from 'node:crypto'
 import type { McpClientInput } from '../types/mcp'
 import { parseMcpServerInput } from './mcp-input-validate'
+import { getHermesRoot } from './claude-paths'
 import { getStateDir } from './workspace-state-dir'
 
 export interface McpPreset {
@@ -93,7 +94,11 @@ const TOP_KNOWN_FIELDS = new Set(['version', 'presets'])
 let _cache: CacheEntry | null = null
 
 export function presetsFilePath(): string {
-  return join(getStateDir(), 'mcp-presets.json')
+  const rootPath = join(getHermesRoot(), 'mcp-presets.json')
+  if (existsSync(rootPath)) return rootPath
+  const statePath = join(getStateDir(), 'mcp-presets.json')
+  if (existsSync(statePath)) return statePath
+  return rootPath
 }
 
 /**

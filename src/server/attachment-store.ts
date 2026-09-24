@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   statSync,
   unlinkSync,
   writeFileSync,
@@ -52,7 +53,11 @@ function loadIndex(): void {
 function saveIndex(): void {
   try {
     if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true })
-    writeFileSync(INDEX_FILE, JSON.stringify(index, null, 2))
+    const tempFile = `${INDEX_FILE}.${process.pid}.${Date.now()}.${Math.random()
+      .toString(36)
+      .slice(2)}.tmp`
+    writeFileSync(tempFile, JSON.stringify(index, null, 2), 'utf-8')
+    renameSync(tempFile, INDEX_FILE)
   } catch {
     // ignore index save failure
   }

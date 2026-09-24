@@ -10,6 +10,7 @@
  */
 import {
   closeSync,
+  existsSync,
   fstatSync,
   fsyncSync,
   linkSync,
@@ -23,6 +24,7 @@ import {
 } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { randomBytes } from 'node:crypto'
+import { getHermesRoot } from './claude-paths'
 import { getStateDir } from './workspace-state-dir'
 
 // ---------------------------------------------------------------------------
@@ -103,7 +105,11 @@ const KNOWN_TOP_FIELDS = new Set(['version', 'sources'])
 // ---------------------------------------------------------------------------
 
 export function hubSourcesFilePath(): string {
-  return join(getStateDir(), 'mcp-hub-sources.json')
+  const rootPath = join(getHermesRoot(), 'mcp-hub-sources.json')
+  if (existsSync(rootPath)) return rootPath
+  const statePath = join(getStateDir(), 'mcp-hub-sources.json')
+  if (existsSync(statePath)) return statePath
+  return rootPath
 }
 
 // ---------------------------------------------------------------------------

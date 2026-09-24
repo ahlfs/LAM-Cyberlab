@@ -63,6 +63,8 @@ export const Route = createFileRoute('/api/terminal-stream')({
             : null
 
         const encoder = new TextEncoder()
+        let cleanup: (() => void) | null = null
+
         const stream = new ReadableStream({
           start(controller) {
             let isStreamActive = true
@@ -155,6 +157,7 @@ export const Route = createFileRoute('/api/terminal-stream')({
             }, 8000)
 
             const abort = () => {
+              if (!isStreamActive) return
               isStreamActive = false
               clearInterval(keepAlive)
               session.emitter.off('event', handleEvent)
@@ -166,7 +169,11 @@ export const Route = createFileRoute('/api/terminal-stream')({
               session.markDetached()
             }
 
+            cleanup = abort
             request.signal.addEventListener('abort', abort)
+          },
+          cancel() {
+            if (cleanup) cleanup()
           },
         })
 

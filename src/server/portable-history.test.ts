@@ -6,12 +6,12 @@ import {
 } from './portable-history'
 
 describe('portable history replay', () => {
-  it('skips replay when the Hermes gateway can continue the server-side session', () => {
+  it('replays history when shouldReplayPortableHistory returns true', () => {
     expect(
       shouldReplayPortableHistory({
         bearerToken: 'token',
       }),
-    ).toBe(false)
+    ).toBe(true)
 
     expect(
       selectPortableConversationHistory(
@@ -19,7 +19,7 @@ describe('portable history replay', () => {
         [{ role: 'user', content: 'fallback' }],
         { bearerToken: 'token' },
       ),
-    ).toEqual([])
+    ).toEqual([{ role: 'assistant', content: 'old reply' }])
   })
 
   it('replays persisted history for direct local-provider requests', () => {
