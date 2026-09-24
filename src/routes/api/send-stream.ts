@@ -1416,31 +1416,6 @@ export const Route = createFileRoute('/api/send-stream')({
                         gatewaySessionMap.set(resolvedFriendlyId, gwSid)
                       }
 
-                      // On run completion, try to discover the actual gateway
-                      // session where messages landed (enhanced-claude fallback).
-                      if (
-                        (event === 'run.completed' ||
-                          event === 'assistant.completed') &&
-                        !gatewaySessionMap.has(resolvedFriendlyId) &&
-                        !SESSION_BOOTSTRAP_KEYS.has(resolvedFriendlyId)
-                      ) {
-                        try {
-                          const recent = await listGatewaySessions(5)
-                          const actual = recent.find(
-                            (s) =>
-                              s.id !== resolvedFriendlyId &&
-                              s.id !== sessionKey &&
-                              typeof s.message_count === 'number' &&
-                              s.message_count > 0,
-                          )
-                          if (actual) {
-                            gatewaySessionMap.set(resolvedFriendlyId, actual.id)
-                          }
-                        } catch {
-                          // non-critical
-                        }
-                      }
-
                       // Always send the frontend's key in events — NOT the
                       // gateway's internal session ID.
                       const sessionKeyFromEvent = resolvedFriendlyId

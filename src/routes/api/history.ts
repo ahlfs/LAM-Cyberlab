@@ -7,6 +7,7 @@ import {
   getMessages,
   listSessions,
   toChatMessage,
+  toChatMessages,
 } from '../../server/claude-api'
 import {
   resolveMainChatSessionId,
@@ -133,9 +134,7 @@ export const Route = createFileRoute('/api/history')({
           return json({
             sessionKey,
             sessionId: sessionKey,
-            messages: boundedMessages.map((message, index) =>
-              toChatMessage(message, { historyIndex: index }),
-            ),
+            messages: toChatMessages(boundedMessages),
           })
         } catch (err) {
           return json(

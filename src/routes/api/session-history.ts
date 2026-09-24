@@ -12,6 +12,7 @@ import {
   getGatewayCapabilities,
   getMessages,
   toChatMessage,
+  toChatMessages,
 } from '../../server/claude-api'
 import { resolveSessionKey } from '../../server/session-utils'
 import { isAuthenticated } from '@/server/auth-middleware'
@@ -62,7 +63,7 @@ export const Route = createFileRoute('/api/session-history')({
           const trimmed = rows.slice(-limit)
           return json({
             ok: true,
-            messages: trimmed.map((row) => toChatMessage(row)),
+            messages: toChatMessages(trimmed),
             sessionKey: resolved.sessionKey,
             source: 'gateway',
           })

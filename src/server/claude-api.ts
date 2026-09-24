@@ -296,7 +296,7 @@ export async function forkSession(
 /** Convert a ClaudeMessage to the ChatMessage format the frontend expects */
 export function toChatMessage(
   msg: ClaudeMessage,
-  options?: { historyIndex?: number },
+  options?: { historyIndex?: number; userScreenshotIndex?: number },
 ): Record<string, unknown> {
   // Accept either parsed arrays from FastAPI or legacy JSON strings.
   let toolCalls: Array<unknown> | undefined
@@ -408,11 +408,15 @@ export function toChatMessage(
         (a.contentType || '').startsWith('image/'),
       )
 
-      const sessionHistoryIndex =
-        typeof options?.historyIndex === 'number' ? options.historyIndex : 0
+      const targetIndex =
+        typeof options?.userScreenshotIndex === 'number'
+          ? options.userScreenshotIndex
+          : typeof options?.historyIndex === 'number'
+            ? options.historyIndex
+            : 0
       // If we have single image attachment and single screenshot turn or multiple
       const attIndex = Math.min(
-        sessionHistoryIndex,
+        targetIndex,
         Math.max(0, imageAtt.length - 1),
       )
       const targetAtt = imageAtt[attIndex] || imageAtt[0]
@@ -486,6 +490,27 @@ export function toChatMessage(
       ? { streamToolCalls: streamToolCallsArr }
       : {}),
   }
+}
+
+/** Convert a list of ClaudeMessages to ChatMessages, correctly tracking user screenshot indices */
+export function toChatMessages(
+  messages: Array<ClaudeMessage>,
+): Array<Record<string, unknown>> {
+  let userScreenshotCount = 0
+  return messages.map((msg, index) => {
+    let userScreenshotIndex: number | undefined
+    if (
+      msg.role === 'user' &&
+      typeof msg.content === 'string' &&
+      msg.content.includes('[screenshot]')
+    ) {
+      const hasMediaTags = /<media:image\s+id="[^"]*"/i.test(msg.content)
+      if (!hasMediaTags) {
+        userScreenshotIndex = userScreenshotCount++
+      }
+    }
+    return toChatMessage(msg, { historyIndex: index, userScreenshotIndex })
+  })
 }
 
 /** Convert a ClaudeSession to the session summary format the frontend expects */
