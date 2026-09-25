@@ -102,6 +102,9 @@ export const Route = createFileRoute('/api/history')({
               })),
             })
           }
+          const localSession = getLocalSession(sessionKey)
+          const localMessages = localSession ? getLocalMessages(sessionKey) : []
+
           let messages: Awaited<ReturnType<typeof getMessages>> = []
           try {
             messages = await getMessages(sessionKey)
@@ -109,24 +112,44 @@ export const Route = createFileRoute('/api/history')({
             messages = []
           }
 
+          // In portable / responses mode (or when local session store holds
+          // the authoritative multi-turn history), prefer the local store.
+          if (
+            localMessages.length > 0 &&
+            (!capabilities.enhancedChat || localMessages.length >= messages.length)
+          ) {
+            const boundedLocal =
+              limit > 0 ? localMessages.slice(-limit) : localMessages
+            return json({
+              sessionKey,
+              sessionId: sessionKey,
+              messages: boundedLocal.map((m, index) => ({
+                id: m.id,
+                role: m.role,
+                content: [{ type: 'text', text: m.content }],
+                attachments: m.attachments,
+                timestamp: m.timestamp,
+                historyIndex: index,
+              })),
+            })
+          }
+
           // Fallback to local session store for portable/local model sessions
-          if (messages.length === 0) {
-            const localSession = getLocalSession(sessionKey)
-            if (localSession) {
-              const localMessages = getLocalMessages(sessionKey)
-              return json({
-                sessionKey,
-                sessionId: sessionKey,
-                messages: localMessages.map((m, index) => ({
-                  id: m.id,
-                  role: m.role,
-                  content: [{ type: 'text', text: m.content }],
-                  attachments: m.attachments,
-                  timestamp: m.timestamp,
-                  historyIndex: index,
-                })),
-              })
-            }
+          if (messages.length === 0 && localMessages.length > 0) {
+            const boundedLocal =
+              limit > 0 ? localMessages.slice(-limit) : localMessages
+            return json({
+              sessionKey,
+              sessionId: sessionKey,
+              messages: boundedLocal.map((m, index) => ({
+                id: m.id,
+                role: m.role,
+                content: [{ type: 'text', text: m.content }],
+                attachments: m.attachments,
+                timestamp: m.timestamp,
+                historyIndex: index,
+              })),
+            })
           }
 
           const boundedMessages = limit > 0 ? messages.slice(-limit) : messages

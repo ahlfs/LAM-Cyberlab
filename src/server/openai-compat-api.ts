@@ -289,6 +289,7 @@ export async function openaiChat(
   // Agent to derive a fresh api-* session from each message payload.
   if (options.sessionId) {
     headers['X-Hermes-Session-Id'] = options.sessionId
+    headers['X-Hermes-Session-Key'] = options.sessionId
     // Back-compat for older/Claude-compatible adapters that still look for
     // the pre-Hermes header name.  Hermes Agent ignores this alias.
     headers['X-Claude-Session-Id'] = options.sessionId

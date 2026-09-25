@@ -55,6 +55,7 @@ describe('openaiChat', () => {
     >
     expect(headers.Authorization).toBe('Bearer test-token')
     expect(headers['X-Hermes-Session-Id']).toBe('workspace-session-1')
+    expect(headers['X-Hermes-Session-Key']).toBe('workspace-session-1')
     expect(headers['X-Claude-Session-Id']).toBe('workspace-session-1')
   })
 
@@ -81,6 +82,7 @@ describe('openaiChat', () => {
     >
     expect(headers.Authorization).toBeUndefined()
     expect(headers['X-Hermes-Session-Id']).toBe('workspace-session-2')
+    expect(headers['X-Hermes-Session-Key']).toBe('workspace-session-2')
     expect(headers['X-Claude-Session-Id']).toBe('workspace-session-2')
   })
 })

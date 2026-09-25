@@ -19,6 +19,7 @@
  * caring about Responses-spec quirks.
  */
 import { BEARER_TOKEN, CLAUDE_API } from './gateway-capabilities'
+import type { OpenAICompatContentPart } from './openai-compat-api'
 
 export type ResponsesStreamEvent =
   | { kind: 'text.delta'; delta: string }
@@ -113,8 +114,10 @@ export async function* streamResponses(
     'Content-Type': 'application/json',
     Accept: 'text/event-stream',
   }
-  if (req.sessionId && BEARER_TOKEN) {
+  if (req.sessionId) {
     headers['X-Hermes-Session-Id'] = req.sessionId
+    headers['X-Hermes-Session-Key'] = req.sessionId
+    headers['X-Claude-Session-Id'] = req.sessionId
   }
 
   const body: Record<string, unknown> = {
